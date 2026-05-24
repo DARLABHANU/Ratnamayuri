@@ -71,6 +71,7 @@ export interface Product {
   rating_avg: number;
   rating_count: number;
   total_sold: number;
+  low_stock_threshold: number;
   category?: Category;
   created_at: string;
   updated_at: string;

@@ -72,6 +72,8 @@ export interface Product {
   rating_count: number;
   total_sold: number;
   low_stock_threshold: number;
+  weight_grams?: number;
+  category_id?: number | null;
   category?: Category;
   created_at: string;
   updated_at: string;

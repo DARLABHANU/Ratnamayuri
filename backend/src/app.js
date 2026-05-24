@@ -8,7 +8,11 @@ const app = express();
 
 // CORS Middleware
 app.use(cors({
-  origin: [config.frontendUrl, 'http://localhost:3000'],
+  origin: [
+    config.frontendUrl,
+    'https://ratnamayuri-tbu8.vercel.app',
+    'http://localhost:3000'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

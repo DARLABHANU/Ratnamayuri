@@ -1,6 +1,6 @@
 # Ratnamayuri — Full-Stack E-Commerce Platform
 
-> Luxury Jewellery & Silk Sarees · Next.js 14 + FastAPI + PostgreSQL + Redis
+> Luxury Jewellery & Silk Sarees · Next.js 14 + Node.js (Express) + MongoDB
 
 ---
 
@@ -8,7 +8,7 @@
 
 ```
 ratnamayuri/
-├── backend/          # FastAPI Python backend
+├── backend/          # Node.js Express backend
 ├── frontend/         # Next.js 14 App Router frontend
 ├── docker-compose.yml
 └── README.md
@@ -21,11 +21,10 @@ ratnamayuri/
 | Layer      | Technology                                      |
 |------------|-------------------------------------------------|
 | Frontend   | Next.js 14 (App Router), Tailwind CSS, Zustand  |
-| Backend    | FastAPI, SQLAlchemy 2.0, Alembic                |
-| Database   | PostgreSQL 16                                   |
-| Cache      | Redis 7                                         |
-| Auth       | JWT (access + refresh tokens), bcrypt           |
-| Email      | aiosmtplib (SMTP)                               |
+| Backend    | Node.js (Express)                               |
+| Database   | MongoDB 7.0 (Mongoose ODM)                      |
+| Auth       | JWT (access + refresh tokens), bcryptjs         |
+| Email      | Nodemailer (SMTP)                               |
 | Charts     | Recharts                                        |
 | Container  | Docker + Docker Compose                         |
 
@@ -46,7 +45,7 @@ docker-compose up --build
 
 # Frontend → http://localhost:3000
 # Backend  → http://localhost:8000
-# API Docs → http://localhost:8000/api/docs
+# API Docs → http://localhost:8000/api/
 ```
 
 ---
@@ -58,23 +57,18 @@ docker-compose up --build
 ```bash
 cd backend
 
-# Create virtualenv
-python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-
-# Install deps
-pip install -r requirements.txt
+# Install dependencies
+npm install
 
 # Copy and edit .env
 cp .env.example .env
-# Edit DATABASE_URL, SMTP_*, SECRET_KEY
+# Edit MONGODB_URI, SMTP_*, SECRET_KEY
 
-# Start PostgreSQL and Redis (or use Docker)
-docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=password -e POSTGRES_DB=ratnamayuri postgres:16-alpine
-docker run -d -p 6379:6379 redis:7-alpine
+# Start MongoDB locally (or run via Docker)
+# docker run -d -p 27017:27017 mongo:7.0
 
-# Run (tables auto-created on startup, admin bootstrapped)
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Run in development mode
+npm run dev
 ```
 
 ### Frontend

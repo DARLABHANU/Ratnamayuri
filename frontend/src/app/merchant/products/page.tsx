@@ -26,6 +26,7 @@ const productSchema = z.object({
   is_featured: z.boolean().default(false),
   images: z.string().optional(), // comma-separated URLs
   tags: z.string().optional(),
+  category_id: z.string().optional().nullable(),
 });
 type ProductForm = z.infer<typeof productSchema>;
 
@@ -33,17 +34,26 @@ export default function MerchantProductsPage() {
   const router = useRouter();
   const { isAuthenticated, role } = useAuthStore();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<ProductForm>({
+  const { register, handleSubmit, reset, setValue, getValues, watch, formState: { errors } } = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
-    defaultValues: { is_active: true, is_featured: false, stock_quantity: 0, low_stock_threshold: 5 },
+    defaultValues: { is_active: true, is_featured: false, stock_quantity: 0, low_stock_threshold: 5, category_id: "" },
   });
+
+  useEffect(() => {
+    // Load categories
+    productApi.categories()
+      .then((res) => setCategories(res.data))
+      .catch((err) => console.error("Error loading categories:", err));
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated || role !== "merchant") { router.push("/auth/login"); return; }
@@ -63,7 +73,7 @@ export default function MerchantProductsPage() {
 
   const openCreate = () => {
     setEditing(null);
-    reset({ is_active: true, is_featured: false, stock_quantity: 0, low_stock_threshold: 5 });
+    reset({ is_active: true, is_featured: false, stock_quantity: 0, low_stock_threshold: 5, category_id: "" });
     setShowForm(true);
   };
 
@@ -83,6 +93,7 @@ export default function MerchantProductsPage() {
       is_featured: product.is_featured,
       images: product.images?.join(", ") || "",
       tags: product.tags?.join(", ") || "",
+      category_id: product.category_id ? String(product.category_id) : "",
     });
     setShowForm(true);
   };
@@ -92,6 +103,7 @@ export default function MerchantProductsPage() {
     try {
       const payload = {
         ...data,
+        category_id: data.category_id ? Number(data.category_id) : null,
         images: data.images ? data.images.split(",").map((s) => s.trim()).filter(Boolean) : [],
         tags: data.tags ? data.tags.split(",").map((s) => s.trim()).filter(Boolean) : [],
       };
@@ -133,6 +145,45 @@ export default function MerchantProductsPage() {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        // Convert to base64
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = (err) => reject(err);
+        });
+        reader.readAsDataURL(file);
+        const base64 = await base64Promise;
+
+        // Upload to Express API
+        const { data } = await productApi.upload({
+          filename: file.name,
+          base64: base64
+        });
+
+        // Update form state
+        const currentImagesVal = getValues("images") || "";
+        const imagesList = currentImagesVal ? currentImagesVal.split(",").map((s) => s.trim()).filter(Boolean) : [];
+        imagesList.push(data.url);
+        setValue("images", imagesList.join(", "));
+      }
+      toast.success("Images uploaded successfully!");
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -164,6 +215,18 @@ export default function MerchantProductsPage() {
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">PRODUCT NAME *</label>
                   <input {...register("name")} className="input-field" />
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+                </div>
+
+                <div className="col-span-2">
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">CATEGORY</label>
+                  <select {...register("category_id")} className="input-field py-2.5 font-cinzel text-xs tracking-wide">
+                    <option value="">Select Category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name.toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -205,9 +268,63 @@ export default function MerchantProductsPage() {
 
                 <div className="col-span-2">
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-                    IMAGE URLS <span className="font-garamond normal-case tracking-normal text-muted">(comma-separated)</span>
+                    PRODUCT IMAGES
                   </label>
-                  <input {...register("images")} className="input-field" placeholder="https://..., https://..." />
+                  
+                  {/* File Upload Zone */}
+                  <div className="border-2 border-dashed border-gold-200 hover:border-gold-400 p-4 text-center transition-all bg-ivory/20 mb-3 relative group">
+                    {isUploading ? (
+                      <div className="flex flex-col items-center justify-center py-2">
+                        <Loader2 className="animate-spin text-gold-500 mb-1" size={20} />
+                        <span className="font-garamond text-xs text-muted">Uploading image to server...</span>
+                      </div>
+                    ) : (
+                      <label className="cursor-pointer block py-2">
+                        <Plus className="mx-auto text-gold-600 mb-1 group-hover:scale-110 transition-transform" size={18} />
+                        <span className="font-cinzel text-[10px] tracking-widest text-brown block">UPLOAD IMAGE FILE</span>
+                        <span className="font-garamond text-xs text-muted mt-0.5 block">Select PNG, JPG, or WEBP from your device</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Thumbnail Gallery Previews */}
+                  {(() => {
+                    const imgs = watch("images");
+                    const list = imgs ? imgs.split(",").map((s) => s.trim()).filter(Boolean) : [];
+                    if (list.length === 0) return null;
+                    return (
+                      <div className="grid grid-cols-5 gap-2 mb-3">
+                        {list.map((url, index) => (
+                          <div key={url + index} className="relative aspect-square border border-gold-100 group overflow-hidden bg-ivory">
+                            <img src={url} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newList = list.filter((_, idx) => idx !== index);
+                                setValue("images", newList.join(", "));
+                              }}
+                              className="absolute top-1 right-1 bg-black/75 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Manual URL input list for fallback */}
+                  <label className="font-garamond text-xs text-muted block mb-1">
+                    Or manage URLs manually (comma-separated):
+                  </label>
+                  <input {...register("images")} className="input-field text-xs font-mono" placeholder="https://image1.jpg, https://image2.jpg" />
                 </div>
                 <div className="col-span-2">
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
@@ -278,7 +395,14 @@ export default function MerchantProductsPage() {
                       </div>
                       <div>
                         <p className="font-garamond text-sm font-medium text-brown">{product.name}</p>
-                        {product.sku && <p className="font-garamond text-xs text-muted">SKU: {product.sku}</p>}
+                        <div className="flex gap-2 items-center mt-0.5">
+                          {product.category && (
+                            <span className="font-cinzel text-[10px] tracking-wider bg-gold-100 text-gold-700 px-1.5 py-0.5 rounded-sm">
+                              {product.category.name.toUpperCase()}
+                            </span>
+                          )}
+                          {product.sku && <span className="font-garamond text-xs text-muted">SKU: {product.sku}</span>}
+                        </div>
                       </div>
                     </div>
                   </td>

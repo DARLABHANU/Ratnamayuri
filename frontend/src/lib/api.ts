@@ -106,6 +106,8 @@ export const productApi = {
   update: (id: number, data: object) => api.put(`/products/${id}`, data),
   delete: (id: number) => api.delete(`/products/${id}`),
   myProducts: (params?: object) => api.get("/products/merchant/my-products", { params }),
+  upload: (data: { filename: string; base64: string }) => api.post("/upload", data),
+  categories: () => api.get("/products/categories/all"),
 };
 
 export const cartApi = {

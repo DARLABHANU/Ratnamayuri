@@ -15,12 +15,14 @@ interface AuthState {
   setLoading: (v: boolean) => void;
 }
 
+const isClient = typeof window !== "undefined";
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      role: null,
-      isAuthenticated: false,
+      role: (isClient ? Cookies.get("user_role") : null) as UserRole || null,
+      isAuthenticated: isClient ? !!Cookies.get("access_token") : false,
       isLoading: false,
 
       setUser: (user) => set({ user, isAuthenticated: true, role: user.role }),

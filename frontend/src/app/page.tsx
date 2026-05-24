@@ -77,14 +77,13 @@ export default function HomePage() {
             <h2 className="section-title">Shop by <em className="italic">Category</em></h2>
             <div className="divider-gold" />
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
-              { label: "Silk Sarees", sub: "Kanjivaram · Banarasi", bg: "from-red-900 to-purple-900", icon: "🥻" },
-              { label: "Gold Jewellery", sub: "Necklaces · Earrings", bg: "from-yellow-900 to-brown", icon: "💛" },
-              { label: "Kundan & Polki", sub: "Bridal Sets · Tikka", bg: "from-green-900 to-teal-900", icon: "💎" },
-              { label: "Bangles & Kadas", sub: "Gold · Silver · Lac", bg: "from-blue-900 to-indigo-900", icon: "⭕" },
+              { label: "Silk Sarees", sub: "Kanjivaram · Banarasi", bg: "from-red-950 to-purple-950", icon: "🥻", href: "/customer/products?category=sarees" },
+              { label: "Luxury Jewellery", sub: "Necklaces · Earrings", bg: "from-amber-950 to-brown", icon: "💎", href: "/customer/products?category=jewellery" },
+              { label: "Bridal Collection", sub: "Heirloom Bridal Sets", bg: "from-emerald-950 to-teal-950", icon: "👑", href: "/customer/products?category=bridal" },
             ].map((cat) => (
-              <Link key={cat.label} href="/customer/products"
+              <Link key={cat.label} href={cat.href}
                 className={`group relative h-56 lg:h-72 bg-gradient-to-br ${cat.bg}
                   overflow-hidden flex flex-col justify-end p-6 hover:scale-[1.02] transition-transform duration-300`}>
                 <div className="absolute inset-0 opacity-20">

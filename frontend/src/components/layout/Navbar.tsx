@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, Heart, Search, Menu, X, User, LogOut, Settings } from "lucide-react";
+import { ShoppingBag, Heart, Menu, X, User, LogOut, Settings } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { authApi } from "@/lib/api";
@@ -15,6 +15,11 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) fetchCart();
@@ -92,9 +97,6 @@ export default function Navbar() {
             {/* Right icons */}
             <div className="flex items-center gap-3 lg:gap-4">
               <button className="hidden lg:flex text-brown hover:text-gold-600 transition-colors">
-                <Search size={18} />
-              </button>
-              <button className="hidden lg:flex text-brown hover:text-gold-600 transition-colors">
                 <Heart size={18} />
               </button>
 
@@ -110,7 +112,7 @@ export default function Navbar() {
               </Link>
 
               {/* User menu */}
-              {isAuthenticated ? (
+              {mounted && isAuthenticated ? (
                 <div className="relative">
                   <button onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center gap-2 font-cinzel text-xs tracking-wide
@@ -159,7 +161,7 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            {!isAuthenticated && (
+            {mounted && !isAuthenticated && (
               <Link href="/auth/login" className="btn-primary block text-center mt-4"
                 onClick={() => setMobileOpen(false)}>
                 SIGN IN

@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Local uploads and media storage
+uploads/
+
+# Environment files
+.env
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

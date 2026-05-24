@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SlidersHorizontal, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { productApi } from "@/lib/api";
@@ -27,19 +27,24 @@ function ProductsContent() {
   const [maxPrice, setMaxPrice] = useState("");
   const [page, setPage] = useState(1);
 
-  const fetchProducts = async () => {
+  const categoryParam = params.get("category");
+  const featuredParam = params.get("is_featured");
+  const lastFiltersRef = useRef({ category: categoryParam, featured: featuredParam });
+
+  const fetchProducts = async (currentPage = page) => {
     setIsLoading(true);
     const [sort_by, sort_order] = sort.split(":");
     try {
       const { data: res } = await productApi.list({
-        page,
+        page: currentPage,
         page_size: 12,
         search: search || undefined,
         sort_by,
         sort_order,
         min_price: minPrice || undefined,
         max_price: maxPrice || undefined,
-        is_featured: params.get("is_featured") || undefined,
+        category: categoryParam || undefined,
+        is_featured: featuredParam || undefined,
       });
       setData(res);
     } finally {
@@ -47,26 +52,93 @@ function ProductsContent() {
     }
   };
 
-  useEffect(() => { fetchProducts(); }, [page, sort]);
+  useEffect(() => {
+    const filtersChanged =
+      lastFiltersRef.current.category !== categoryParam ||
+      lastFiltersRef.current.featured !== featuredParam;
+
+    if (filtersChanged) {
+      lastFiltersRef.current = { category: categoryParam, featured: featuredParam };
+      if (page !== 1) {
+        setPage(1);
+        return;
+      }
+    }
+
+    fetchProducts();
+  }, [page, sort, categoryParam, featuredParam]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPage(1);
-    fetchProducts();
+    if (page === 1) {
+      fetchProducts(1);
+    } else {
+      setPage(1);
+    }
   };
 
   const handleFilter = () => {
-    setPage(1);
-    fetchProducts();
     setShowFilters(false);
+    if (page === 1) {
+      fetchProducts(1);
+    } else {
+      setPage(1);
+    }
   };
 
   const clearFilters = () => {
     setSearch("");
     setMinPrice("");
     setMaxPrice("");
-    setPage(1);
-    fetchProducts();
+    if (page === 1) {
+      fetchProducts(1);
+    } else {
+      setPage(1);
+    }
+  };
+
+  const getPageTitle = () => {
+    if (featuredParam === "true") {
+      return (
+        <>
+          Featured <em className="italic">Collection</em>
+        </>
+      );
+    }
+    if (categoryParam) {
+      if (categoryParam === "jewellery") {
+        return (
+          <>
+            Luxury <em className="italic">Jewellery</em>
+          </>
+        );
+      }
+      if (categoryParam === "sarees") {
+        return (
+          <>
+            Silk <em className="italic">Sarees</em>
+          </>
+        );
+      }
+      if (categoryParam === "bridal") {
+        return (
+          <>
+            Bridal <em className="italic">Collection</em>
+          </>
+        );
+      }
+      const capitalized = categoryParam.charAt(0).toUpperCase() + categoryParam.slice(1);
+      return (
+        <>
+          {capitalized} <em className="italic">Products</em>
+        </>
+      );
+    }
+    return (
+      <>
+        All <em className="italic">Products</em>
+      </>
+    );
   };
 
   return (
@@ -74,7 +146,7 @@ function ProductsContent() {
       {/* Header */}
       <div className="mb-8">
         <span className="section-tag">EXPLORE</span>
-        <h1 className="section-title">All <em className="italic">Products</em></h1>
+        <h1 className="section-title">{getPageTitle()}</h1>
         <div className="divider-gold mx-0 mt-4" />
       </div>
 

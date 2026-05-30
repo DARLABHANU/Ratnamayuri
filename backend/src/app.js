@@ -6,17 +6,35 @@ const errorMiddleware = require('./middleware/error');
 
 const app = express();
 
-// CORS Middleware
+// 1. STRICT CORS CONFIGURATION (Must be the very first middleware)
+const allowedOrigins = [
+  config.frontendUrl,                                         // Dynamically loaded frontend URL
+  'https://ratnamayuri.vercel.app',                          // Production frontend
+  'https://ratnamayuri-tbu8.vercel.app',                     // Early preview branch
+  'http://localhost:3000'                                    // Local testing environment
+];
+
 app.use(cors({
-  origin: [
-    config.frontendUrl,
-    'https://ratnamayuri-tbu8.vercel.app',
-    'http://localhost:3000'
-  ],
+  origin: function (origin, callback) {
+    // Allow server-to-server or tools like Postman (which don't send an Origin header)
+    if (!origin) return callback(null, true);
+    
+    // Check direct matching arrays OR evaluate dynamic vercel preview subdomains
+    const isAllowed = allowedOrigins.includes(origin) || /https:\/\/ratnamayuri.*\.vercel\.app$/.test(origin);
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS policy blockage: Origin ${origin} unauthorized`));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
+
+// 2. Preflight Option Interceptor (Forces instant 200 OK responses to browser preflight validations)
+app.options('*', cors());
 
 // Body Parsing Middleware
 app.use(express.json({ limit: 52428800 }));

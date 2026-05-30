@@ -19,6 +19,7 @@ export interface User {
   is_verified: boolean;
   avatar_url?: string;
   created_at: string;
+  is_promoter?: boolean;
 }
 
 export interface Address {
@@ -67,6 +68,7 @@ export interface Product {
   tags?: string[];
   attributes?: Record<string, string>;
   is_active: boolean;
+  is_approved: boolean;
   is_featured: boolean;
   rating_avg: number;
   rating_count: number;
@@ -123,7 +125,9 @@ export interface Order {
   status: OrderStatus;
   payment_status: PaymentStatus;
   payment_method?: string;
+  payment_reference?: string;
   tracking_number?: string;
+  current_location?: string;
   notes?: string;
   status_history?: StatusHistoryEntry[];
   items: OrderItem[];

@@ -18,7 +18,7 @@ const couponSchema = z.object({
   discount_amount:      z.coerce.number().positive().default(200),
   promoter_commission:  z.coerce.number().min(0).default(100),
   platform_profit:      z.coerce.number().min(0).default(100),
-  promoter_id:          z.coerce.number().optional(),
+  promoter_id:          z.string().optional().or(z.literal("")),
   min_order_amount:     z.coerce.number().min(0).default(0),
   max_uses:             z.coerce.number().optional(),
   valid_until:          z.string().optional(),
@@ -145,8 +145,8 @@ export default function AdminCouponsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">PROMOTER USER ID</label>
-                  <input {...register("promoter_id")} type="number" placeholder="Optional" className="input-field" />
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">PROMOTER CUSTOMER ID</label>
+                  <input {...register("promoter_id")} type="text" placeholder="e.g. #RM1421133920" className="input-field" />
                 </div>
                 <div>
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">MIN ORDER (₹)</label>

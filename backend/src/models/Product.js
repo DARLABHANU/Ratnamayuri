@@ -20,6 +20,7 @@ const ProductSchema = new mongoose.Schema({
   tags: { type: [String], default: [] },
   attributes: { type: mongoose.Schema.Types.Mixed, default: {} },
   is_active: { type: Boolean, default: true, index: true },
+  is_approved: { type: Boolean, default: false, index: true },
   is_featured: { type: Boolean, default: false },
   rating_avg: { type: Number, default: 0.0 },
   rating_count: { type: Number, default: 0 },

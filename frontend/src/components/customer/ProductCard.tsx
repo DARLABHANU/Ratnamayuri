@@ -8,6 +8,7 @@ import { Product } from "@/types";
 import { formatPrice, getProductImage, getApiError } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 
 interface Props {
   product: Product;
@@ -16,8 +17,9 @@ interface Props {
 export default function ProductCard({ product }: Props) {
   const { addItem } = useCartStore();
   const { isAuthenticated } = useAuthStore();
+  const { toggleWishlist, isWishlisted } = useWishlistStore();
   const [isAdding, setIsAdding] = useState(false);
-  const [wishlisted, setWishlisted] = useState(false);
+  const wishlisted = isWishlisted(product.id);
 
   // Compute discount percentage
   const discount = product.compare_price
@@ -26,10 +28,10 @@ export default function ProductCard({ product }: Props) {
 
   // Mock colors to perfectly mirror the requested image's color options circle
   const swatches = [
-    { name: "Cream Gold", color: "bg-[#E8D5A3]" },
+    { name: "Alabaster Platinum", color: "bg-[#DDE1E6]" },
     { name: "Crimson Red", color: "bg-[#881337]" },
     { name: "Emerald Green", color: "bg-[#022c22]" },
-    { name: "Indigo Navy", color: "bg-[#0f172a]" },
+    { name: "Indigo Navy", color: "bg-[#0c2337]" },
   ];
 
   // Colors are only respected for sarees and bridals (not for gold/jewellery)
@@ -64,7 +66,7 @@ export default function ProductCard({ product }: Props) {
     <div className="card p-4 flex flex-col justify-between h-full hover:shadow-md transition-shadow duration-300">
       <Link href={`/customer/products/${product.id}`} className="group flex-1 flex flex-col">
         {/* Product Image */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-ivory mb-4">
+        <div className="relative aspect-[3/4] overflow-hidden bg-ivory mb-4 rounded-md">
           <img
             src={getProductImage(product.images)}
             alt={product.name}
@@ -90,16 +92,25 @@ export default function ProductCard({ product }: Props) {
 
           {/* Wishlist Icon */}
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.preventDefault();
-              setWishlisted(!wishlisted);
+              if (!isAuthenticated) {
+                toast.error("Please sign in to save to wishlist");
+                return;
+              }
+              try {
+                const added = await toggleWishlist(product.id);
+                toast.success(added ? "Saved to wishlist!" : "Removed from wishlist");
+              } catch (err) {
+                toast.error("Failed to update wishlist");
+              }
             }}
             className="absolute top-3 right-3 w-8 h-8 bg-white/90 rounded-full flex items-center
               justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white hover:scale-105"
           >
             <Heart
               size={14}
-              fill={wishlisted ? "#C9A96E" : "none"}
+              fill={wishlisted ? "#5A1212" : "none"}
               className={wishlisted ? "text-gold-500" : "text-brown"}
             />
           </button>
@@ -139,7 +150,7 @@ export default function ProductCard({ product }: Props) {
               <Star
                 key={i}
                 size={11}
-                fill={i < Math.floor(ratingAvg) ? "#C9A96E" : "none"}
+                fill={i < Math.floor(ratingAvg) ? "#C9973E" : "none"}
                 className={i < Math.floor(ratingAvg) ? "text-gold-500" : "text-gold-200"}
               />
             ))}
@@ -193,7 +204,7 @@ export default function ProductCard({ product }: Props) {
         disabled={isAdding || product.stock_quantity === 0}
         className="w-full bg-gold-500 hover:bg-gold-600 disabled:bg-gold-200 text-deep font-cinzel
           text-[11px] font-semibold tracking-widest py-2.5 mt-4 transition-all duration-200
-          flex items-center justify-center gap-2 rounded-none hover:shadow-sm"
+          flex items-center justify-center gap-2 rounded-md hover:shadow-sm"
       >
         <ShoppingBag size={12} />
         {isAdding ? "ADDING TO BAG..." : product.stock_quantity === 0 ? "SOLD OUT" : "ADD TO CART"}

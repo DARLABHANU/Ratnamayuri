@@ -10,7 +10,7 @@ import { UserRole } from "@/types";
 import { getApiError } from "@/lib/utils";
 
 const ROLE_REDIRECTS: Record<UserRole, string> = {
-  customer: "/customer/dashboard",
+  customer: "/",
   merchant: "/merchant/dashboard",
   admin: "/admin/dashboard",
   support: "/support/dashboard",

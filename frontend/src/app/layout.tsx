@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Cinzel, EB_Garamond } from "next/font/google";
+import { Playfair_Display, Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
-const cormorant = Cormorant_Garamond({
+const cormorant = Playfair_Display({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
   variable: "--font-cormorant",
 });
 
-const cinzel = Cinzel({
+const cinzel = Outfit({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-cinzel",
 });
 
-const garamond = EB_Garamond({
+const garamond = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["300", "400", "500", "600", "700"],
   style: ["normal", "italic"],
   variable: "--font-garamond",
 });
@@ -38,12 +38,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           position="top-right"
           toastOptions={{
             style: {
-              fontFamily: "var(--font-garamond), serif",
-              background: "#1A0E05",
-              color: "#E8D5A3",
-              border: "1px solid #C9A96E",
+              fontFamily: "var(--font-garamond), sans-serif",
+              background: "#4A0F0F",
+              color: "#FAF6EE",
+              border: "1px solid #C9973E",
             },
-            success: { iconTheme: { primary: "#C9A96E", secondary: "#1A0E05" } },
+            success: { iconTheme: { primary: "#C9973E", secondary: "#4A0F0F" } },
           }}
         />
         {children}

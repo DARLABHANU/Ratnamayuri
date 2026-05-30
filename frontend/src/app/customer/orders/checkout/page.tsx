@@ -12,6 +12,7 @@ import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { Address } from "@/types";
 import { formatPrice, getApiError } from "@/lib/utils";
+import Cookies from "js-cookie";
 
 const addressSchema = z.object({
   label: z.string().default("Home"),
@@ -27,7 +28,6 @@ const addressSchema = z.object({
 type AddressForm = z.infer<typeof addressSchema>;
 
 const PAYMENT_METHODS = [
-  { value: "cod", label: "Cash on Delivery" },
   { value: "upi", label: "UPI" },
   { value: "card", label: "Credit / Debit Card" },
   { value: "netbanking", label: "Net Banking" },
@@ -36,13 +36,13 @@ const PAYMENT_METHODS = [
 function CheckoutContent() {
   const router = useRouter();
   const params = useSearchParams();
-  const couponCode = params.get("coupon") || "";
+  const couponCode = params.get("coupon") || Cookies.get("affiliate_coupon") || "";
   const { cart, fetchCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [paymentMethod, setPaymentMethod] = useState("upi");
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [isPlacing, setIsPlacing] = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -103,6 +103,9 @@ function CheckoutContent() {
         coupon_code: couponCode || undefined,
         payment_method: paymentMethod,
       });
+      // Clear affiliate coupon cookie after successful use — prevents it
+      // from silently applying to every future order the customer places.
+      Cookies.remove("affiliate_coupon");
       toast.success("Order placed successfully!");
       router.push(`/customer/orders/${order.id}`);
     } catch (err) {

@@ -253,6 +253,10 @@ router.post('/change-password', getCurrentUser, async (req, res, next) => {
 
 // Get Current User Info
 router.get('/me', getCurrentUser, async (req, res) => {
+  const Coupon = require('../models/Coupon');
+  const coupons = await Coupon.find({ promoter_id: req.user.id, is_active: true });
+  const is_promoter = coupons.length > 0;
+
   res.json({
     id: req.user.id,
     email: req.user.email,
@@ -263,7 +267,8 @@ router.get('/me', getCurrentUser, async (req, res) => {
     is_active: req.user.is_active,
     is_verified: req.user.is_verified,
     avatar_url: req.user.avatar_url,
-    created_at: req.user.created_at
+    created_at: req.user.created_at,
+    is_promoter: is_promoter
   });
 });
 

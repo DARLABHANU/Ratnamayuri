@@ -7,6 +7,7 @@ import { orderApi } from "@/lib/api";
 import { Order } from "@/types";
 import { formatPrice, formatDate, formatDateTime, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import OrderTracker from "@/components/customer/OrderTracker";
+import LiveTrackingMap from "@/components/customer/LiveTrackingMap";
 import { useAuthStore } from "@/store/authStore";
 
 export default function OrderDetailPage() {
@@ -65,6 +66,21 @@ export default function OrderDetailPage() {
         </h2>
         <OrderTracker status={order.status} history={order.status_history} />
       </div>
+
+      {/* Live Map GPS Tracking */}
+      {["shipped", "out_for_delivery", "delivered"].includes(order.status) && (
+        <div className="card p-6 mb-6 overflow-hidden animate-fade-in">
+          <h2 className="font-cinzel text-xs tracking-widest text-muted mb-4 flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <MapPin size={12} className="text-gold-500 animate-bounce" /> LIVE GPS COURIER TRACKING
+            </span>
+            <span className="font-mono text-[10px] text-green-600 animate-pulse bg-green-50 px-2 py-0.5 border border-green-200">
+              ● SIGNAL ACTIVE
+            </span>
+          </h2>
+          <LiveTrackingMap order={order} />
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         {/* Items */}

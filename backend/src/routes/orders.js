@@ -427,7 +427,7 @@ orderRouter.get('/:order_id', async (req, res, next) => {
 orderRouter.patch('/:order_id/status', requireMerchantOrAdmin, async (req, res, next) => {
   try {
     const orderId = Number(req.params.order_id);
-    const { status, tracking_number, notes } = req.body;
+    const { status, tracking_number, notes, current_location } = req.body;
 
     const order = await Order.findOne({ id: orderId });
     if (!order) {
@@ -435,13 +435,72 @@ orderRouter.patch('/:order_id/status', requireMerchantOrAdmin, async (req, res, 
     }
 
     order.status = status;
-    if (tracking_number) {
+    if (tracking_number !== undefined) {
       order.tracking_number = tracking_number;
+    }
+    if (current_location !== undefined) {
+      order.current_location = current_location;
     }
 
     if (status === 'delivered') {
       order.delivered_at = new Date();
       order.payment_status = 'paid';
+
+      // ─── Settlement Holding Integration ───
+      try {
+        const OrderItem = require('../models/OrderItem');
+        const MerchantProfile = require('../models/MerchantProfile');
+        const Settlement = require('../models/Settlement');
+        const Wallet = require('../models/Wallet');
+
+        const orderItems = await OrderItem.find({ order_id: order.id });
+        
+        // Group items by merchant_id
+        const merchantGroups = new Map();
+        orderItems.forEach(item => {
+          if (!merchantGroups.has(item.merchant_id)) {
+            merchantGroups.set(item.merchant_id, []);
+          }
+          merchantGroups.get(item.merchant_id).push(item);
+        });
+
+        const releaseDate = new Date();
+        releaseDate.setDate(releaseDate.getDate() + 7); // 7-day observation hold
+
+        for (const [merchantId, items] of merchantGroups.entries()) {
+          const total_merchant_price = items.reduce((sum, item) => sum + item.total_price, 0);
+          
+          // Get merchant commission rate
+          const profile = await MerchantProfile.findOne({ id: merchantId });
+          const commission_rate = profile ? profile.commission_rate : 10.0;
+          
+          const platform_commission = Number((total_merchant_price * (commission_rate / 100)).toFixed(2));
+          const merchant_share = Number((total_merchant_price - platform_commission).toFixed(2));
+
+          // 1. Create Escrow Settlement record
+          const settlement = new Settlement({
+            order_id: order.id,
+            merchant_id: merchantId,
+            amount: merchant_share,
+            platform_commission: platform_commission,
+            status: 'escrow_hold',
+            release_date: releaseDate
+          });
+          await settlement.save();
+
+          // 2. Credit Wallet pending balance
+          let wallet = await Wallet.findOne({ merchant_id: merchantId });
+          if (!wallet) {
+            wallet = new Wallet({ merchant_id: merchantId });
+          }
+          wallet.pending_balance = Number(((wallet.pending_balance || 0) + merchant_share).toFixed(2));
+          await wallet.save();
+
+          console.log(`[Escrow] Created 7-day escrow hold for Merchant Profile #${merchantId} (₹${merchant_share}) on Order #${order.order_number}`);
+        }
+      } catch (escrowErr) {
+        console.error('Failed to process escrow hold settlements on delivery:', escrowErr);
+      }
     }
 
     // Append to status history log

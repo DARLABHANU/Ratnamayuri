@@ -11,6 +11,7 @@ const MerchantProfileSchema = new mongoose.Schema({
   ifsc_code: { type: String, default: null },
   commission_rate: { type: Number, default: 10.0 }, // platform fee %
   is_approved: { type: Boolean, default: false },
+  performance_points: { type: Number, default: 100 },
   logo_url: { type: String, default: null },
   created_at: { type: Date, default: Date.now }
 });

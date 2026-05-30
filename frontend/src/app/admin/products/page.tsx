@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Eye, EyeOff, Search } from "lucide-react";
+import { Loader2, Eye, EyeOff, Search, CheckCircle, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
-import { productApi } from "@/lib/api";
+import { adminApi, productApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { Product } from "@/types";
 import { formatPrice, formatDate, getApiError } from "@/lib/utils";
@@ -18,22 +18,36 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [approvingId, setApprovingId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"all" | "pending">("all");
 
   useEffect(() => {
     if (!isAuthenticated || role !== "admin") { router.push("/auth/login"); return; }
     loadProducts();
-  }, [isAuthenticated, role, page]);
+  }, [isAuthenticated, role, page, activeTab]);
 
   const loadProducts = async () => {
     setIsLoading(true);
     try {
-      const { data } = await productApi.list({ page, page_size: 20, search: search || undefined });
+      const params: any = { page, page_size: 20 };
+      if (search) params.search = search;
+      if (activeTab === "pending") params.is_approved = "false";
+      
+      const { data } = await adminApi.products(params);
       setProducts(data.items);
       setTotal(data.total);
-    } finally { setIsLoading(false); }
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1); loadProducts(); };
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    loadProducts();
+  };
 
   const toggleActive = async (product: Product) => {
     setTogglingId(product.id);
@@ -41,15 +55,50 @@ export default function AdminProductsPage() {
       await productApi.update(product.id, { is_active: !product.is_active });
       toast.success(product.is_active ? "Product hidden" : "Product made visible");
       loadProducts();
-    } catch (err) { toast.error(getApiError(err)); }
-    finally { setTogglingId(null); }
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handleApprove = async (product: Product, approve: boolean) => {
+    setApprovingId(product.id);
+    try {
+      await adminApi.approveProduct(product.id, { is_approved: approve });
+      toast.success(approve ? "Product approved successfully!" : "Product rejected/disapproved");
+      loadProducts();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setApprovingId(null);
+    }
   };
 
   return (
     <div>
-      <div className="mb-8">
-        <span className="section-tag">CATALOGUE</span>
-        <h1 className="section-title">All <em className="italic">Products</em></h1>
+      <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <span className="section-tag">CATALOGUE</span>
+          <h1 className="section-title">All <em className="italic">Products</em></h1>
+        </div>
+
+        {/* Tab Controls */}
+        <div className="flex bg-gold-50 p-1 border border-gold-200 rounded-sm">
+          <button onClick={() => { setActiveTab("all"); setPage(1); }}
+            className={`font-cinzel text-xs tracking-wider px-4 py-2 rounded-sm transition-all
+              ${activeTab === "all" ? "bg-deep text-gold-400 shadow-sm" : "text-brown hover:text-gold-600"}`}>
+            ALL PRODUCTS
+          </button>
+          <button onClick={() => { setActiveTab("pending"); setPage(1); }}
+            className={`font-cinzel text-xs tracking-wider px-4 py-2 rounded-sm transition-all relative
+              ${activeTab === "pending" ? "bg-deep text-gold-400 shadow-sm" : "text-brown hover:text-gold-600"}`}>
+            PENDING APPROVAL
+            {activeTab !== "pending" && products.some(p => !p.is_approved) && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
+            )}
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSearch} className="flex gap-2 mb-6">
@@ -72,9 +121,9 @@ export default function AdminProductsPage() {
                 <th className="table-th">Price</th>
                 <th className="table-th">Stock</th>
                 <th className="table-th">Sold</th>
-                <th className="table-th">Merchant ID</th>
-                <th className="table-th">Status</th>
-                <th className="table-th">Actions</th>
+                <th className="table-th">Approval Status</th>
+                <th className="table-th">Visibility</th>
+                <th className="table-th text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -100,26 +149,54 @@ export default function AdminProductsPage() {
                     </span>
                   </td>
                   <td className="table-td font-garamond text-sm text-muted">{p.total_sold}</td>
-                  <td className="table-td font-garamond text-xs text-muted">#{p.id}</td>
+                  <td className="table-td">
+                    <span className={`badge text-xs ${p.is_approved ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                      {p.is_approved ? "Approved" : "Pending Review"}
+                    </span>
+                  </td>
                   <td className="table-td">
                     <span className={`badge text-xs ${p.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
                       {p.is_active ? "Active" : "Hidden"}
                     </span>
                   </td>
-                  <td className="table-td">
-                    {togglingId === p.id
-                      ? <Loader2 size={14} className="animate-spin text-gold-500" />
-                      : (
-                        <button onClick={() => toggleActive(p)} title={p.is_active ? "Hide" : "Show"}
+                  <td className="table-td text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      {approvingId === p.id ? (
+                        <Loader2 size={14} className="animate-spin text-gold-500" />
+                      ) : !p.is_approved ? (
+                        <div className="flex gap-2">
+                          <button onClick={() => handleApprove(p, true)} title="Approve Product"
+                            className="flex items-center gap-1 font-cinzel text-[10px] tracking-widest text-green-700 hover:text-green-600 border border-green-200 bg-green-50 px-2.5 py-1 rounded-sm transition-all">
+                            <CheckCircle size={10} /> APPROVE
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => handleApprove(p, false)} title="Revoke Approval"
+                          className="flex items-center gap-1 font-cinzel text-[10px] tracking-widest text-red-700 hover:text-red-600 border border-red-200 bg-red-50 px-2.5 py-1 rounded-sm transition-all">
+                          <XCircle size={10} /> REVOKE
+                        </button>
+                      )}
+                      
+                      <div className="w-px h-4 bg-gold-200" />
+                      
+                      {togglingId === p.id ? (
+                        <Loader2 size={14} className="animate-spin text-gold-500" />
+                      ) : (
+                        <button onClick={() => toggleActive(p)} title={p.is_active ? "Hide Product" : "Show Product"}
                           className="text-muted hover:text-brown transition-colors">
                           {p.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
                       )}
+                    </div>
                   </td>
                 </tr>
               ))}
               {products.length === 0 && (
-                <tr><td colSpan={7} className="table-td text-center py-10 font-garamond text-muted">No products found</td></tr>
+                <tr>
+                  <td colSpan={7} className="table-td text-center py-10 font-garamond text-muted">
+                    {activeTab === "pending" ? "No products pending approval" : "No products found"}
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

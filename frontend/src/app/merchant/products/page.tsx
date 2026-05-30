@@ -151,6 +151,15 @@ export default function MerchantProductsPage() {
 
     setIsUploading(true);
     try {
+      const currentImagesVal = getValues("images") || "";
+      const imagesList = currentImagesVal ? currentImagesVal.split(",").map((s) => s.trim()).filter(Boolean) : [];
+      
+      if (imagesList.length + files.length > 5) {
+        toast.error("You can upload a maximum of 5 images total.");
+        setIsUploading(false);
+        return;
+      }
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
@@ -169,12 +178,9 @@ export default function MerchantProductsPage() {
           base64: base64
         });
 
-        // Update form state
-        const currentImagesVal = getValues("images") || "";
-        const imagesList = currentImagesVal ? currentImagesVal.split(",").map((s) => s.trim()).filter(Boolean) : [];
         imagesList.push(data.url);
-        setValue("images", imagesList.join(", "));
       }
+      setValue("images", imagesList.join(", "));
       toast.success("Images uploaded successfully!");
     } catch (err) {
       toast.error(getApiError(err));
@@ -267,22 +273,37 @@ export default function MerchantProductsPage() {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-                    PRODUCT IMAGES
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-cinzel text-xs tracking-widest text-muted block">
+                      PRODUCT IMAGES (5 ANGLES FOR SLIDESHOW)
+                    </label>
+                    {(() => {
+                      const imgs = watch("images");
+                      const count = imgs ? imgs.split(",").map((s) => s.trim()).filter(Boolean).length : 0;
+                      return (
+                        <span className={`font-cinzel text-xs font-semibold ${count === 5 ? "text-green-600" : "text-amber-600"}`}>
+                          {count} / 5 SELECTED
+                        </span>
+                      );
+                    })()}
+                  </div>
                   
                   {/* File Upload Zone */}
                   <div className="border-2 border-dashed border-gold-200 hover:border-gold-400 p-4 text-center transition-all bg-ivory/20 mb-3 relative group">
                     {isUploading ? (
                       <div className="flex flex-col items-center justify-center py-2">
                         <Loader2 className="animate-spin text-gold-500 mb-1" size={20} />
-                        <span className="font-garamond text-xs text-muted">Uploading image to server...</span>
+                        <span className="font-garamond text-xs text-muted">Uploading image slides to server...</span>
                       </div>
                     ) : (
                       <label className="cursor-pointer block py-2">
                         <Plus className="mx-auto text-gold-600 mb-1 group-hover:scale-110 transition-transform" size={18} />
-                        <span className="font-cinzel text-[10px] tracking-widest text-brown block">UPLOAD IMAGE FILE</span>
-                        <span className="font-garamond text-xs text-muted mt-0.5 block">Select PNG, JPG, or WEBP from your device</span>
+                        <span className="font-cinzel text-[10px] tracking-widest text-brown block">
+                          UPLOAD IMAGE SLIDES (UP TO 5 DETAILS & ANGLES)
+                        </span>
+                        <span className="font-garamond text-xs text-muted mt-0.5 block">
+                          Select up to 5 PNG, JPG, or WEBP images to showcase different angles
+                        </span>
                         <input
                           type="file"
                           accept="image/*"
@@ -318,6 +339,27 @@ export default function MerchantProductsPage() {
                         ))}
                       </div>
                     );
+                  })()}
+
+                  {/* Contextual Seeding Helper Tip */}
+                  {(() => {
+                    const imgs = watch("images");
+                    const count = imgs ? imgs.split(",").map((s) => s.trim()).filter(Boolean).length : 0;
+                    if (count > 0 && count < 5) {
+                      return (
+                        <p className="text-amber-600 text-xs font-garamond italic mb-3">
+                          ✦ Tip: Adding exactly 5 images enables a beautiful multi-angle detail viewer for customer browsing.
+                        </p>
+                      );
+                    }
+                    if (count === 5) {
+                      return (
+                        <p className="text-green-600 text-xs font-garamond italic mb-3">
+                          ✦ Success: 5 slides complete! Customers will see a rich multi-angle detail carousel.
+                        </p>
+                      );
+                    }
+                    return null;
                   })()}
 
                   {/* Manual URL input list for fallback */}

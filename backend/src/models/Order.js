@@ -26,6 +26,7 @@ const OrderSchema = new mongoose.Schema({
   payment_method: { type: String, default: null },
   payment_reference: { type: String, default: null },
   tracking_number: { type: String, default: null },
+  current_location: { type: String, default: null },
   notes: { type: String, default: null },
   status_history: { type: [mongoose.Schema.Types.Mixed], default: [] },
   created_at: { type: Date, default: Date.now },

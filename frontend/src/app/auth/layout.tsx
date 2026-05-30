@@ -8,8 +8,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="auth-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M30 0 L60 30 L30 60 L0 30 Z" fill="none" stroke="#C9A96E" strokeWidth="0.5" />
-                <circle cx="30" cy="30" r="3" fill="#C9A96E" opacity="0.5" />
+                <path d="M30 0 L60 30 L30 60 L0 30 Z" fill="none" stroke="#C9973E" strokeWidth="0.5" />
+                <circle cx="30" cy="30" r="3" fill="#C9973E" opacity="0.5" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#auth-pattern)" />
@@ -27,17 +27,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Center decorative */}
         <div className="relative z-10 text-center">
           <svg viewBox="0 0 300 300" className="w-64 h-64 mx-auto opacity-70" xmlns="http://www.w3.org/2000/svg">
-            <g transform="translate(150,150)" stroke="#C9A96E" fill="none">
+            <g transform="translate(150,150)" stroke="#C9973E" fill="none">
               <circle r="120" strokeWidth="0.5" opacity="0.4"/>
               <circle r="90" strokeWidth="0.5" opacity="0.5"/>
               <circle r="60" strokeWidth="1" opacity="0.6"/>
               {[0,30,60,90,120,150,180,210,240,270,300,330].map((angle, i) => (
                 <ellipse key={i} cx="0" cy="-80" rx="12" ry="28"
-                  fill="#C9A96E" opacity="0.2"
+                  fill="#5A1212" opacity="0.2"
                   transform={`rotate(${angle})`} />
               ))}
-              <circle r="25" fill="#C9A96E" opacity="0.3"/>
-              <circle r="12" fill="#C9A96E" opacity="0.5"/>
+              <circle r="25" fill="#C9973E" opacity="0.3"/>
+              <circle r="12" fill="#C9973E" opacity="0.5"/>
             </g>
           </svg>
           <blockquote className="font-cormorant text-xl italic text-gold-300 mt-6 leading-relaxed">

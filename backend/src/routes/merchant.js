@@ -69,6 +69,8 @@ router.put('/profile', getCurrentUser, requireMerchantOrAdmin, async (req, res, 
 
 router.get('/analytics', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
   try {
+    const Wallet = require('../models/Wallet');
+
     const profile = await MerchantProfile.findOne({ user_id: req.user.id });
     if (!profile) {
       return res.status(404).json({ detail: 'Merchant profile not found' });
@@ -78,29 +80,29 @@ router.get('/analytics', getCurrentUser, requireMerchantOrAdmin, async (req, res
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    // Get order IDs from delivered orders in the last 'days'
+    // Get order IDs from delivered orders in the selected period
     const orders = await Order.find({
       status: 'delivered',
       created_at: { $gte: since }
     });
     const orderIds = orders.map(o => o.id);
 
-    // Get matching order items for this merchant
+    // Get matching order items for this merchant in the period
     const orderItems = await OrderItem.find({
       merchant_id: profile.id,
       order_id: { $in: orderIds }
     });
 
-    // Total revenue (total sum of total_price)
+    // Total revenue from the period
     const total_revenue = orderItems.reduce((sum, item) => sum + item.total_price, 0);
 
-    // Total unique orders
+    // Total unique orders in the period
     const total_orders = new Set(orderItems.map(item => item.order_id)).size;
 
     // Total products listed
     const total_products = await Product.countDocuments({ merchant_id: profile.id });
 
-    // Top products by revenue
+    // Top products by revenue in the period
     const productSales = {};
     orderItems.forEach(item => {
       if (!productSales[item.product_name]) {
@@ -114,15 +116,18 @@ router.get('/analytics', getCurrentUser, requireMerchantOrAdmin, async (req, res
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
 
-    // Pending payout: total sum of merchant_payout from ALL delivered orders
-    const allDeliveredOrders = await Order.find({ status: 'delivered' });
-    const allDeliveredOrderIds = allDeliveredOrders.map(o => o.id);
-    const allDeliveredItems = await OrderItem.find({
-      merchant_id: profile.id,
-      order_id: { $in: allDeliveredOrderIds }
-    });
+    // ─── Wallet balances (source of truth for payouts) ─────────────────────
+    // Read directly from Wallet model — this correctly reflects escrow releases
+    // done by the SLA scheduler, rather than recalculating from raw OrderItems.
+    let wallet = await Wallet.findOne({ merchant_id: profile.id });
+    if (!wallet) {
+      wallet = new Wallet({ merchant_id: profile.id });
+      await wallet.save();
+    }
 
-    const pending_payout = allDeliveredItems.reduce((sum, item) => sum + item.merchant_payout, 0);
+    const pending_payout   = wallet.pending_balance   || 0; // In escrow (7-day hold)
+    const available_payout = wallet.available_balance || 0; // Released, ready to withdraw
+    const withdrawn_payout = wallet.withdrawn_balance || 0; // Already requested/paid out
 
     res.json({
       total_revenue,
@@ -130,6 +135,8 @@ router.get('/analytics', getCurrentUser, requireMerchantOrAdmin, async (req, res
       total_products,
       top_products,
       pending_payout,
+      available_payout,
+      withdrawn_payout,
       period_days: days
     });
   } catch (error) {
@@ -143,6 +150,71 @@ router.get('/commissions', getCurrentUser, requireMerchantOrAdmin, async (req, r
     const commissions = await Commission.find({ promoter_id: req.user.id })
       .sort({ created_at: -1 });
     res.json(commissions);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── Wallet & Withdrawals ───────────────────────────────────────────────────
+
+// Get Merchant Wallet
+router.get('/wallet', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
+  try {
+    const Wallet = require('../models/Wallet');
+    const profile = await MerchantProfile.findOne({ user_id: req.user.id });
+    if (!profile) {
+      return res.status(404).json({ detail: 'Merchant profile not found' });
+    }
+
+    let wallet = await Wallet.findOne({ merchant_id: profile.id });
+    if (!wallet) {
+      wallet = new Wallet({ merchant_id: profile.id });
+      await wallet.save();
+    }
+    res.json(wallet);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Request Withdrawal
+router.post('/withdraw', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
+  try {
+    const Wallet = require('../models/Wallet');
+    const WithdrawalRequest = require('../models/WithdrawalRequest');
+    
+    const profile = await MerchantProfile.findOne({ user_id: req.user.id });
+    if (!profile) {
+      return res.status(404).json({ detail: 'Merchant profile not found' });
+    }
+
+    const { amount, bank_name, account_number, routing_details } = req.body;
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ detail: 'Invalid withdrawal amount specified' });
+    }
+
+    let wallet = await Wallet.findOne({ merchant_id: profile.id });
+    if (!wallet || wallet.available_balance < amount) {
+      return res.status(400).json({ detail: 'Insufficient available balance' });
+    }
+
+    // Deduct available balance and place it into withdrawn/reserved state
+    wallet.available_balance = Number((wallet.available_balance - amount).toFixed(2));
+    wallet.withdrawn_balance = Number(((wallet.withdrawn_balance || 0) + amount).toFixed(2));
+    await wallet.save();
+
+    // Create withdrawal request
+    const request = new WithdrawalRequest({
+      merchant_id: profile.id,
+      amount,
+      bank_name,
+      account_number,
+      routing_details,
+      status: 'pending'
+    });
+    await request.save();
+
+    res.status(201).json(request);
   } catch (error) {
     next(error);
   }

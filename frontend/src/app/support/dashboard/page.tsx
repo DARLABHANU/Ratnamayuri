@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search, UserCheck, Loader2, ShieldAlert, Eye,
-  FileText, LogOut, Phone, Mail, Hash,
+  FileText, LogOut, Phone, Mail, Hash, Menu, X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supportApi } from "@/lib/api";
@@ -18,6 +18,7 @@ export default function SupportDashboardPage() {
   const router = useRouter();
   const { isAuthenticated, role } = useAuthStore();
   const [tab, setTab] = useState<Tab>("lookup");
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Lookup state
   const [searchType, setSearchType] = useState<"account_number" | "email" | "name">("email");
@@ -136,36 +137,69 @@ export default function SupportDashboardPage() {
 
   useEffect(() => {
     if (tab === "audit") loadAuditLogs();
-  }, [tab]);
+  }, [tab]);  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      <div className="p-5 border-b border-white/10">
+        <p className="font-cinzel text-sm tracking-[0.3em] text-gold-300">RATNAMAYURI</p>
+        <p className="font-garamond text-xs tracking-widest text-gold-600 mt-0.5">SUPPORT PORTAL</p>
+      </div>
+      <nav className="flex-1 p-3 space-y-1">
+        <button onClick={() => { setTab("lookup"); setMobileOpen(false); }}
+          className={`sidebar-link rounded-sm w-full ${tab === "lookup" ? "active" : ""}`}>
+          <Search size={15} /> User Lookup
+        </button>
+        <button onClick={() => { setTab("audit"); setMobileOpen(false); }}
+          className={`sidebar-link rounded-sm w-full ${tab === "audit" ? "active" : ""}`}>
+          <FileText size={15} /> Audit Logs
+        </button>
+      </nav>
+      <div className="p-3 border-t border-white/10">
+        <button onClick={() => { useAuthStore.getState().logout(); router.push("/auth/login"); }}
+          className="sidebar-link rounded-sm w-full text-red-400 hover:text-red-300 hover:bg-red-900/20">
+          <LogOut size={15} /> Sign Out
+        </button>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen flex">
-      {/* Sidebar */}
-      <aside className="w-56 bg-deep flex flex-col flex-shrink-0">
-        <div className="p-5 border-b border-white/10">
-          <p className="font-cinzel text-sm tracking-[0.3em] text-gold-300">RATNAMAYURI</p>
-          <p className="font-garamond text-xs tracking-widest text-gold-600 mt-0.5">SUPPORT PORTAL</p>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Mobile Top Bar */}
+      <header className="lg:hidden flex items-center justify-between p-4 bg-deep sidebar-bg border-b border-white/10">
+        <div className="flex flex-col">
+          <p className="font-cinzel text-xs tracking-[0.2em] text-gold-300">RATNAMAYURI</p>
+          <p className="font-garamond text-[9px] tracking-widest text-gold-600 mt-0.5">SUPPORT PORTAL</p>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
-          <button onClick={() => setTab("lookup")}
-            className={`sidebar-link rounded-sm w-full ${tab === "lookup" ? "active" : ""}`}>
-            <Search size={15} /> User Lookup
-          </button>
-          <button onClick={() => setTab("audit")}
-            className={`sidebar-link rounded-sm w-full ${tab === "audit" ? "active" : ""}`}>
-            <FileText size={15} /> Audit Logs
-          </button>
-        </nav>
-        <div className="p-3 border-t border-white/10">
-          <button onClick={() => { useAuthStore.getState().logout(); router.push("/auth/login"); }}
-            className="sidebar-link rounded-sm w-full text-red-400 hover:text-red-300 hover:bg-red-900/20">
-            <LogOut size={15} /> Sign Out
-          </button>
-        </div>
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-gold-300 hover:text-cream p-1">
+          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </header>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-56 bg-deep sidebar-bg flex-col flex-shrink-0 min-h-screen">
+        {sidebarContent}
       </aside>
 
+      {/* Mobile Drawer Overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+          
+          {/* Drawer Panel */}
+          <aside className="relative flex flex-col w-64 max-w-xs bg-deep sidebar-bg shadow-2xl h-full z-10 animate-slide-in">
+            <div className="absolute top-4 right-4">
+              <button onClick={() => setMobileOpen(false)} className="text-gold-300 hover:text-cream p-1">
+                <X size={20} />
+              </button>
+            </div>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
       {/* Main */}
-      <main className="flex-1 bg-cream p-8 overflow-auto">
+      <main className="flex-1 bg-cream dashboard-bg p-8 overflow-auto min-h-0">
         {/* Active impersonation banner */}
         {activeSession && (
           <div className="bg-orange-50 border-2 border-orange-400 p-4 mb-6 flex items-center justify-between animate-fade-in">

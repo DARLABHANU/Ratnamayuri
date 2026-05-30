@@ -53,7 +53,7 @@ router.get('/', async (req, res, next) => {
     const sortBy = req.query.sort_by || 'created_at';
     const sortOrder = req.query.sort_order || 'desc';
 
-    const filter = { is_active: true };
+    const filter = { is_active: true, is_approved: true };
 
     if (category_id !== null) {
       filter.category_id = category_id;
@@ -129,7 +129,7 @@ router.get('/categories/all', async (req, res, next) => {
 router.get('/:product_id', async (req, res, next) => {
   try {
     const productId = Number(req.params.product_id);
-    const product = await Product.findOne({ id: productId, is_active: true });
+    const product = await Product.findOne({ id: productId, is_active: true, is_approved: true });
     if (!product) {
       return res.status(404).json({ detail: 'Product not found' });
     }

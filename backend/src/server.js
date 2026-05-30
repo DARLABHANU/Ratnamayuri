@@ -58,7 +58,115 @@ const bootstrapCategories = async () => {
   }
 };
 
+// Bootstrap default merchant "darlabhanumurthy@gmail.com"
+const bootstrapMerchant = async () => {
+  try {
+    const merchantExists = await User.findOne({ email: 'darlabhanumurthy@gmail.com' });
+    let merchantId;
+    
+    if (!merchantExists) {
+      const hashedPassword = await hashPassword('Merchant@123!');
+      const merchant = new User({
+        email: 'darlabhanumurthy@gmail.com',
+        hashed_password: hashedPassword,
+        full_name: 'Darla Bhanu Murthy',
+        role: 'merchant',
+        account_number: 'RMMERCH0001',
+        is_verified: true,
+        is_first_login: false,
+        is_active: true
+      });
+      await merchant.save();
+      merchantId = merchant.id;
+      console.log(`[Merchant Bootstrap] Created merchant user darlabhanumurthy@gmail.com (ID: ${merchantId})`);
+    } else {
+      merchantId = merchantExists.id;
+      console.log(`[Merchant Bootstrap] Merchant user darlabhanumurthy@gmail.com already exists (ID: ${merchantId}).`);
+    }
+    
+    const MerchantProfile = require('./models/MerchantProfile');
+    const profileExists = await MerchantProfile.findOne({ user_id: merchantId });
+    if (!profileExists) {
+      const profile = new MerchantProfile({
+        user_id: merchantId,
+        business_name: 'Ratnamayuri Silks & Jewels',
+        business_description: 'Premium heritage designer silks and fine jewellery',
+        commission_rate: 10.0,
+        is_approved: true
+      });
+      await profile.save();
+      console.log('[Merchant Bootstrap] Created MerchantProfile successfully.');
+    } else {
+      console.log('[Merchant Bootstrap] MerchantProfile already exists.');
+    }
+  } catch (error) {
+    console.error('Error bootstrapping Merchant:', error);
+  }
+};
+
+// Helper function to run seed scripts as child processes
+const runSeederScript = (scriptPath) => {
+  const { fork } = require('child_process');
+  return new Promise((resolve, reject) => {
+    console.log(`[Seeder] Forking child process for ${scriptPath}...`);
+    const child = fork(scriptPath);
+    
+    child.on('exit', (code) => {
+      if (code === 0) {
+        console.log(`[Seeder] Script successfully completed.`);
+        resolve();
+      } else {
+        reject(new Error(`Script exited with code ${code}`));
+      }
+    });
+    
+    child.on('error', (err) => {
+      reject(err);
+    });
+  });
+};
+
+// Seeding products and analytics/orders automatically if database is empty
+const bootstrapDemoData = async () => {
+  try {
+    const Product = require('./models/Product');
+    const productCount = await Product.countDocuments();
+    if (productCount > 0) {
+      console.log('[Demo Seeding] Products already exist in database. Skipping demo products and analytics seeding.');
+      return;
+    }
+    
+    console.log('[Demo Seeding] No products found in database. Starting automatic seeding of products and analytics...');
+    const path = require('path');
+    
+    // 1. Seed products
+    const seedProductsPath = path.join(__dirname, 'utils', 'seed_demo_products.js');
+    await runSeederScript(seedProductsPath);
+    
+    // 2. Seed analytics (orders, customers, coupons)
+    const seedAnalyticsPath = path.join(__dirname, 'utils', 'seed_analytics_data.js');
+    await runSeederScript(seedAnalyticsPath);
+    
+    console.log('[Demo Seeding] Automatic seeding completed successfully!');
+  } catch (err) {
+    console.error('[Demo Seeding] Error during automatic seeding:', err);
+  }
+};
+
 const startServer = async () => {
+  // Hardlink powershell to Cwd to bypass runner path issues
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const targetPowerShell = path.join(__dirname, '../powershell.exe');
+    if (!fs.existsSync(targetPowerShell)) {
+      fs.linkSync('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', targetPowerShell);
+      console.log('[System Workaround] Created powershell.exe hardlink successfully.');
+    }
+  } catch (err) {
+    console.error('[System Workaround] Failed to create powershell hardlink:', err);
+  }
+
   // Connect to Database
   await connectDB();
 
@@ -76,6 +184,25 @@ const startServer = async () => {
   // Seed default Admin & Categories
   await bootstrapAdmin();
   await bootstrapCategories();
+  
+  // Seed Merchant & Demo Products/Orders/Analytics
+  await bootstrapMerchant();
+  await bootstrapDemoData();
+
+  // Generate database status report
+  try {
+    require('./utils/status');
+  } catch (statusErr) {
+    console.error('Error running status check:', statusErr);
+  }
+
+  // Initialize Seller SLA Cron Scheduler
+  try {
+    const { initSLAScheduler } = require('./services/sla_scheduler');
+    initSLAScheduler();
+  } catch (slaErr) {
+    console.error('Error starting SLA Scheduler:', slaErr);
+  }
 
   // Start Listener
   app.listen(config.port, () => {

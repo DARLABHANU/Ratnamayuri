@@ -325,6 +325,36 @@ router.post('/coupons', requireAdmin, async (req, res, next) => {
       return res.status(409).json({ detail: 'Coupon code already exists' });
     }
 
+    let promoter_id = payload.promoter_id;
+    if (promoter_id) {
+      let userObj = null;
+      const idStr = String(promoter_id).trim();
+      if (idStr.startsWith('#') || idStr.toUpperCase().startsWith('RM')) {
+        const accNum = (idStr.startsWith('#') ? idStr.substring(1) : idStr).toUpperCase();
+        userObj = await User.findOne({ account_number: accNum });
+      } else if (isNaN(Number(idStr))) {
+        userObj = await User.findOne({ account_number: idStr.toUpperCase() });
+      } else {
+        const numVal = Number(idStr);
+        userObj = await User.findOne({ 
+          $or: [
+            { id: numVal }, 
+            { account_number: idStr.toUpperCase() }, 
+            { account_number: ('#' + idStr).toUpperCase() },
+            { account_number: ('RM' + idStr).toUpperCase() }
+          ] 
+        });
+      }
+
+      if (userObj) {
+        payload.promoter_id = userObj.id;
+      } else {
+        return res.status(404).json({ detail: `Customer with ID/Account Number '${promoter_id}' not found` });
+      }
+    } else {
+      payload.promoter_id = null;
+    }
+
     const coupon = new Coupon({
       ...payload,
       code,
@@ -345,6 +375,38 @@ router.patch('/coupons/:coupon_id', requireAdmin, async (req, res, next) => {
     const coupon = await Coupon.findOne({ id: couponId });
     if (!coupon) {
       return res.status(404).json({ detail: 'Coupon not found' });
+    }
+
+    if (req.body.hasOwnProperty('promoter_id')) {
+      let promoter_id = req.body.promoter_id;
+      if (promoter_id) {
+        let userObj = null;
+        const idStr = String(promoter_id).trim();
+        if (idStr.startsWith('#') || idStr.toUpperCase().startsWith('RM')) {
+          const accNum = (idStr.startsWith('#') ? idStr.substring(1) : idStr).toUpperCase();
+          userObj = await User.findOne({ account_number: accNum });
+        } else if (isNaN(Number(idStr))) {
+          userObj = await User.findOne({ account_number: idStr.toUpperCase() });
+        } else {
+          const numVal = Number(idStr);
+          userObj = await User.findOne({ 
+            $or: [
+              { id: numVal }, 
+              { account_number: idStr.toUpperCase() }, 
+              { account_number: ('#' + idStr).toUpperCase() },
+              { account_number: ('RM' + idStr).toUpperCase() }
+            ] 
+          });
+        }
+
+        if (userObj) {
+          req.body.promoter_id = userObj.id;
+        } else {
+          return res.status(404).json({ detail: `Customer with ID/Account Number '${promoter_id}' not found` });
+        }
+      } else {
+        req.body.promoter_id = null;
+      }
     }
 
     Object.assign(coupon, req.body);
@@ -441,6 +503,165 @@ router.get('/analytics/sales', requireAdmin, async (req, res, next) => {
       orders_by_status,
       period_days: days
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── Product Moderation ──────────────────────────────────────────────────────
+
+// List all products for review / moderation (Admin)
+router.get('/products', requireAdminOrSupport, async (req, res, next) => {
+  try {
+    const Product = require('../models/Product');
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.page_size || '20', 10)));
+    const isApproved = req.query.is_approved !== undefined ? req.query.is_approved === 'true' : null;
+
+    const filter = {};
+    if (isApproved !== null) {
+      filter.is_approved = isApproved;
+    }
+
+    const total = await Product.countDocuments(filter);
+    const products = await Product.find(filter)
+      .sort({ created_at: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize);
+
+    res.json({
+      items: products,
+      total,
+      page,
+      page_size: pageSize,
+      pages: Math.ceil(total / pageSize)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Approve or reject a product (Admin)
+router.patch('/products/:product_id/approve', requireAdminOrSupport, async (req, res, next) => {
+  try {
+    const Product = require('../models/Product');
+    const productId = Number(req.params.product_id);
+    const { is_approved } = req.body;
+
+    if (is_approved === undefined) {
+      return res.status(400).json({ detail: 'Missing is_approved parameter in request body' });
+    }
+
+    const product = await Product.findOne({ id: productId });
+    if (!product) {
+      return res.status(404).json({ detail: 'Product not found' });
+    }
+
+    product.is_approved = is_approved;
+    await product.save();
+
+    res.json(product);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── Withdrawal Requests (Admin) ─────────────────────────────────────────────
+
+// List all withdrawal requests
+router.get('/withdrawals', requireAdminOrSupport, async (req, res, next) => {
+  try {
+    const WithdrawalRequest = require('../models/WithdrawalRequest');
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.page_size || '20', 10)));
+    const status = req.query.status || null;
+
+    const filter = {};
+    if (status) {
+      filter.status = status;
+    }
+
+    const total = await WithdrawalRequest.countDocuments(filter);
+    const requests = await WithdrawalRequest.find(filter)
+      .sort({ created_at: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize);
+
+    // Enrich with Merchant Profile details
+    const merchantIds = requests.map(r => r.merchant_id);
+    const profiles = await MerchantProfile.find({ id: { $in: merchantIds } });
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+    const enriched = requests.map(r => {
+      const rObj = r.toObject();
+      rObj.merchant = profileMap.get(r.merchant_id) || null;
+      return rObj;
+    });
+
+    res.json({
+      items: enriched,
+      total,
+      page,
+      page_size: pageSize,
+      pages: Math.ceil(total / pageSize)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Approve or Reject Withdrawal
+router.patch('/withdrawals/:id/approval', requireAdmin, async (req, res, next) => {
+  try {
+    const WithdrawalRequest = require('../models/WithdrawalRequest');
+    const Wallet = require('../models/Wallet');
+    const AuditLog = require('../models/AuditLog');
+    
+    const requestId = Number(req.params.id);
+    const { status } = req.body; // 'approved' or 'rejected'
+
+    if (status !== 'approved' && status !== 'rejected') {
+      return res.status(400).json({ detail: 'Status must be approved or rejected' });
+    }
+
+    const request = await WithdrawalRequest.findOne({ id: requestId });
+    if (!request) {
+      return res.status(404).json({ detail: 'Withdrawal request not found' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ detail: 'Request is already processed' });
+    }
+
+    request.status = status;
+    request.processed_at = new Date();
+    await request.save();
+
+    // If rejected, refund the money back to merchant available balance
+    if (status === 'rejected') {
+      let wallet = await Wallet.findOne({ merchant_id: request.merchant_id });
+      if (wallet) {
+        wallet.available_balance = Number(((wallet.available_balance || 0) + request.amount).toFixed(2));
+        wallet.withdrawn_balance = Number(Math.max(0, (wallet.withdrawn_balance || 0) - request.amount).toFixed(2));
+        await wallet.save();
+      }
+    }
+
+    console.log(`[Withdrawal] Admin ${status} request #${request.id} for ₹${request.amount}`);
+
+    // Audit log
+    const audit = new AuditLog({
+      action_type: `withdrawal_${status}`,
+      actor_id: req.user.id,
+      actor_email: req.user.email,
+      target_id: request.id,
+      target_type: 'WithdrawalRequest',
+      details: `Withdrawal request for ₹${request.amount} was ${status} by admin.`,
+      timestamp: new Date()
+    });
+    await audit.save();
+
+    res.json(request);
   } catch (error) {
     next(error);
   }

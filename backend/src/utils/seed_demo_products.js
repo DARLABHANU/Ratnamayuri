@@ -22,7 +22,13 @@ const seedProducts = [
     short_description: "Exquisite 22k Temple Gold Choker set with rubies and pearls.",
     sku: "RMJ-001",
     stock_quantity: 5,
-    images: ["https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.35&fp-z=2",
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.65&fp-z=2",
+      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.4&fp-z=1.8"
+    ],
     tags: ["temple", "gold", "choker", "jewellery"],
     is_featured: true,
     category_slug: "jewellery"
@@ -36,7 +42,13 @@ const seedProducts = [
     short_description: "Stunning Kundan & Polki Jhumka earrings with natural pearls.",
     sku: "RMJ-002",
     stock_quantity: 12,
-    images: ["https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.4&fp-z=1.8"
+    ],
     tags: ["jhumkas", "kundan", "polki", "earrings"],
     is_featured: false,
     category_slug: "jewellery"
@@ -50,7 +62,13 @@ const seedProducts = [
     short_description: "Solid 22k gold antique kada with intricate Nakshi carvings.",
     sku: "RMJ-003",
     stock_quantity: 8,
-    images: ["https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1589674781759-c21c37956a44?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1589674781759-c21c37956a44?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.4&fp-z=1.8"
+    ],
     tags: ["kada", "bangle", "antique", "gold"],
     is_featured: true,
     category_slug: "jewellery"
@@ -64,7 +82,13 @@ const seedProducts = [
     short_description: "Classic 22k gold Kasu Mala coin necklace with kemp rubies.",
     sku: "RMJ-004",
     stock_quantity: 6,
-    images: ["https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.3&fp-y=0.3&fp-z=1.8"
+    ],
     tags: ["kasu-mala", "necklace", "gold", "traditional"],
     is_featured: false,
     category_slug: "jewellery"
@@ -78,7 +102,13 @@ const seedProducts = [
     short_description: "Elegant Zambian emerald & diamond floral cluster ring in 18k gold.",
     sku: "RMJ-005",
     stock_quantity: 4,
-    images: ["https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.4&fp-z=1.8"
+    ],
     tags: ["ring", "diamond", "emerald", "luxury"],
     is_featured: true,
     category_slug: "jewellery"
@@ -92,7 +122,13 @@ const seedProducts = [
     short_description: "Vibrant Meenakari peacock chandbalis with pearls.",
     sku: "RMJ-006",
     stock_quantity: 15,
-    images: ["https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["chandbalis", "meenakari", "earrings", "traditional"],
     is_featured: false,
     category_slug: "jewellery"
@@ -106,7 +142,13 @@ const seedProducts = [
     short_description: "Royal 22k gold Guttapusalu necklace with rich pearl clusters.",
     sku: "RMJ-007",
     stock_quantity: 3,
-    images: ["https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.4&fp-y=0.5&fp-z=2",
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.6&fp-y=0.5&fp-z=2",
+      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.4&fp-z=1.8"
+    ],
     tags: ["guttapusalu", "necklace", "pearls", "jewellery"],
     is_featured: true,
     category_slug: "jewellery"
@@ -122,7 +164,13 @@ const seedProducts = [
     short_description: "Pure Kanjivaram silk saree in emerald green with red zari border.",
     sku: "RMS-001",
     stock_quantity: 20,
-    images: ["https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1610030470224-3067b8f967a6?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1610030470224-3067b8f967a6?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.4&fp-z=1.8"
+    ],
     tags: ["kanjivaram", "silk", "saree", "green"],
     is_featured: true,
     category_slug: "sarees"
@@ -136,7 +184,13 @@ const seedProducts = [
     short_description: "Traditional crimson Katan silk Banarasi handloom saree.",
     sku: "RMS-002",
     stock_quantity: 15,
-    images: ["https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.4&fp-z=1.8"
+    ],
     tags: ["banarasi", "silk", "saree", "crimson"],
     is_featured: true,
     category_slug: "sarees"
@@ -150,7 +204,13 @@ const seedProducts = [
     short_description: "Stunning handloom double ikat Patan Patola silk saree.",
     sku: "RMS-003",
     stock_quantity: 5,
-    images: ["https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1617627143268-659131258ea4?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1617627143268-659131258ea4?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.4&fp-z=1.8"
+    ],
     tags: ["patola", "silk", "saree", "blue"],
     is_featured: false,
     category_slug: "sarees"
@@ -164,7 +224,13 @@ const seedProducts = [
     short_description: "Graceful mustard yellow organza silk saree with zardosi work.",
     sku: "RMS-004",
     stock_quantity: 25,
-    images: ["https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.4&fp-y=0.4&fp-z=1.8",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.6&fp-y=0.6&fp-z=1.8",
+      "https://images.unsplash.com/photo-1610030470224-3067b8f967a6?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1610030470224-3067b8f967a6?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["organza", "silk", "saree", "yellow"],
     is_featured: false,
     category_slug: "sarees"
@@ -178,7 +244,13 @@ const seedProducts = [
     short_description: "Crepe Mysore silk saree in baby pink with pure gold zari.",
     sku: "RMS-005",
     stock_quantity: 18,
-    images: ["https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.4&fp-y=0.4&fp-z=2",
+      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.6&fp-y=0.6&fp-z=2",
+      "https://images.unsplash.com/photo-1610030469668-93535c17b6b3?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1610030469668-93535c17b6b3?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["mysore-silk", "saree", "pink", "crepe"],
     is_featured: true,
     category_slug: "sarees"
@@ -192,7 +264,13 @@ const seedProducts = [
     short_description: "Hand-painted Madhubani organic Tussar silk saree.",
     sku: "RMS-006",
     stock_quantity: 30,
-    images: ["https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.3&fp-y=0.3&fp-z=1.8",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.7&fp-y=0.7&fp-z=1.8",
+      "https://images.unsplash.com/photo-1610030470224-3067b8f967a6?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1610030470224-3067b8f967a6?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.3&fp-y=0.3&fp-z=1.8"
+    ],
     tags: ["tussar", "silk", "saree", "madhubani"],
     is_featured: false,
     category_slug: "sarees"
@@ -206,7 +284,13 @@ const seedProducts = [
     short_description: "Royal violet handloom Paithani silk saree with golden peacock border.",
     sku: "RMS-007",
     stock_quantity: 8,
-    images: ["https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.3&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.7&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1617627143268-659131258ea4?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1617627143268-659131258ea4?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["paithani", "silk", "saree", "violet"],
     is_featured: true,
     category_slug: "sarees"
@@ -222,7 +306,13 @@ const seedProducts = [
     short_description: "Vermillion & crimson bridal lehenga saree with zardozi.",
     sku: "RMB-001",
     stock_quantity: 4,
-    images: ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["bridal", "lehenga", "saree", "wedding"],
     is_featured: true,
     category_slug: "bridal"
@@ -236,7 +326,13 @@ const seedProducts = [
     short_description: "Pure gold-dipped zari heavy Kanjivaram wedding saree.",
     sku: "RMB-002",
     stock_quantity: 6,
-    images: ["https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["bridal", "kanjivaram", "wedding", "saree"],
     is_featured: true,
     category_slug: "bridal"
@@ -250,7 +346,13 @@ const seedProducts = [
     short_description: "Exquisite Jadau Kundan multi-tiered bridal choker necklace set.",
     sku: "RMB-003",
     stock_quantity: 2,
-    images: ["https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["bridal", "kundan", "choker", "set"],
     is_featured: true,
     category_slug: "bridal"
@@ -264,7 +366,13 @@ const seedProducts = [
     short_description: "Regal 22k gold Temple style bridal head ornament.",
     sku: "RMB-004",
     stock_quantity: 10,
-    images: ["https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.3&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.7&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["matha-patti", "bridal", "temple", "jewellery"],
     is_featured: false,
     category_slug: "bridal"
@@ -278,7 +386,13 @@ const seedProducts = [
     short_description: "Exquisite full-box set of 22k gold bridal wedding ornaments.",
     sku: "RMB-005",
     stock_quantity: 1,
-    images: ["https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.4&fp-y=0.4&fp-z=2",
+      "https://images.unsplash.com/photo-1607823489283-1dd240bab3be?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.6&fp-y=0.6&fp-z=2",
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["solah-shringar", "bridal", "full-set", "luxury"],
     is_featured: true,
     category_slug: "bridal"
@@ -292,7 +406,13 @@ const seedProducts = [
     short_description: "Stunning gold tissue silk zardozi embroidered bridal shawl.",
     sku: "RMB-006",
     stock_quantity: 12,
-    images: ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.4&fp-y=0.4&fp-z=1.8",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.6&fp-y=0.6&fp-z=1.8",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["shawl", "bridal", "zardozi", "gold"],
     is_featured: false,
     category_slug: "bridal"
@@ -306,7 +426,13 @@ const seedProducts = [
     short_description: "Luxurious red velvet bridal dupatta with zardosi border.",
     sku: "RMB-007",
     stock_quantity: 15,
-    images: ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.3&fp-y=0.3&fp-z=2",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.7&fp-y=0.7&fp-z=2",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.8"
+    ],
     tags: ["dupatta", "bridal", "velvet", "red"],
     is_featured: false,
     category_slug: "bridal"
@@ -320,8 +446,19 @@ async function seed() {
 
   // 1. Resolve merchant id
   const merchant = await User.findOne({ email: 'darlabhanumurthy@gmail.com' });
-  const merchantId = merchant ? merchant.id : 3;
-  console.log(`Resolved Merchant ID for darlabhanumurthy@gmail.com: ${merchantId}`);
+  let merchantId = merchant ? merchant.id : 3;
+  if (merchant) {
+    const MerchantProfile = require('../models/MerchantProfile');
+    const profile = await MerchantProfile.findOne({ user_id: merchant.id });
+    if (profile) {
+      merchantId = profile.id;
+    }
+  }
+  console.log(`Resolved Merchant Profile ID for darlabhanumurthy@gmail.com: ${merchantId}`);
+
+  // Clear existing products for this merchant to ensure they are seeded with correct profile id
+  await Product.deleteMany({ merchant_id: { $in: [merchant ? merchant.id : 3, merchantId] } });
+  console.log('Cleared existing products for merchant to ensure correct profile ID alignment.');
 
   // 2. Resolve category mappings
   const categories = await Category.find({});
@@ -352,7 +489,8 @@ async function seed() {
         images: prod.images,
         tags: prod.tags,
         is_featured: prod.is_featured,
-        is_active: true
+        is_active: true,
+        is_approved: true
       });
 
       await newProd.save();
@@ -368,7 +506,11 @@ async function seed() {
   console.log('Disconnected from MongoDB.');
 }
 
-seed().catch(err => {
-  console.error('Error while seeding demo products:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  seed().catch(err => {
+    console.error('Error while seeding demo products:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { seed, seedProducts };

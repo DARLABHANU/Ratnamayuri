@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, Package, User, Heart, ChevronRight, Loader2 } from "lucide-react";
+import { ShoppingBag, Package, User, Heart, ChevronRight, Loader2, CreditCard, Award } from "lucide-react";
 import { authApi, orderApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 import { Order } from "@/types";
 import { formatPrice, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 
@@ -14,6 +15,7 @@ export default function CustomerDashboard() {
   const router = useRouter();
   const { isAuthenticated, user, setUser } = useAuthStore();
   const { cart, fetchCart } = useCartStore();
+  const { wishlistIds, fetchWishlist } = useWishlistStore();
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -23,6 +25,7 @@ export default function CustomerDashboard() {
       authApi.me().then((r) => setUser(r.data)),
       orderApi.list({ page: 1, page_size: 5 }).then((r) => setRecentOrders(r.data.items)),
       fetchCart(),
+      fetchWishlist(),
     ]).finally(() => setIsLoading(false));
   }, [isAuthenticated]);
 
@@ -35,7 +38,7 @@ export default function CustomerDashboard() {
   const stats = [
     { label: "Total Orders", value: recentOrders.length || "0", icon: Package, href: "/customer/orders" },
     { label: "Cart Items", value: cart?.item_count || "0", icon: ShoppingBag, href: "/customer/cart" },
-    { label: "Wishlist", value: "0", icon: Heart, href: "#" },
+    { label: "Wishlist Items", value: wishlistIds.length || "0", icon: Heart, href: "/customer/wishlist" },
   ];
 
   return (
@@ -113,7 +116,8 @@ export default function CustomerDashboard() {
               { href: "/customer/profile", label: "My Profile", icon: User },
               { href: "/customer/orders", label: "All Orders", icon: Package },
               { href: "/customer/cart", label: "View Cart", icon: ShoppingBag },
-              { href: "/customer/products", label: "Shop Products", icon: Heart },
+              { href: "/customer/payments", label: "Payment History", icon: CreditCard },
+              ...(user?.is_promoter ? [{ href: "/promoter/dashboard", label: "Affiliate Portal", icon: Award }] : []),
             ].map(({ href, label, icon: Icon }) => (
               <Link key={href} href={href}
                 className="card p-4 flex items-center gap-3 hover:border-gold-300 transition-all group">
@@ -138,6 +142,25 @@ export default function CustomerDashboard() {
                 <span>{user.is_verified ? "✓ Verified" : "⚠ Unverified"}</span>
               </div>
             </div>
+          )}
+
+          {/* Promoter CTA Card */}
+          {user?.is_promoter && (
+            <Link href="/promoter/dashboard" className="card p-4 mt-4 bg-gold-400/10 border-gold-300 flex flex-col justify-between hover:bg-gold-400/20 transition-all group">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Award size={16} className="text-gold-600 animate-pulse" />
+                  <p className="font-cinzel text-xs tracking-widest text-brown font-bold">EARN COMMISSIONS</p>
+                </div>
+                <p className="font-garamond text-xs text-muted leading-relaxed">
+                  Join our partner program, refer buyers, and earn stable commission payouts on Kanjivaram Sarees and premium Kundan jewelry referrals!
+                </p>
+              </div>
+              <div className="flex items-center gap-1 font-cinzel text-[10px] text-gold-700 font-bold mt-3 group-hover:text-gold-900 transition-colors">
+                <span>ENTER PORTAL</span>
+                <ChevronRight size={10} />
+              </div>
+            </Link>
           )}
         </div>
       </div>

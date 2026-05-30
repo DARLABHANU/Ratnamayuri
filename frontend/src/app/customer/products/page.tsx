@@ -248,19 +248,19 @@ function ProductsContent() {
         <div className="flex items-center justify-center gap-3 mt-12">
           <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
             className="w-9 h-9 border border-gold-200 flex items-center justify-center
-              hover:border-gold-500 transition-colors disabled:opacity-40">
+              hover:border-gold-500 transition-colors disabled:opacity-40 rounded-md">
             <ChevronLeft size={14} />
           </button>
           {Array.from({ length: data.pages }, (_, i) => i + 1).map((p) => (
             <button key={p} onClick={() => setPage(p)}
-              className={`w-9 h-9 font-cinzel text-xs transition-colors
+              className={`w-9 h-9 font-cinzel text-xs transition-colors rounded-md
                 ${p === page ? "bg-deep text-gold-400" : "border border-gold-200 hover:border-gold-500"}`}>
               {p}
             </button>
           ))}
           <button onClick={() => setPage((p) => Math.min(data.pages, p + 1))} disabled={page === data.pages}
             className="w-9 h-9 border border-gold-200 flex items-center justify-center
-              hover:border-gold-500 transition-colors disabled:opacity-40">
+              hover:border-gold-500 transition-colors disabled:opacity-40 rounded-md">
             <ChevronRight size={14} />
           </button>
         </div>

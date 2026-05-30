@@ -132,6 +132,8 @@ export const merchantApi = {
   updateProfile: (data: object) => api.put("/merchant/profile", data),
   analytics: (days?: number) => api.get("/merchant/analytics", { params: { days } }),
   commissions: () => api.get("/merchant/commissions"),
+  wallet: () => api.get("/merchant/wallet"),
+  requestWithdrawal: (data: object) => api.post("/merchant/withdraw", data),
 };
 
 export const adminApi = {
@@ -151,6 +153,11 @@ export const adminApi = {
   commissions: (params?: object) => api.get("/admin/commissions", { params }),
   payCommission: (id: number) => api.patch(`/admin/commissions/${id}/pay`),
   salesAnalytics: (days?: number) => api.get("/admin/analytics/sales", { params: { days } }),
+  products: (params?: object) => api.get("/admin/products", { params }),
+  approveProduct: (id: number, data: { is_approved: boolean }) => api.patch(`/admin/products/${id}/approve`, data),
+  withdrawals: (params?: object) => api.get("/admin/withdrawals", { params }),
+  approveWithdrawal: (id: number, data: { status: "approved" | "rejected" }) =>
+    api.patch(`/admin/withdrawals/${id}/approval`, data),
 };
 
 export const supportApi = {
@@ -169,4 +176,15 @@ export const addressApi = {
   create: (data: object) => api.post("/addresses", data),
   update: (id: number, data: object) => api.put(`/addresses/${id}`, data),
   delete: (id: number) => api.delete(`/addresses/${id}`),
+};
+
+export const wishlistApi = {
+  get: () => api.get("/wishlist"),
+  toggle: (productId: number) => api.post("/wishlist/toggle", { product_id: productId }),
+};
+
+export const promoterApi = {
+  commissions: () => api.get("/promoter/commissions"),
+  coupons: () => api.get("/promoter/coupons"),
+  analytics: () => api.get("/promoter/analytics"),
 };

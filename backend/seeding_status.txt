@@ -1,0 +1,36 @@
+--- DATABASE SEEDING STATUS REPORT ---
+Timestamp: 2026-05-30T14:11:17.123Z
+
+COUNTS:
+- users: 10
+- categories: 3
+- products: 25
+- merchantProfiles: 5
+- orders: 12
+- orderItems: 17
+- coupons: 7
+- addresses: 6
+
+USERS:
+- ID: 1 | Email: admin@ratnamayuri.live | Role: admin | Name: Super Admin
+- ID: 9 | Email: daarlabhanumurthy@gmail.com | Role: customer | Name: usr
+- ID: 10 | Email: appzonix@gmail.com | Role: customer | Name: appzonix
+- ID: 11 | Email: darlabhanumurthy@gmail.com | Role: merchant | Name: usr
+- ID: 12 | Email: renuka@peralstore.com | Role: merchant | Name: Lagudu Renuka
+- ID: 13 | Email: bhoomika@peralstore.com | Role: merchant | Name: M. Rani Bhoomika
+- ID: 14 | Email: priya.sharma@gmail.com | Role: customer | Name: Priya Sharma
+- ID: 15 | Email: amit.verma@yahoo.com | Role: customer | Name: Amit Verma
+- ID: 16 | Email: neha.reddy@gmail.com | Role: customer | Name: Neha Reddy
+- ID: 17 | Email: soyav50421@matkind.com | Role: customer | Name: affilate test
+
+CATEGORIES:
+- ID: 1 | Slug: jewellery | Name: Luxury Jewellery
+- ID: 2 | Slug: sarees | Name: Silk Sarees
+- ID: 3 | Slug: bridal | Name: Bridal
+
+PRODUCTS (First 5):
+- SKU: ks-001 | Price: 120000 | CatID: 1 | Name: necklace
+- SKU: ks-002 | Price: 1000 | CatID: 2 | Name: saree
+- SKU: ks-003 | Price: 1000 | CatID: 2 | Name: Product Name:  Royal Banarasi Silk Saree – Emerald Green with Zari Work
+- SKU: 1288 | Price: 2000 | CatID: 3 | Name: bangless banaras
+- SKU: RMJ-001 | Price: 145000 | CatID: 1 | Name: Royal Temple Gold Choker Set

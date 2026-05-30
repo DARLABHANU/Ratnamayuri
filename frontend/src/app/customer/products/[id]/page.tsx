@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ShoppingBag, Star, Package, ChevronLeft, Plus, Minus, Loader2 } from "lucide-react";
+import { ShoppingBag, Star, Package, ChevronLeft, Plus, Minus, Loader2, Heart } from "lucide-react";
 import toast from "react-hot-toast";
 import { productApi } from "@/lib/api";
 import { Product } from "@/types";
 import { formatPrice, getProductImage, getApiError } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,8 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
+  const { toggleWishlist, isWishlisted } = useWishlistStore();
+  const wishlisted = product ? isWishlisted(product.id) : false;
 
   useEffect(() => {
     productApi.get(Number(id))
@@ -70,7 +73,7 @@ export default function ProductDetailPage() {
       <div className="grid lg:grid-cols-2 gap-12">
         {/* Images */}
         <div>
-          <div className="aspect-square overflow-hidden bg-ivory mb-3">
+          <div className="aspect-square overflow-hidden bg-ivory mb-3 rounded-lg">
             <img src={images[selectedImage]} alt={product.name}
               className="w-full h-full object-cover"
               onError={(e) => { (e.target as HTMLImageElement).src = getProductImage([]); }}
@@ -80,7 +83,7 @@ export default function ProductDetailPage() {
             <div className="grid grid-cols-5 gap-2">
               {images.map((img, i) => (
                 <button key={i} onClick={() => setSelectedImage(i)}
-                  className={`aspect-square overflow-hidden border-2 transition-all
+                  className={`aspect-square overflow-hidden border-2 transition-all rounded-md
                     ${i === selectedImage ? "border-gold-500" : "border-transparent hover:border-gold-300"}`}>
                   <img src={img} alt="" className="w-full h-full object-cover" />
                 </button>
@@ -104,7 +107,7 @@ export default function ProductDetailPage() {
               <div className="flex gap-0.5">
                 {Array(5).fill(0).map((_, i) => (
                   <Star key={i} size={12}
-                    fill={i < Math.floor(product.rating_avg) ? "#C9A96E" : "none"}
+                    fill={i < Math.floor(product.rating_avg) ? "#C9973E" : "none"}
                     className="text-gold-500" />
                 ))}
               </div>
@@ -151,7 +154,7 @@ export default function ProductDetailPage() {
           {product.attributes && Object.keys(product.attributes).length > 0 && (
             <div className="grid grid-cols-2 gap-3 mb-6">
               {Object.entries(product.attributes).map(([key, val]) => (
-                <div key={key} className="bg-ivory px-3 py-2">
+                <div key={key} className="bg-ivory px-3 py-2 rounded-md">
                   <p className="font-cinzel text-xs tracking-wide text-muted mb-0.5">{key.toUpperCase()}</p>
                   <p className="font-garamond text-sm text-brown">{val as string}</p>
                 </div>
@@ -162,7 +165,7 @@ export default function ProductDetailPage() {
           {/* Quantity + Add to cart */}
           {product.stock_quantity > 0 && (
             <div className="flex gap-4 mb-6">
-              <div className="flex items-center border border-gold-200">
+              <div className="flex items-center border border-gold-200 rounded-md overflow-hidden">
                 <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   className="w-10 h-11 flex items-center justify-center text-muted hover:text-brown transition-colors">
                   <Minus size={14} />
@@ -177,6 +180,29 @@ export default function ProductDetailPage() {
                 className="btn-primary flex-1 flex items-center justify-center gap-2">
                 {isAdding ? <Loader2 size={14} className="animate-spin" /> : <ShoppingBag size={14} />}
                 {isAdding ? "ADDING..." : "ADD TO BAG"}
+              </button>
+              
+              <button
+                onClick={async () => {
+                  if (!isAuthenticated) {
+                    toast.error("Please sign in to save to wishlist");
+                    return;
+                  }
+                  try {
+                    const added = await toggleWishlist(product!.id);
+                    toast.success(added ? "Saved to wishlist!" : "Removed from wishlist");
+                  } catch (err) {
+                    toast.error("Failed to update wishlist");
+                  }
+                }}
+                className="w-11 h-11 border border-gold-200 hover:border-gold-500 flex items-center justify-center transition-all bg-white hover:scale-105 rounded-md"
+                title="Save to Wishlist"
+              >
+                <Heart
+                  size={18}
+                  fill={wishlisted ? "#5A1212" : "none"}
+                  className={wishlisted ? "text-gold-500" : "text-brown"}
+                />
               </button>
             </div>
           )}

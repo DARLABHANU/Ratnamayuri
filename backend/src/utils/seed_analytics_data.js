@@ -232,7 +232,11 @@ async function seed() {
   console.log('Disconnected from MongoDB.');
 }
 
-seed().catch(err => {
-  console.error('Error seeding analytics data:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  seed().catch(err => {
+    console.error('Error seeding analytics data:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { seed };

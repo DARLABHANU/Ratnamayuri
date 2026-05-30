@@ -85,7 +85,7 @@ export default function CartPage() {
             {cart.items.map((item) => (
               <div key={item.id} className="card p-4 flex gap-4">
                 <Link href={`/customer/products/${item.product_id}`}
-                  className="w-24 h-28 flex-shrink-0 overflow-hidden bg-ivory">
+                  className="w-24 h-28 flex-shrink-0 overflow-hidden bg-ivory rounded-md">
                   <img src={getProductImage(item.product.images)}
                     alt={item.product.name}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
@@ -111,7 +111,7 @@ export default function CartPage() {
                   </div>
 
                   <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center border border-gold-200">
+                    <div className="flex items-center border border-gold-200 rounded-md overflow-hidden">
                       <button onClick={() => item.quantity > 1
                         ? useCartStore.getState().addItem(item.product_id, item.quantity - 1)
                         : removeItem(item.id)}

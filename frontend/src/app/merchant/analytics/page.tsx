@@ -11,7 +11,7 @@ import { merchantApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { formatPrice } from "@/lib/utils";
 
-const GOLD_PALETTE = ["#C9A96E", "#9B7940", "#E8D5A3", "#7A5E30", "#5C4524"];
+const GOLD_PALETTE = ["#6B1A1A", "#C9973E", "#5A1212", "#E8D5B0", "#8B2020"];
 
 export default function MerchantAnalyticsPage() {
   const router = useRouter();
@@ -39,7 +39,8 @@ export default function MerchantAnalyticsPage() {
     { label: "Total Revenue", value: formatPrice(analytics.total_revenue), icon: DollarSign, color: "text-green-600" },
     { label: "Total Orders", value: analytics.total_orders, icon: ShoppingBag, color: "text-blue-600" },
     { label: "Products Listed", value: analytics.total_products, icon: Package, color: "text-purple-600" },
-    { label: "Pending Payout", value: formatPrice(analytics.pending_payout), icon: TrendingUp, color: "text-gold-600" },
+    { label: "Escrow Hold", value: formatPrice(analytics.pending_payout), icon: TrendingUp, color: "text-yellow-600" },
+    { label: "Available to Withdraw", value: formatPrice(analytics.available_payout || 0), icon: DollarSign, color: "text-gold-600" },
   ] : [];
 
   const pieData = (analytics?.top_products || []).map((p: any) => ({
@@ -71,7 +72,7 @@ export default function MerchantAnalyticsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             {stats.map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="card p-5">
                 <div className="flex justify-between items-center mb-3">
@@ -99,7 +100,7 @@ export default function MerchantAnalyticsPage() {
                       tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
                     <Tooltip formatter={(v: any) => [formatPrice(v), "Revenue"]}
                       contentStyle={{ fontFamily: "var(--font-garamond)", fontSize: 12 }} />
-                    <Bar dataKey="revenue" fill="#C9A96E" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="revenue" fill="#0C2337" radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

@@ -58,7 +58,7 @@ export default function MerchantDashboard() {
     { label: "Revenue (30d)", value: formatPrice(analytics?.total_revenue || 0), icon: DollarSign, color: "text-green-600" },
     { label: "Orders (30d)", value: analytics?.total_orders || 0, icon: ShoppingBag, color: "text-blue-600" },
     { label: "Total Products", value: analytics?.total_products || 0, icon: Package, color: "text-purple-600" },
-    { label: "Pending Payout", value: formatPrice(analytics?.pending_payout || 0), icon: TrendingUp, color: "text-gold-600" },
+    { label: "Available to Withdraw", value: formatPrice(analytics?.available_payout || 0), icon: TrendingUp, color: "text-gold-600" },
   ];
 
   return (

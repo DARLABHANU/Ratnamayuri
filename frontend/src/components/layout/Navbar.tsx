@@ -82,12 +82,12 @@ export default function Navbar() {
         border-b border-gold-100`}>
         <div className="max-w-7xl mx-auto px-4 lg:px-8 relative">
           <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Left: Mobile Menu Toggles & Desktop Navigation */}
-            <div className="flex items-center">
-              <button className="lg:hidden text-brown mr-4" onClick={() => setMobileOpen(!mobileOpen)}>
+            {/* Left: Mobile Menu Toggle & Desktop Navigation */}
+            <div className="flex items-center flex-shrink-0">
+              <button className="lg:hidden text-brown mr-3" onClick={() => setMobileOpen(!mobileOpen)}>
                 {mobileOpen ? <X size={22} /> : <Menu size={22} />}
               </button>
-              
+
               <ul className="hidden lg:flex items-center gap-6">
                 {navLinks.map((link) => (
                   <li key={link.href}>
@@ -100,24 +100,24 @@ export default function Navbar() {
               </ul>
             </div>
 
-            {/* Middle: Centered Logo */}
-            <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center">
-              <Link href="/" className="flex items-center gap-1.5 justify-center leading-none">
-                <div className="w-8 h-8 border border-gold-500 rounded-full flex items-center justify-center
-                  text-gold-500 font-bold text-sm" style={{ fontFamily: "Georgia, serif" }}>R</div>
+            {/* Middle: Logo — left-aligned on mobile (flex-1), absolutely centered on desktop */}
+            <div className="flex-1 flex items-center justify-start lg:flex-none lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:justify-center">
+              <Link href="/" className="flex items-center gap-1.5 leading-none">
+                <div className="w-7 h-7 lg:w-8 lg:h-8 border border-gold-500 rounded-full flex items-center justify-center
+                  text-gold-500 font-bold text-xs lg:text-sm flex-shrink-0" style={{ fontFamily: "Georgia, serif" }}>R</div>
                 <div className="flex flex-col text-left">
                   <span className="font-cormorant text-sm lg:text-base font-extrabold tracking-[0.15em] text-brown leading-none">
                     RATNAMAYURI
                   </span>
                   <span className="text-gold-500 text-[8px] lg:text-[9px] tracking-[0.2em] font-bold mt-0.5">
-                    JEWELLERY & SAREES
+                    JEWELLERY &amp; SAREES
                   </span>
                 </div>
               </Link>
             </div>
 
             {/* Right icons */}
-            <div className="flex items-center gap-3 lg:gap-4">
+            <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
               <Link href="/customer/wishlist" className="relative text-brown hover:text-gold-600 transition-colors">
                 <Heart size={20} />
                 {wishlistIds.length > 0 && (

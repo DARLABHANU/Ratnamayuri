@@ -69,14 +69,14 @@ export default function MerchantDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
         {stats.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="card p-5">
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-cinzel text-xs tracking-widest text-muted">{label}</p>
+          <div key={label} className="card p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <p className="font-cinzel text-[10px] sm:text-xs tracking-widest text-muted">{label}</p>
               <Icon size={16} className={color} />
             </div>
-            <p className="font-cormorant text-2xl font-medium text-brown">{value}</p>
+            <p className="font-cormorant text-xl sm:text-2xl font-medium text-brown">{value}</p>
           </div>
         ))}
       </div>
@@ -96,35 +96,37 @@ export default function MerchantDashboard() {
                 <p className="font-garamond text-muted">No orders yet</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="bg-ivory">
-                  <tr>
-                    <th className="table-th">Order</th>
-                    <th className="table-th">Status</th>
-                    <th className="table-th">Amount</th>
-                    <th className="table-th">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-ivory/50 transition-colors">
-                      <td className="table-td">
-                        <Link href={`/merchant/orders?id=${order.id}`}
-                          className="font-cinzel text-xs text-gold-700 hover:text-gold-600">
-                          #{order.order_number}
-                        </Link>
-                      </td>
-                      <td className="table-td">
-                        <span className={`badge text-xs ${ORDER_STATUS_COLORS[order.status]}`}>
-                          {ORDER_STATUS_LABELS[order.status]}
-                        </span>
-                      </td>
-                      <td className="table-td font-garamond text-sm">{formatPrice(order.total_amount)}</td>
-                      <td className="table-td font-garamond text-xs text-muted">{formatDate(order.created_at)}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-ivory">
+                    <tr>
+                      <th className="table-th">Order</th>
+                      <th className="table-th">Status</th>
+                      <th className="table-th">Amount</th>
+                      <th className="table-th hidden sm:table-cell">Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {recentOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-ivory/50 transition-colors">
+                        <td className="table-td">
+                          <Link href={`/merchant/orders?id=${order.id}`}
+                            className="font-cinzel text-xs text-gold-700 hover:text-gold-600">
+                            #{order.order_number}
+                          </Link>
+                        </td>
+                        <td className="table-td">
+                          <span className={`badge text-xs ${ORDER_STATUS_COLORS[order.status]}`}>
+                            {ORDER_STATUS_LABELS[order.status]}
+                          </span>
+                        </td>
+                        <td className="table-td font-garamond text-sm">{formatPrice(order.total_amount)}</td>
+                        <td className="table-td font-garamond text-xs text-muted hidden sm:table-cell">{formatDate(order.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

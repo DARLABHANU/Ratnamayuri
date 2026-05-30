@@ -129,12 +129,12 @@ export default function CustomerProfilePage() {
 
       {/* User info card */}
       {user && (
-        <div className="card p-5 mb-6 flex items-center gap-4">
+        <div className="card p-4 sm:p-5 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-4">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gold-200 to-gold-500
-            flex items-center justify-center font-cinzel text-xl text-deep">
+            flex items-center justify-center font-cinzel text-xl text-deep flex-shrink-0">
             {user.full_name.charAt(0)}
           </div>
-          <div>
+          <div className="text-center sm:text-left">
             <p className="font-cormorant text-xl text-brown">{user.full_name}</p>
             <p className="font-garamond text-sm text-muted">{user.email}</p>
             <p className="font-cinzel text-xs text-gold-600 mt-0.5">
@@ -145,12 +145,13 @@ export default function CustomerProfilePage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border border-gold-200 p-1 bg-white mb-6">
+      <div className="flex gap-1 border border-gold-200 p-1 bg-white mb-6 rounded-md">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 font-cinzel text-xs tracking-wide transition-all
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 font-cinzel text-xs tracking-wide transition-all rounded-sm
               ${tab === id ? "bg-deep text-gold-300" : "text-muted hover:text-brown"}`}>
-            <Icon size={12} /> {label}
+            <Icon size={12} />
+            <span className="hidden xs:inline sm:inline">{label}</span>
           </button>
         ))}
       </div>
@@ -255,8 +256,8 @@ export default function CustomerProfilePage() {
           {showAddressForm && (
             <div className="card p-6 animate-fade-up">
               <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">FULL NAME</label>
                     <input {...addressForm.register("full_name")} className="input-field" />
                   </div>
@@ -275,11 +276,11 @@ export default function CustomerProfilePage() {
                       <option>Other</option>
                     </select>
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">ADDRESS LINE 1</label>
                     <input {...addressForm.register("line1")} className="input-field" placeholder="House/Flat, Street" />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">ADDRESS LINE 2</label>
                     <input {...addressForm.register("line2")} className="input-field" placeholder="Area, Landmark (optional)" />
                   </div>
@@ -298,7 +299,7 @@ export default function CustomerProfilePage() {
                       <p className="text-red-500 text-xs mt-1">{addressForm.formState.errors.pincode.message}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 mt-4">
+                  <div className="flex items-center gap-2 mt-2">
                     <input {...addressForm.register("is_default")} type="checkbox" id="is_default" className="accent-gold-500 w-4 h-4" />
                     <label htmlFor="is_default" className="font-cinzel text-xs tracking-wide text-brown cursor-pointer">
                       Set as default

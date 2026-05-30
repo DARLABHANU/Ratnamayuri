@@ -54,11 +54,11 @@ export default function OrdersPage() {
         <div className="divider-gold mx-0 mt-4" />
       </div>
 
-      {/* Status filter tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
+      {/* Status filter tabs — horizontally scrollable on mobile */}
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
         {STATUS_FILTERS.map((f) => (
           <button key={f.value} onClick={() => { setStatusFilter(f.value); setPage(1); }}
-            className={`flex-shrink-0 font-cinzel text-xs tracking-wide px-4 py-2 transition-all
+            className={`flex-shrink-0 font-cinzel text-xs tracking-wide px-3 sm:px-4 py-2 transition-all rounded-md
               ${statusFilter === f.value
                 ? "bg-deep text-gold-400"
                 : "border border-gold-200 text-muted hover:border-gold-500 hover:text-brown"}`}>
@@ -84,10 +84,10 @@ export default function OrdersPage() {
         <div className="space-y-4">
           {data.items.map((order) => (
             <Link key={order.id} href={`/customer/orders/${order.id}`}
-              className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4
+              className="card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4
                 hover:border-gold-300 transition-all group">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   <p className="font-cinzel text-sm tracking-wide text-brown">#{order.order_number}</p>
                   <span className={`badge text-xs ${ORDER_STATUS_COLORS[order.status]}`}>
                     {ORDER_STATUS_LABELS[order.status]}
@@ -96,14 +96,14 @@ export default function OrdersPage() {
                 <p className="font-garamond text-sm text-muted mb-1">
                   {order.items.length} item{order.items.length !== 1 ? "s" : ""} · Placed {formatDate(order.created_at)}
                 </p>
-                <p className="font-garamond text-xs text-muted">
+                <p className="font-garamond text-xs text-muted truncate">
                   {order.items.slice(0, 2).map((i) => i.product_name).join(", ")}
                   {order.items.length > 2 && ` +${order.items.length - 2} more`}
                 </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <p className="font-cinzel text-sm text-brown">{formatPrice(order.total_amount)}</p>
-                <ChevronRight size={16} className="text-muted group-hover:text-gold-500 transition-colors" />
+                <ChevronRight size={16} className="text-muted group-hover:text-gold-500 transition-colors flex-shrink-0" />
               </div>
             </Link>
           ))}

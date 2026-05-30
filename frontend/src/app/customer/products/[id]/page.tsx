@@ -164,45 +164,50 @@ export default function ProductDetailPage() {
 
           {/* Quantity + Add to cart */}
           {product.stock_quantity > 0 && (
-            <div className="flex gap-4 mb-6">
-              <div className="flex items-center border border-gold-200 rounded-md overflow-hidden">
-                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="w-10 h-11 flex items-center justify-center text-muted hover:text-brown transition-colors">
-                  <Minus size={14} />
-                </button>
-                <span className="w-12 text-center font-cinzel text-sm text-brown">{quantity}</span>
-                <button onClick={() => setQuantity((q) => Math.min(product.stock_quantity, q + 1))}
-                  className="w-10 h-11 flex items-center justify-center text-muted hover:text-brown transition-colors">
-                  <Plus size={14} />
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              {/* Top row on mobile: Qty selector + Wishlist side by side */}
+              <div className="flex gap-3 sm:contents">
+                <div className="flex items-center border border-gold-200 rounded-md overflow-hidden flex-shrink-0">
+                  <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="w-10 h-11 flex items-center justify-center text-muted hover:text-brown transition-colors">
+                    <Minus size={14} />
+                  </button>
+                  <span className="w-12 text-center font-cinzel text-sm text-brown">{quantity}</span>
+                  <button onClick={() => setQuantity((q) => Math.min(product.stock_quantity, q + 1))}
+                    className="w-10 h-11 flex items-center justify-center text-muted hover:text-brown transition-colors">
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                <button
+                  onClick={async () => {
+                    if (!isAuthenticated) {
+                      toast.error("Please sign in to save to wishlist");
+                      return;
+                    }
+                    try {
+                      const added = await toggleWishlist(product!.id);
+                      toast.success(added ? "Saved to wishlist!" : "Removed from wishlist");
+                    } catch (err) {
+                      toast.error("Failed to update wishlist");
+                    }
+                  }}
+                  className="w-11 h-11 border border-gold-200 hover:border-gold-500 flex items-center justify-center transition-all bg-white hover:scale-105 rounded-md flex-shrink-0 sm:order-last"
+                  title="Save to Wishlist"
+                >
+                  <Heart
+                    size={18}
+                    fill={wishlisted ? "#5A1212" : "none"}
+                    className={wishlisted ? "text-gold-500" : "text-brown"}
+                  />
                 </button>
               </div>
+
+              {/* Add to Bag — full width on mobile, flex-1 on sm+ */}
               <button onClick={handleAddToCart} disabled={isAdding}
-                className="btn-primary flex-1 flex items-center justify-center gap-2">
+                className="btn-primary w-full sm:flex-1 flex items-center justify-center gap-2">
                 {isAdding ? <Loader2 size={14} className="animate-spin" /> : <ShoppingBag size={14} />}
                 {isAdding ? "ADDING..." : "ADD TO BAG"}
-              </button>
-              
-              <button
-                onClick={async () => {
-                  if (!isAuthenticated) {
-                    toast.error("Please sign in to save to wishlist");
-                    return;
-                  }
-                  try {
-                    const added = await toggleWishlist(product!.id);
-                    toast.success(added ? "Saved to wishlist!" : "Removed from wishlist");
-                  } catch (err) {
-                    toast.error("Failed to update wishlist");
-                  }
-                }}
-                className="w-11 h-11 border border-gold-200 hover:border-gold-500 flex items-center justify-center transition-all bg-white hover:scale-105 rounded-md"
-                title="Save to Wishlist"
-              >
-                <Heart
-                  size={18}
-                  fill={wishlisted ? "#5A1212" : "none"}
-                  className={wishlisted ? "text-gold-500" : "text-brown"}
-                />
               </button>
             </div>
           )}

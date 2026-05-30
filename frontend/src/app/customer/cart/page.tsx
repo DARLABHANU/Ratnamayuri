@@ -83,9 +83,9 @@ export default function CartPage() {
           {/* Cart items */}
           <div className="lg:col-span-2 space-y-4">
             {cart.items.map((item) => (
-              <div key={item.id} className="card p-4 flex gap-4">
+              <div key={item.id} className="card p-3 sm:p-4 flex gap-3 sm:gap-4">
                 <Link href={`/customer/products/${item.product_id}`}
-                  className="w-24 h-28 flex-shrink-0 overflow-hidden bg-ivory rounded-md">
+                  className="w-20 h-24 sm:w-24 sm:h-28 flex-shrink-0 overflow-hidden bg-ivory rounded-md">
                   <img src={getProductImage(item.product.images)}
                     alt={item.product.name}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
@@ -100,7 +100,7 @@ export default function CartPage() {
                           {item.product.category.name}
                         </p>
                       )}
-                      <h3 className="font-cormorant text-lg font-medium text-brown leading-tight">
+                      <h3 className="font-cormorant text-base sm:text-lg font-medium text-brown leading-tight">
                         {item.product.name}
                       </h3>
                     </div>

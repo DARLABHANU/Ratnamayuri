@@ -173,24 +173,24 @@ function CheckoutContent() {
             </button>
 
             {showNewAddress && (
-              <form onSubmit={handleSubmit(onAddressSubmit)} className="card p-6 mt-4 space-y-4 animate-fade-up">
+              <form onSubmit={handleSubmit(onAddressSubmit)} className="card p-4 sm:p-6 mt-4 space-y-4 animate-fade-up">
                 <h3 className="font-cinzel text-xs tracking-widest text-brown">NEW ADDRESS</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">FULL NAME</label>
                     <input {...register("full_name")} className="input-field" />
                     {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name.message}</p>}
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">PHONE</label>
                     <input {...register("phone")} className="input-field" />
                     {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">ADDRESS LINE 1</label>
                     <input {...register("line1")} className="input-field" placeholder="House/Flat, Street" />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">ADDRESS LINE 2</label>
                     <input {...register("line2")} className="input-field" placeholder="Area, Landmark (optional)" />
                   </div>

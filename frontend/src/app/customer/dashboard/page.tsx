@@ -55,13 +55,15 @@ export default function CustomerDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
         {stats.map(({ label, value, icon: Icon, href }) => (
           <Link key={label} href={href}
-            className="card p-6 text-center hover:border-gold-300 transition-all group">
-            <Icon size={24} className="text-gold-500 mx-auto mb-3" />
-            <p className="font-cinzel text-2xl text-brown group-hover:text-gold-700 transition-colors">{value}</p>
-            <p className="font-garamond text-xs text-muted mt-1">{label}</p>
+            className="card p-5 sm:p-6 flex sm:flex-col items-center sm:items-center gap-4 sm:gap-0 hover:border-gold-300 transition-all group">
+            <Icon size={24} className="text-gold-500 sm:mx-auto sm:mb-3" />
+            <div className="sm:text-center">
+              <p className="font-cinzel text-xl sm:text-2xl text-brown group-hover:text-gold-700 transition-colors">{value}</p>
+              <p className="font-garamond text-xs text-muted sm:mt-1">{label}</p>
+            </div>
           </Link>
         ))}
       </div>
@@ -88,9 +90,9 @@ export default function CustomerDashboard() {
             <div className="space-y-3">
               {recentOrders.map((order) => (
                 <Link key={order.id} href={`/customer/orders/${order.id}`}
-                  className="card p-4 flex items-center justify-between gap-4 hover:border-gold-300 transition-all group">
+                  className="card p-3 sm:p-4 flex items-center justify-between gap-3 hover:border-gold-300 transition-all group">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
                       <p className="font-cinzel text-xs tracking-wide text-brown">#{order.order_number}</p>
                       <span className={`badge text-xs ${ORDER_STATUS_COLORS[order.status]}`}>
                         {ORDER_STATUS_LABELS[order.status]}
@@ -98,7 +100,7 @@ export default function CustomerDashboard() {
                     </div>
                     <p className="font-garamond text-xs text-muted">{formatDate(order.created_at)}</p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                     <p className="font-cinzel text-sm text-brown">{formatPrice(order.total_amount)}</p>
                     <ChevronRight size={14} className="text-muted group-hover:text-gold-500 transition-colors" />
                   </div>

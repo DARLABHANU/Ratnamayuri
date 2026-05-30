@@ -151,9 +151,9 @@ function ProductsContent() {
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col lg:flex-row gap-4 mb-8">
-        {/* Search */}
-        <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+      <div className="flex flex-col gap-3 mb-8">
+        {/* Search — full width on all screens */}
+        <form onSubmit={handleSearch} className="flex gap-2">
           <div className="flex-1 relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
@@ -163,26 +163,27 @@ function ProductsContent() {
               className="input-field pl-9 py-2.5"
             />
           </div>
-          <button type="submit" className="btn-primary px-6 py-2.5">SEARCH</button>
+          <button type="submit" className="btn-primary px-4 sm:px-6 py-2.5 whitespace-nowrap">SEARCH</button>
         </form>
 
-        {/* Sort */}
-        <select
-          value={sort}
-          onChange={(e) => { setSort(e.target.value); setPage(1); }}
-          className="input-field w-auto font-cinzel text-xs tracking-wide py-2.5"
-        >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        {/* Sort + Filter — side by side row, full width on mobile */}
+        <div className="flex gap-2">
+          <select
+            value={sort}
+            onChange={(e) => { setSort(e.target.value); setPage(1); }}
+            className="input-field flex-1 font-cinzel text-xs tracking-wide py-2.5"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
 
-        {/* Filter toggle */}
-        <button onClick={() => setShowFilters(!showFilters)}
-          className="btn-outline flex items-center gap-2 px-5 py-2.5">
-          <SlidersHorizontal size={14} />
-          FILTERS
-        </button>
+          <button onClick={() => setShowFilters(!showFilters)}
+            className="btn-outline flex items-center gap-2 px-4 py-2.5 whitespace-nowrap flex-shrink-0">
+            <SlidersHorizontal size={14} />
+            <span className="hidden sm:inline">FILTERS</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter panel */}
@@ -220,10 +221,10 @@ function ProductsContent() {
 
       {/* Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
           {Array(8).fill(0).map((_, i) => (
             <div key={i} className="animate-pulse">
-              <div className="aspect-[3/4] bg-ivory mb-3" />
+              <div className="aspect-[3/4] bg-ivory rounded-lg mb-3" />
               <div className="h-3 bg-ivory rounded mb-2 w-3/4" />
               <div className="h-3 bg-ivory rounded w-1/2" />
             </div>
@@ -236,7 +237,7 @@ function ProductsContent() {
           <button onClick={clearFilters} className="btn-outline mt-6">Clear Filters</button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
           {data?.items.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

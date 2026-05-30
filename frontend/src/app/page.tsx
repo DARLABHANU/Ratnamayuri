@@ -484,6 +484,27 @@ export default function HomePage() {
         </div>
       </header>
 
+      {/* Mobile Search Bar Row (Visible only on mobile viewports) */}
+      <div className="block md:hidden bg-white px-4 py-2 border-b border-[#E8D5B0]">
+        <div className="flex items-center bg-[#FAF6EE] border border-[#C9973E] rounded-md h-10 px-3">
+          <Search size={14} className="text-[#9A7070] mr-2 flex-shrink-0" />
+          <input
+            type="text"
+            placeholder="Search jewellery, sarees..."
+            className="flex-1 text-xs text-[#4A0F0F] placeholder-[#9A7070] bg-transparent focus:outline-none h-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearchSubmit()}
+          />
+          <button 
+            onClick={handleSearchSubmit}
+            className="font-cinzel text-[10px] font-bold text-[#6B1A1A] border-l border-[#E8D5B0] pl-2 hover:text-[#8B2020] transition-colors flex-shrink-0 h-full flex items-center"
+          >
+            SEARCH
+          </button>
+        </div>
+      </div>
+
       {/* ── 3. Sub-Navigation Bar (HOME, JEWELLERY, SAREES...) with Offers Zone ── */}
       <div className="bg-[#FAF6EE] border-b border-[#E8D5B0] py-2 px-4 hidden md:block">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -679,7 +700,7 @@ export default function HomePage() {
         {/* ── Trust Badges ──────────────────────────────────────────────────── */}
         <section className="bg-[#FAF6EE] py-5 border-b border-[#E8D5B0]">
           <div className="max-w-7xl mx-auto px-4">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
               {TRUST_BADGES.map((b) => (
                 <div key={b.title} className="flex items-center gap-3">
                   <div className="flex-shrink-0">{b.icon}</div>
@@ -694,11 +715,11 @@ export default function HomePage() {
         </section>
 
         {/* ── Promotional Banners (3 cards) ─────────────────────────────────── */}
-        <section className="py-6 px-4 max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-4">
+        <section className="py-5 sm:py-6 px-4 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
 
             {/* Card 1 — Saree Collection */}
-            <div className="relative bg-[#5A1212] border border-[#3A1F1F] overflow-hidden p-6 flex flex-col justify-between min-h-[180px] shadow-sm hover:shadow-md transition-shadow rounded-lg">
+            <div className="relative bg-[#5A1212] border border-[#3A1F1F] overflow-hidden p-6 flex flex-col justify-between min-h-[160px] sm:min-h-[180px] shadow-sm hover:shadow-md transition-shadow rounded-lg">
               <div className="relative z-10 my-auto">
                 <p className="text-[#C9973E] font-bold text-xs tracking-widest mb-1">ROYAL SAREES</p>
                 <p className="text-white text-[10px] tracking-[0.2em] font-semibold mb-1">UP TO</p>
@@ -718,7 +739,7 @@ export default function HomePage() {
             </div>
 
             {/* Card 2 — Bangles Collection */}
-            <div className="relative bg-[#FAF0E4] border border-[#E8D5B0] overflow-hidden p-6 flex flex-col justify-between min-h-[180px] shadow-sm hover:shadow-md transition-shadow rounded-lg">
+            <div className="relative bg-[#FAF0E4] border border-[#E8D5B0] overflow-hidden p-6 flex flex-col justify-between min-h-[160px] sm:min-h-[180px] shadow-sm hover:shadow-md transition-shadow rounded-lg">
               <div className="relative z-10 my-auto">
                 <p className="text-[#5A1212] font-bold text-xs tracking-widest mb-1">HERITAGE BANGLES</p>
                 <p className="text-[#5A1212]/80 text-[10px] tracking-[0.2em] font-semibold mb-1">UP TO</p>
@@ -738,7 +759,7 @@ export default function HomePage() {
             </div>
 
             {/* Card 3 — Chains Collection */}
-            <div className="relative bg-[#FAF6EE] border border-[#E8D5B0] overflow-hidden p-6 flex flex-col justify-between min-h-[180px] shadow-sm hover:shadow-md transition-shadow rounded-lg">
+            <div className="relative bg-[#FAF6EE] border border-[#E8D5B0] overflow-hidden p-6 flex flex-col justify-between min-h-[160px] sm:min-h-[180px] shadow-sm hover:shadow-md transition-shadow rounded-lg">
               <div className="relative z-10 my-auto">
                 <p className="text-[#5A1212] font-bold text-xs tracking-widest mb-1">GOLD CHAINS</p>
                 <p className="text-[#4A0F0F] font-extrabold text-3xl leading-tight mb-4"
@@ -759,9 +780,9 @@ export default function HomePage() {
         </section>
 
         {/* ── Trending Now ──────────────────────────────────────────────────── */}
-        <section className="py-8 px-4 max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-[#1a0505] font-black text-xl tracking-wide"
+        <section className="py-6 sm:py-8 px-4 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-5 sm:mb-6">
+            <h2 className="text-[#1a0505] font-black text-lg sm:text-xl tracking-wide"
               style={{ fontFamily: "Georgia, serif" }}>TRENDING NOW</h2>
             <Link href="/customer/products"
               className="flex items-center gap-1 text-[#6B1A1A] text-xs font-bold tracking-widest hover:underline">
@@ -769,7 +790,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {loading ? (
               Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)
             ) : (
@@ -794,12 +815,12 @@ export default function HomePage() {
                         </div>
                       )}
                     </div>
-                    <div className="p-2.5 flex flex-col gap-1">
+                    <div className="p-2 sm:p-2.5 flex flex-col gap-1">
                       <p className="text-[#1a0505] text-xs font-semibold leading-tight line-clamp-2">{p.name}</p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[#1a0505] text-sm font-black">₹{p.price.toLocaleString()}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[#1a0505] text-sm font-black">&#8377;{p.price.toLocaleString()}</span>
                         {p.original > p.price && (
-                          <span className="text-[#9a7070] text-xs line-through">₹{p.original.toLocaleString()}</span>
+                          <span className="text-[#9a7070] text-xs line-through">&#8377;{p.original.toLocaleString()}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
@@ -816,23 +837,23 @@ export default function HomePage() {
         </section>
 
         {/* ── Shop by Collection ────────────────────────────────────────────── */}
-        <section className="py-8 px-4 max-w-7xl mx-auto border-t border-[#E8D5B0]">
-          <h2 className="text-[#1a0505] font-black text-xl tracking-wide mb-6"
+        <section className="py-6 sm:py-8 px-4 max-w-7xl mx-auto border-t border-[#E8D5B0]">
+          <h2 className="text-[#1a0505] font-black text-lg sm:text-xl tracking-wide mb-5 sm:mb-6"
             style={{ fontFamily: "Georgia, serif" }}>SHOP BY COLLECTION</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
             {COLLECTIONS.map((c) => (
               <Link key={c.label} href="/customer/products"
-                className="group flex flex-col items-center gap-3 p-6 bg-white border border-[#E8D5B0]
-                  hover:border-[#C9973E] hover:shadow-md transition-all duration-300 text-center">
-                <div className="w-14 h-14 border-2 border-[#C9973E] rounded-full flex items-center justify-center
+                className="group flex flex-col items-center gap-3 p-4 sm:p-6 bg-white border border-[#E8D5B0]
+                  hover:border-[#C9973E] hover:shadow-md transition-all duration-300 text-center rounded-md">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 border-2 border-[#C9973E] rounded-full flex items-center justify-center
                   bg-[#FAF6EE] text-2xl group-hover:scale-110 transition-transform duration-300">
                   {c.icon}
                 </div>
                 <div>
-                  <p className="text-[#1a0505] font-bold text-xs tracking-wide group-hover:text-[#6B1A1A] transition-colors">
+                  <p className="text-[#1a0505] font-bold text-[10px] sm:text-xs tracking-wide group-hover:text-[#6B1A1A] transition-colors">
                     {c.label.toUpperCase()}
                   </p>
-                  <p className="text-[#9a7070] text-[11px] mt-0.5">{c.sub}</p>
+                  <p className="text-[#9a7070] text-[10px] mt-0.5 hidden sm:block">{c.sub}</p>
                 </div>
               </Link>
             ))}
@@ -840,9 +861,9 @@ export default function HomePage() {
         </section>
 
         {/* ── Trusted by Thousands stats bar ────────────────────────────────── */}
-        <section className="bg-[#FAF0E4] border-y border-[#E8D5B0] py-6 px-4">
+        <section className="bg-[#FAF0E4] border-y border-[#E8D5B0] py-5 sm:py-6 px-4">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
               {[
                 {
                   icon: (
@@ -910,19 +931,19 @@ export default function HomePage() {
         </section>
 
         {/* ── Testimonials ──────────────────────────────────────────────────── */}
-        <section className="py-10 px-4 max-w-7xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-[#1a0505] font-black text-xl tracking-wide"
+        <section className="py-8 sm:py-10 px-4 max-w-7xl mx-auto">
+          <div className="text-center mb-6 sm:mb-8">
+            <h2 className="text-[#1a0505] font-black text-lg sm:text-xl tracking-wide"
               style={{ fontFamily: "Georgia, serif" }}>WHAT OUR CUSTOMERS SAY</h2>
             <div className="w-16 h-0.5 bg-[#C9973E] mx-auto mt-3" />
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             {[
               { name: "Ananya Sharma", loc: "Jaipur", text: "The Kanjivaram silk I ordered for my wedding was beyond expectations. The zari work is exquisite and the fabric feels truly royal.", stars: 5 },
               { name: "Meera Kapoor", loc: "Bengaluru", text: "Finding jewellery that respects tradition while looking modern is rare. Ratnamayuri's collection hits that sweet spot perfectly.", stars: 5 },
               { name: "Priya Rai", loc: "Chennai", text: "The bespoke service was seamless. They understood my bridal vision and delivered a masterpiece I will cherish forever.", stars: 5 },
             ].map((t) => (
-              <div key={t.name} className="bg-white border border-[#E8D5B0] p-6 hover:shadow-md transition-shadow rounded-lg">
+              <div key={t.name} className="bg-white border border-[#E8D5B0] p-5 sm:p-6 hover:shadow-md transition-shadow rounded-lg">
                 <div className="flex mb-3">
                   {Array(t.stars).fill(0).map((_, i) => (
                     <Star key={i} size={14} className="fill-[#C9973E] text-[#C9973E]" />
@@ -931,7 +952,7 @@ export default function HomePage() {
                 <p className="text-[#3a2020] text-sm leading-relaxed mb-4 italic">"{t.text}"</p>
                 <div className="flex items-center gap-3 pt-3 border-t border-[#E8D5B0]">
                   <div className="w-9 h-9 rounded-full bg-[#6B1A1A] flex items-center justify-center
-                    text-white font-bold text-xs">
+                    text-white font-bold text-xs flex-shrink-0">
                     {t.name.split(" ").map(n => n[0]).join("")}
                   </div>
                   <div>

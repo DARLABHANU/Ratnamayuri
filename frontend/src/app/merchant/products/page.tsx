@@ -413,6 +413,7 @@ export default function MerchantProductsPage() {
         </div>
       ) : (
         <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-ivory">
               <tr>
@@ -489,6 +490,7 @@ export default function MerchantProductsPage() {
               ))}
             </tbody>
           </table>
+          </div>
 
           <div className="p-4 border-t border-gold-100 flex items-center justify-between">
             <p className="font-garamond text-xs text-muted">Showing {products.length} of {total} products</p>

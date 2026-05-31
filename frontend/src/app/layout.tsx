@@ -29,7 +29,16 @@ export const metadata: Metadata = {
   description:
     "Handcrafted jewellery and hand-woven silk sarees — celebrating the timeless beauty of Indian craftsmanship.",
   keywords: ["jewellery", "silk sarees", "kanjivaram", "banarasi", "kundan", "gold"],
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/favicon.png", type: "image/png" },
+    ],
+  },
 };
+
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

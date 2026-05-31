@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
+import AuthInitializer from "@/components/AuthInitializer";
 
 const cormorant = Playfair_Display({
   subsets: ["latin"],
@@ -34,6 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${cormorant.variable} ${cinzel.variable} ${garamond.variable}`}>
       <body className="bg-cream font-garamond text-brown antialiased">
+        {/* Rehydrates auth session from cookies on every page load */}
+        <AuthInitializer />
         <Toaster
           position="top-right"
           toastOptions={{

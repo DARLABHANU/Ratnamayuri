@@ -25,7 +25,7 @@ const HERO_SLIDES = [
     cta: "EXPLORE SAREES",
     href: "/customer/products?category=sarees",
     bg: "from-[#FAF0E4] to-[#F5E6D0]",
-    img: "/hero_saree_model_1780120920151.png",
+    img: "/hero_saree_new.png",
   },
   {
     tag: "HANDCRAFTED ORNAMENTS",
@@ -45,7 +45,7 @@ const HERO_SLIDES = [
     cta: "EXPLORE CHAINS",
     href: "/customer/products?search=chain",
     bg: "from-[#E8F0F5] to-[#D5E4EF]",
-    img: "/hero_jewellery_model_1780120962360.png",
+    img: "/hero_chain_new.png",
   },
 ];
 

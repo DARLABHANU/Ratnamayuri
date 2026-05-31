@@ -104,11 +104,11 @@ export default function Footer() {
             <div className="space-y-2.5 text-xs text-[#d4b896] font-garamond pt-2">
               <p className="flex items-center gap-2">
                 <Phone size={13} className="text-[#C9973E] flex-shrink-0" />
-                <span>+91 98765 43210</span>
+                <span>+91 83318 10689</span>
               </p>
               <p className="flex items-center gap-2">
                 <Mail size={13} className="text-[#C9973E] flex-shrink-0" />
-                <span>care@ratnamayuri.com</span>
+                <span>ratnamayurii@gmail.com</span>
               </p>
               <p className="flex items-center gap-2">
                 <MapPin size={13} className="text-[#C9973E] flex-shrink-0" />

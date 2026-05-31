@@ -1,7 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import Cookies from "js-cookie";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+// In production (Vercel), the frontend and backend share the same domain,
+// so /api/v1 routes correctly through vercel.json without any CORS issues.
+// In local development, override via NEXT_PUBLIC_API_URL in .env.local.
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+
 
 export const api = axios.create({
   baseURL: BASE_URL,

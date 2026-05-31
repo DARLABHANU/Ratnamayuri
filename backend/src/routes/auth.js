@@ -270,6 +270,82 @@ router.get('/me', getCurrentUser, async (req, res) => {
     created_at: req.user.created_at,
     is_promoter: is_promoter
   });
+// Firebase Auth Verification and Automatic Registration callback
+router.post('/firebase', async (req, res, next) => {
+  try {
+    const { token, role } = req.body;
+    if (!token) {
+      return res.status(400).json({ detail: 'Firebase Token is required' });
+    }
+
+    const { verifyFirebaseIdToken } = require('../services/firebaseAdmin');
+    const decoded = await verifyFirebaseIdToken(token);
+
+    // Extract verified phone or email from Firebase payload
+    const phone = decoded.phone_number;
+    const email = decoded.email;
+
+    if (!phone && !email) {
+      return res.status(400).json({ detail: 'Firebase payload has neither phone nor email' });
+    }
+
+    let user;
+    if (phone) {
+      // Find by verified phone
+      user = await User.findOne({ phone });
+    } else if (email) {
+      // Find by verified email
+      user = await User.findOne({ email });
+    }
+
+    // Auto-register if user doesn't exist
+    if (!user) {
+      const { generateAccountNumber } = require('../utils/helpers');
+      const { hashPassword } = require('../middleware/auth');
+      
+      let accountNumber = generateAccountNumber();
+      while (true) {
+        const existingAccount = await User.findOne({ account_number: accountNumber });
+        if (!existingAccount) break;
+        accountNumber = generateAccountNumber();
+      }
+
+      // Generate a strong random password placeholder
+      const randomPass = require('crypto').randomBytes(16).toString('hex');
+      const hashedPassword = await hashPassword(randomPass);
+
+      user = new User({
+        email: email || `${phone.replace('+', '')}@ratnamayuri.phone`,
+        hashed_password: hashedPassword,
+        full_name: decoded.name || 'Valued Customer',
+        phone: phone || undefined,
+        role: role || 'customer',
+        account_number: accountNumber,
+        is_first_login: false,
+        is_verified: true
+      });
+
+      await user.save();
+    }
+
+    // Generate local JWT access & refresh tokens
+    const { createAccessToken, createRefreshToken } = require('../middleware/auth');
+    const tokenData = { sub: String(user.id), role: user.role, email: user.email };
+    const accessToken = createAccessToken(tokenData);
+    const refreshToken = createRefreshToken(tokenData);
+
+    res.json({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      role: user.role,
+      user_id: user.id,
+      is_first_login: false,
+      requires_otp: false
+    });
+  } catch (error) {
+    console.error('Firebase Auth callback error:', error);
+    res.status(401).json({ detail: 'Invalid or expired Firebase ID token' });
+  }
 });
 
 module.exports = router;

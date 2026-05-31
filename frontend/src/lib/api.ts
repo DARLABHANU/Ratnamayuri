@@ -101,6 +101,7 @@ export const authApi = {
   changePassword: (data: object) => api.post("/auth/change-password", data),
   forgotPassword: (data: object) => api.post("/auth/forgot-password", data),
   resetPassword: (data: object) => api.post("/auth/reset-password", data),
+  firebaseLogin: (data: { token: string; role: string }) => api.post("/auth/firebase", data),
 };
 
 export const productApi = {

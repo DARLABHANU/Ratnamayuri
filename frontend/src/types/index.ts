@@ -127,6 +127,10 @@ export interface Order {
   payment_status: PaymentStatus;
   payment_method?: string;
   payment_reference?: string;
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
+  razorpay_key_id?: string;
   tracking_number?: string;
   current_location?: string;
   notes?: string;

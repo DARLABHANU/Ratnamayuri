@@ -62,7 +62,7 @@ export default function OrderDetailPage() {
     }
 
     const options = {
-      key: (order as any).razorpay_key_id,
+      key: order.razorpay_key_id,
       amount: Math.round(order.total_amount * 100), // in paise
       currency: "INR",
       name: "Ratnamayuri",

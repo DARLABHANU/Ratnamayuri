@@ -270,6 +270,8 @@ router.get('/me', getCurrentUser, async (req, res) => {
     created_at: req.user.created_at,
     is_promoter: is_promoter
   });
+});
+
 // Firebase Auth Verification and Automatic Registration callback
 router.post('/firebase', async (req, res, next) => {
   try {

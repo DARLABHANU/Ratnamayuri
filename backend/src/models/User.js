@@ -13,6 +13,11 @@ const UserSchema = new mongoose.Schema({
   is_verified: { type: Boolean, default: false },
   is_first_login: { type: Boolean, default: true },
   avatar_url: { type: String, default: null },
+  payout_bank_name: { type: String, default: null },
+  payout_account_number: { type: String, default: null },
+  payout_ifsc_code: { type: String, default: null },
+  payout_account_holder_name: { type: String, default: null },
+  payout_upi_id: { type: String, default: null },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 }, {

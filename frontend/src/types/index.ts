@@ -183,6 +183,16 @@ export interface Commission {
   notes?: string;
   paid_at?: string;
   created_at: string;
+  promoter?: {
+    id: number;
+    email: string;
+    full_name: string;
+    payout_bank_name?: string;
+    payout_account_number?: string;
+    payout_ifsc_code?: string;
+    payout_account_holder_name?: string;
+    payout_upi_id?: string;
+  };
 }
 
 // ─── Merchant ─────────────────────────────────────────────────────────────────

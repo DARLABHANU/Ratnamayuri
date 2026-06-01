@@ -249,3 +249,13 @@
 [2026-06-01T10:02:49.257Z] req.query: {"category_id":"2","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
 [2026-06-01T10:04:57.802Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
 [2026-06-01T10:04:57.881Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T10:33:59.818Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T10:33:59.926Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T10:38:11.588Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T10:38:11.658Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T10:42:09.064Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T10:42:09.115Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T10:42:14.276Z] req.query: {"category_id":"2","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
+[2026-06-01T10:42:14.368Z] req.query: {"category_id":"2","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
+[2026-06-01T10:42:44.698Z] req.query: {"category_id":"2","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
+[2026-06-01T10:42:44.725Z] req.query: {"category_id":"2","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":2}

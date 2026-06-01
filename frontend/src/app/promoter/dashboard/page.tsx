@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Copy, DollarSign, Gift, Percent, Check } from "lucide-react";
 import toast from "react-hot-toast";
-import { promoterApi } from "@/lib/api";
+import { promoterApi, authApi } from "@/lib/api";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
@@ -41,6 +41,42 @@ export default function PromoterDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  // Payout Settings State
+  const [payoutBankName, setPayoutBankName] = useState("");
+  const [payoutAccountNumber, setPayoutAccountNumber] = useState("");
+  const [payoutIfscCode, setPayoutIfscCode] = useState("");
+  const [payoutAccountHolderName, setPayoutAccountHolderName] = useState("");
+  const [payoutUpiId, setPayoutUpiId] = useState("");
+  const [payoutMode, setPayoutMode] = useState<"upi" | "bank">("upi");
+  const [isUpdatingPayout, setIsUpdatingPayout] = useState(false);
+
+  const handleSavePayoutSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdatingPayout(true);
+    try {
+      const payload = payoutMode === "upi" ? {
+        payout_upi_id: payoutUpiId.trim(),
+        payout_bank_name: "",
+        payout_account_number: "",
+        payout_ifsc_code: "",
+        payout_account_holder_name: ""
+      } : {
+        payout_upi_id: "",
+        payout_bank_name: payoutBankName.trim(),
+        payout_account_number: payoutAccountNumber.trim(),
+        payout_ifsc_code: payoutIfscCode.trim(),
+        payout_account_holder_name: payoutAccountHolderName.trim()
+      };
+
+      await authApi.updatePayoutSettings(payload);
+      toast.success("Payout credentials updated successfully!");
+    } catch (err) {
+      toast.error("Failed to save payout settings.");
+    } finally {
+      setIsUpdatingPayout(false);
+    }
+  };
+
   useEffect(() => {
     loadPromoterData();
   }, []);
@@ -48,14 +84,25 @@ export default function PromoterDashboard() {
   const loadPromoterData = async () => {
     setIsLoading(true);
     try {
-      const [resAnal, resCoups, resComms] = await Promise.all([
+      const [resAnal, resCoups, resComms, resUser] = await Promise.all([
         promoterApi.analytics(),
         promoterApi.coupons(),
-        promoterApi.commissions()
+        promoterApi.commissions(),
+        authApi.me()
       ]);
       setAnalytics(resAnal.data);
       setCoupons(resCoups.data);
       setCommissions(resComms.data);
+
+      const u = resUser.data;
+      setPayoutBankName(u.payout_bank_name || "");
+      setPayoutAccountNumber(u.payout_account_number || "");
+      setPayoutIfscCode(u.payout_ifsc_code || "");
+      setPayoutAccountHolderName(u.payout_account_holder_name || "");
+      setPayoutUpiId(u.payout_upi_id || "");
+      if (u.payout_bank_name || u.payout_account_number) {
+        setPayoutMode("bank");
+      }
     } catch (err) {
       toast.error("Failed to load promoter details. Please ask admin to assign you an affiliate coupon.");
     } finally {
@@ -240,12 +287,105 @@ export default function PromoterDashboard() {
         )}
       </div>
 
-      {/* Bank Account Settlement Policy */}
-      <div className="card p-6 bg-gold-50/15 border-gold-300">
-        <h3 className="font-cinzel text-xs tracking-widest text-brown mb-2">✦ BANK SETTLEMENT & PAYOUT POLICY</h3>
-        <p className="font-garamond text-sm text-muted leading-relaxed">
-          Affiliate promoter payouts are settled by the marketplace administrator on a bi-weekly cycle. Commissions transition from <strong className="text-yellow-600">Pending</strong> to <strong className="text-blue-700">Approved</strong> status upon validation of referred transactions. Settle requests are automatically initiated, and payment transfers will credit your registered bank profile details on file. For any modifications to your registered bank account details, please contact administrative support directly.
+      {/* Payout Settings Form */}
+      <div className="card p-6 border-gold-300">
+        <h3 className="font-cinzel text-xs tracking-widest text-brown mb-2">✦ PAYOUT SETTINGS</h3>
+        <p className="font-garamond text-xs text-muted mb-4">
+          Configure your preferred payout details below. Admin will use these credentials to settle your earned commissions.
         </p>
+        <div className="divider-gold mx-0 mb-6" />
+
+        <form onSubmit={handleSavePayoutSettings} className="space-y-5">
+          <div className="flex gap-4 mb-4">
+            <button
+              type="button"
+              onClick={() => setPayoutMode("upi")}
+              className={`font-cinzel text-xs px-4 py-2 transition-all ${payoutMode === "upi" ? "bg-deep text-gold-400" : "border border-gold-200 text-muted"}`}
+            >
+              UPI PAYOUT
+            </button>
+            <button
+              type="button"
+              onClick={() => setPayoutMode("bank")}
+              className={`font-cinzel text-xs px-4 py-2 transition-all ${payoutMode === "bank" ? "bg-deep text-gold-400" : "border border-gold-200 text-muted"}`}
+            >
+              BANK ACCOUNT
+            </button>
+          </div>
+
+          {payoutMode === "upi" ? (
+            <div>
+              <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">UPI ID</label>
+              <input
+                type="text"
+                value={payoutUpiId}
+                onChange={(e) => setPayoutUpiId(e.target.value)}
+                placeholder="e.g. promotername@okaxis"
+                className="input-field w-full max-w-md"
+                required={payoutMode === "upi"}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+              <div>
+                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">BANK NAME</label>
+                <input
+                  type="text"
+                  value={payoutBankName}
+                  onChange={(e) => setPayoutBankName(e.target.value)}
+                  placeholder="e.g. State Bank of India"
+                  className="input-field w-full"
+                  required={payoutMode === "bank"}
+                />
+              </div>
+              <div>
+                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">ACCOUNT HOLDER NAME</label>
+                <input
+                  type="text"
+                  value={payoutAccountHolderName}
+                  onChange={(e) => setPayoutAccountHolderName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                  className="input-field w-full"
+                  required={payoutMode === "bank"}
+                />
+              </div>
+              <div>
+                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">ACCOUNT NUMBER</label>
+                <input
+                  type="text"
+                  value={payoutAccountNumber}
+                  onChange={(e) => setPayoutAccountNumber(e.target.value)}
+                  placeholder="Bank account number"
+                  className="input-field w-full"
+                  required={payoutMode === "bank"}
+                />
+              </div>
+              <div>
+                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">IFSC CODE</label>
+                <input
+                  type="text"
+                  value={payoutIfscCode}
+                  onChange={(e) => setPayoutIfscCode(e.target.value)}
+                  placeholder="e.g. SBIN0001234"
+                  className="input-field w-full"
+                  required={payoutMode === "bank"}
+                />
+              </div>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isUpdatingPayout}
+            className="btn-primary flex items-center gap-2 disabled:opacity-60"
+          >
+            {isUpdatingPayout ? (
+              <><Loader2 size={12} className="animate-spin" /> SAVING...</>
+            ) : (
+              "SAVE PAYOUT DETAILS"
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );

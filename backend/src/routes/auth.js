@@ -350,4 +350,42 @@ router.post('/firebase', async (req, res, next) => {
   }
 });
 
+// Update Payout Settings (Bank details & UPI account)
+router.put('/payout-settings', getCurrentUser, async (req, res, next) => {
+  try {
+    const {
+      payout_bank_name,
+      payout_account_number,
+      payout_ifsc_code,
+      payout_account_holder_name,
+      payout_upi_id
+    } = req.body;
+
+    const user = req.user;
+
+    user.payout_bank_name = payout_bank_name !== undefined ? payout_bank_name : user.payout_bank_name;
+    user.payout_account_number = payout_account_number !== undefined ? payout_account_number : user.payout_account_number;
+    user.payout_ifsc_code = payout_ifsc_code !== undefined ? payout_ifsc_code : user.payout_ifsc_code;
+    user.payout_account_holder_name = payout_account_holder_name !== undefined ? payout_account_holder_name : user.payout_account_holder_name;
+    user.payout_upi_id = payout_upi_id !== undefined ? payout_upi_id : user.payout_upi_id;
+
+    await user.save();
+
+    res.json({
+      message: 'Payout settings updated successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        payout_bank_name: user.payout_bank_name,
+        payout_account_number: user.payout_account_number,
+        payout_ifsc_code: user.payout_ifsc_code,
+        payout_account_holder_name: user.payout_account_holder_name,
+        payout_upi_id: user.payout_upi_id
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

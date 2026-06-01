@@ -102,6 +102,7 @@ export const authApi = {
   forgotPassword: (data: object) => api.post("/auth/forgot-password", data),
   resetPassword: (data: object) => api.post("/auth/reset-password", data),
   firebaseLogin: (data: { token: string; role: string }) => api.post("/auth/firebase", data),
+  updatePayoutSettings: (data: object) => api.put("/auth/payout-settings", data),
 };
 
 export const productApi = {
@@ -161,7 +162,7 @@ export const adminApi = {
   updateCoupon: (id: number, data: object) => api.patch(`/admin/coupons/${id}`, data),
   deleteCoupon: (id: number) => api.delete(`/admin/coupons/${id}`),
   commissions: (params?: object) => api.get("/admin/commissions", { params }),
-  payCommission: (id: number) => api.patch(`/admin/commissions/${id}/pay`),
+  payCommission: (id: number, data?: object) => api.patch(`/admin/commissions/${id}/pay`, data),
   salesAnalytics: (days?: number) => api.get("/admin/analytics/sales", { params: { days } }),
   products: (params?: object) => api.get("/admin/products", { params }),
   approveProduct: (id: number, data: { is_approved: boolean }) => api.patch(`/admin/products/${id}/approve`, data),

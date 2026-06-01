@@ -454,7 +454,30 @@ router.get('/commissions', requireAdmin, async (req, res, next) => {
     }
 
     const commissions = await Commission.find(filter).sort({ created_at: -1 });
-    res.json(commissions);
+    
+    // Resolve promoter details (Bank account & UPI info)
+    const User = require('../models/User');
+    const promoterIds = [...new Set(commissions.map(c => c.promoter_id))];
+    const promoters = await User.find({ id: { $in: promoterIds } });
+    const promoterMap = new Map(promoters.map(p => [p.id, p]));
+
+    const enriched = commissions.map(c => {
+      const cObj = c.toObject();
+      const promoter = promoterMap.get(c.promoter_id);
+      cObj.promoter = promoter ? {
+        id: promoter.id,
+        email: promoter.email,
+        full_name: promoter.full_name,
+        payout_bank_name: promoter.payout_bank_name,
+        payout_account_number: promoter.payout_account_number,
+        payout_ifsc_code: promoter.payout_ifsc_code,
+        payout_account_holder_name: promoter.payout_account_holder_name,
+        payout_upi_id: promoter.payout_upi_id
+      } : null;
+      return cObj;
+    });
+
+    res.json(enriched);
   } catch (error) {
     next(error);
   }
@@ -464,6 +487,8 @@ router.get('/commissions', requireAdmin, async (req, res, next) => {
 router.patch('/commissions/:commission_id/pay', requireAdmin, async (req, res, next) => {
   try {
     const commissionId = Number(req.params.commission_id);
+    const { notes } = req.body;
+
     const commission = await Commission.findOne({ id: commissionId });
     if (!commission) {
       return res.status(404).json({ detail: 'Commission not found' });
@@ -471,6 +496,9 @@ router.patch('/commissions/:commission_id/pay', requireAdmin, async (req, res, n
 
     commission.status = 'paid';
     commission.paid_at = new Date();
+    if (notes !== undefined) {
+      commission.notes = notes;
+    }
     await commission.save();
 
     res.json(commission);

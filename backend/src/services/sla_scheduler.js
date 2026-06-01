@@ -71,8 +71,8 @@ const initSLAScheduler = () => {
     }
   });
 
-  // Run every hour: '5 * * * *' (5 minutes past each hour to disperse load)
-  cron.schedule('5 * * * *', async () => {
+  // Run every 10 seconds for demo release sweep: '*/10 * * * * *'
+  cron.schedule('*/10 * * * * *', async () => {
     console.log('[Escrow Cron] Scanning for matured settlements to release...');
     try {
       const Settlement = require('../models/Settlement');

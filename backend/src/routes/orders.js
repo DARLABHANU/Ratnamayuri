@@ -633,7 +633,7 @@ orderRouter.patch('/:order_id/status', requireMerchantOrAdmin, async (req, res, 
         });
 
         const releaseDate = new Date();
-        releaseDate.setDate(releaseDate.getDate() + 7); // 7-day observation hold
+        releaseDate.setSeconds(releaseDate.getSeconds() + 30); // 30-second observation hold for demo purposes
 
         for (const [merchantId, items] of merchantGroups.entries()) {
           const merchant_share = Number(items.reduce((sum, item) => sum + item.merchant_payout, 0).toFixed(2));

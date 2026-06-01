@@ -1,13 +1,13 @@
 --- DATABASE SEEDING STATUS REPORT ---
-Timestamp: 2026-06-01T05:18:58.674Z
+Timestamp: 2026-06-01T09:55:21.217Z
 
 COUNTS:
 - users: 10
 - categories: 3
-- products: 25
+- products: 22
 - merchantProfiles: 5
-- orders: 12
-- orderItems: 17
+- orders: 18
+- orderItems: 23
 - coupons: 7
 - addresses: 6
 
@@ -29,8 +29,8 @@ CATEGORIES:
 - ID: 3 | Slug: bridal | Name: Bridal
 
 PRODUCTS (First 5):
-- SKU: ks-001 | Price: 120000 | CatID: 1 | Name: necklace
-- SKU: ks-002 | Price: 1000 | CatID: 2 | Name: saree
-- SKU: ks-003 | Price: 1000 | CatID: 2 | Name: Product Name:  Royal Banarasi Silk Saree – Emerald Green with Zari Work
-- SKU: 1288 | Price: 2000 | CatID: 3 | Name: bangless banaras
 - SKU: RMJ-001 | Price: 145000 | CatID: 1 | Name: Royal Temple Gold Choker Set
+- SKU: RMJ-002 | Price: 34000 | CatID: 1 | Name: Kundan Polki Pearl Jhumkas
+- SKU: RMJ-003 | Price: 85000 | CatID: 1 | Name: Nakshi Antique Gold Kada
+- SKU: RMJ-004 | Price: 120000 | CatID: 1 | Name: Traditional Nakshi Kasu Mala
+- SKU: RMJ-005 | Price: 95000 | CatID: 1 | Name: Diamond Emerald Floral Ring

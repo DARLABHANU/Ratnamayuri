@@ -9,6 +9,7 @@ const MerchantProfile = require('../models/MerchantProfile');
 const { getCurrentUser, requireMerchantOrAdmin } = require('../middleware/auth');
 const { generateOrderNumber } = require('../utils/helpers');
 const { sendOrderConfirmationEmail } = require('../services/email');
+const config = require('../config');
 
 const cartRouter = express.Router();
 const orderRouter = express.Router();

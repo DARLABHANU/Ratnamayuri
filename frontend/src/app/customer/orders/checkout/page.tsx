@@ -38,11 +38,6 @@ const addressSchema = z.object({
 });
 type AddressForm = z.infer<typeof addressSchema>;
 
-const PAYMENT_METHODS = [
-  { value: "upi", label: "UPI" },
-  { value: "card", label: "Credit / Debit Card" },
-  { value: "netbanking", label: "Net Banking" },
-];
 
 function CheckoutContent() {
   const router = useRouter();
@@ -53,7 +48,7 @@ function CheckoutContent() {
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [paymentMethod] = useState("razorpay");
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [isPlacing, setIsPlacing] = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -126,7 +121,7 @@ function CheckoutContent() {
 
       // If Razorpay order ID is missing (e.g. backend keys are not configured),
       // gracefully fall back to the instant success mock-checkout experience.
-      if (!order.razorpay_order_id) {
+      if (!(order as any).razorpay_order_id) {
         Cookies.remove("affiliate_coupon");
         toast.success("Order placed successfully (Mock Mode)!");
         router.push(`/customer/orders/${order.id}`);
@@ -136,12 +131,12 @@ function CheckoutContent() {
       const activeAddr = addresses.find((a) => a.id === selectedAddressId);
 
       const options = {
-        key: order.razorpay_key_id,
+        key: (order as any).razorpay_key_id,
         amount: Math.round(order.total_amount * 100), // in paise
         currency: "INR",
         name: "Ratnamayuri",
         description: `Order #${order.order_number}`,
-        order_id: order.razorpay_order_id,
+        order_id: (order as any).razorpay_order_id,
         handler: async function (response: any) {
           setIsPlacing(true);
           try {
@@ -283,20 +278,15 @@ function CheckoutContent() {
           </div>
 
           {/* Payment method */}
-          <div>
-            <h2 className="font-cinzel text-sm tracking-widest text-brown mb-4">PAYMENT METHOD</h2>
-            <div className="space-y-2">
-              {PAYMENT_METHODS.map((pm) => (
-                <label key={pm.value} className={`flex items-center gap-3 card p-4 cursor-pointer transition-all
-                  ${paymentMethod === pm.value ? "border-gold-500 bg-gold-50" : "hover:border-gold-300"}`}>
-                  <input type="radio" name="payment" value={pm.value}
-                    checked={paymentMethod === pm.value}
-                    onChange={() => setPaymentMethod(pm.value)}
-                    className="accent-gold-500" />
-                  <span className="font-garamond text-sm text-brown">{pm.label}</span>
-                </label>
-              ))}
+          <div className="card p-6 border-gold-200 bg-gold-50/30">
+            <h2 className="font-cinzel text-xs tracking-widest text-brown mb-2">SECURE PAYMENT PROCESSED BY</h2>
+            <div className="flex items-center gap-3">
+              <span className="font-cinzel text-lg font-bold tracking-widest text-brown">RAZORPAY</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">SECURE CHECKOUT</span>
             </div>
+            <p className="font-garamond text-xs text-muted mt-2">
+              Cards, UPI, Netbanking, and Wallets are fully supported. You can select your preferred payment mode directly inside the secure payment gateway interface.
+            </p>
           </div>
         </div>
 

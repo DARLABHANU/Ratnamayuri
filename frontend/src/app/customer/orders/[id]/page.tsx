@@ -43,7 +43,7 @@ export default function OrderDetailPage() {
     }
 
     // Graceful fallback to sandbox/mock payment if rzp keys are missing in backend
-    if (!order.razorpay_order_id) {
+    if (!(order as any).razorpay_order_id) {
       toast.error("Keys missing: Simulating instant mock payment confirmation...");
       try {
         const { data: updatedOrder } = await orderApi.razorpayVerify({
@@ -62,12 +62,12 @@ export default function OrderDetailPage() {
     }
 
     const options = {
-      key: order.razorpay_key_id,
+      key: (order as any).razorpay_key_id,
       amount: Math.round(order.total_amount * 100), // in paise
       currency: "INR",
       name: "Ratnamayuri",
       description: `Order #${order.order_number}`,
-      order_id: order.razorpay_order_id,
+      order_id: (order as any).razorpay_order_id,
       handler: async function (response: any) {
         setIsProcessingPayment(true);
         try {

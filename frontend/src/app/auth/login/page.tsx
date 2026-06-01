@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
-import { Eye, EyeOff, Loader2, Phone, Mail, ShieldAlert } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Sparkles, ShieldCheck } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { UserRole } from "@/types";
 import { getApiError } from "@/lib/utils";
 import { auth as firebaseAuth } from "@/lib/firebase";
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+import { sendSignInLinkToEmail } from "firebase/auth";
 
 const schema = z.object({
   email: z.string().email("Invalid email"),
@@ -42,12 +42,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   
   // Auth Method States
-  const [authMethod, setAuthMethod] = useState<"password" | "phone">("password");
-  const [phoneNumber, setPhoneNumber] = useState("+91");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const [authMethod, setAuthMethod] = useState<"password" | "magic_link">("password");
+  const [magicEmail, setMagicEmail] = useState("");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -60,20 +57,9 @@ export default function LoginPage() {
   useEffect(() => {
     setValue("email", "");
     setValue("password", "");
-    setPhoneNumber("+91");
-    setVerificationCode("");
-    setOtpSent(false);
-    setConfirmationResult(null);
+    setMagicEmail("");
+    setMagicLinkSent(false);
   }, [selectedRole, setValue]);
-
-  // Clean up recaptcha widget on unmount
-  useEffect(() => {
-    return () => {
-      if (recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current.clear();
-      }
-    };
-  }, []);
 
   // Standard Email/Password onSubmit
   const onSubmit = async (data: FormData) => {
@@ -104,92 +90,31 @@ export default function LoginPage() {
     }
   };
 
-  // Firebase Phone Verification
-  const setupRecaptcha = () => {
+  // Firebase Send Email Magic Link
+  const handleSendMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!magicEmail || !magicEmail.trim() || !magicEmail.includes("@")) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      if (!window || recaptchaVerifierRef.current) return;
+      const actionCodeSettings = {
+        url: `${window.location.origin}/auth/verify-link`,
+        handleCodeInApp: true,
+      };
+
+      await sendSignInLinkToEmail(firebaseAuth, magicEmail.trim(), actionCodeSettings);
       
-      const container = document.getElementById("recaptcha-container");
-      if (!container) return;
-
-      recaptchaVerifierRef.current = new RecaptchaVerifier(firebaseAuth, "recaptcha-container", {
-        size: "invisible",
-        callback: () => {
-          // reCAPTCHA solved, ready to sign in
-        },
-        "expired-callback": () => {
-          toast.error("reCAPTCHA expired. Please request OTP again.");
-        }
-      });
-    } catch (err) {
-      console.error("Recaptcha setup error:", err);
-    }
-  };
-
-  const handleSendPhoneOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phoneNumber || phoneNumber.length < 10) {
-      toast.error("Please enter a valid phone number (e.g. +91 9876543210)");
-      return;
-    }
-
-    setIsLoading(true);
-    setupRecaptcha();
-
-    try {
-      const appVerifier = recaptchaVerifierRef.current;
-      if (!appVerifier) {
-        throw new Error("Recaptcha AppVerifier failed to construct. Check Firebase keys.");
-      }
-
-      const confirmation = await signInWithPhoneNumber(firebaseAuth, phoneNumber, appVerifier);
-      setConfirmationResult(confirmation);
-      setOtpSent(true);
-      toast.success("Verification SMS sent to your mobile phone!");
-    } catch (err) {
-      toast.error("SMS limit exceeded or invalid phone number config.");
-      console.error("Firebase SMS trigger failed:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!verificationCode || verificationCode.length < 6) {
-      toast.error("Please enter the 6-digit verification code");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      if (!confirmationResult) {
-        throw new Error("No confirmation result available.");
-      }
-
-      const result = await confirmationResult.confirm(verificationCode);
-      const idToken = await result.user.getIdToken();
-
-      // Submit Firebase ID Token to backend for verification and auto-registration
-      const res = await authApi.firebaseLogin({
-        token: idToken,
-        role: selectedRole
-      });
-
-      const tokenData = res.data;
-
-      setAuth({
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        role: tokenData.role,
-        user_id: tokenData.user_id,
-      });
-
-      toast.success("Verified successfully! Welcome back.");
-      router.push(ROLE_REDIRECTS[tokenData.role as UserRole]);
-    } catch (err) {
-      toast.error("Invalid OTP code. Please try again.");
-      console.error("OTP validation failed:", err);
+      // Save email locally to verify on redirect (prevents having to re-enter)
+      window.localStorage.setItem("emailForSignIn", magicEmail.trim());
+      
+      setMagicLinkSent(true);
+      toast.success("Secure checkout link dispatched to your inbox!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to trigger Magic Link email.");
+      console.error("Firebase Magic Link trigger failed:", err);
     } finally {
       setIsLoading(false);
     }
@@ -201,12 +126,9 @@ export default function LoginPage() {
         <span className="section-tag">WELCOME BACK</span>
         <h2 className="font-cormorant text-3xl font-light text-brown">Sign In</h2>
         <p className="font-garamond text-sm text-muted mt-2">
-          Access your Ratnamayuri account using standard passwords or secure SMS OTP.
+          Access your Ratnamayuri account using standard passwords or our 100% free, secure passwordless Email Magic Link.
         </p>
       </div>
-
-      {/* Invisible Recaptcha Anchor */}
-      <div id="recaptcha-container" className="invisible"></div>
 
       {/* Role selector */}
       <div className="mb-4">
@@ -241,12 +163,12 @@ export default function LoginPage() {
         </button>
         <button
           type="button"
-          onClick={() => setAuthMethod("phone")}
+          onClick={() => setAuthMethod("magic_link")}
           className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-cinzel tracking-wider transition-all
-            ${authMethod === "phone" ? "bg-gold-50 text-brown border-b-2 border-gold-500 font-bold" : "bg-white text-muted hover:text-brown"}`}
+            ${authMethod === "magic_link" ? "bg-gold-50 text-brown border-b-2 border-gold-500 font-bold" : "bg-white text-muted hover:text-brown"}`}
         >
-          <Phone size={13} />
-          MOBILE SMS OTP
+          <Sparkles size={13} />
+          PASSWORDLESS LINK
         </button>
       </div>
 
@@ -310,69 +232,54 @@ export default function LoginPage() {
         </form>
       )}
 
-      {/* Method B: Firebase SMS OTP form */}
-      {authMethod === "phone" && (
+      {/* Method B: Passwordless Magic Link form */}
+      {authMethod === "magic_link" && (
         <div className="space-y-4">
-          {!otpSent ? (
-            <form onSubmit={handleSendPhoneOtp} className="space-y-4">
+          {!magicLinkSent ? (
+            <form onSubmit={handleSendMagicLink} className="space-y-4">
               <div>
                 <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-                  MOBILE NUMBER
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className="input-field flex-1 bg-white font-mono"
-                  />
-                </div>
-                <p className="text-[10px] text-gray-400 mt-1">Include country code (e.g. +91 for India)</p>
-              </div>
-
-              <button type="submit" disabled={isLoading} className="btn-primary w-full flex items-center justify-center gap-2">
-                {isLoading && <Loader2 size={14} className="animate-spin" />}
-                SEND SMS CODE
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyPhoneOtp} className="space-y-4">
-              <div>
-                <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-                  6-DIGIT VERIFICATION CODE
+                  EMAIL ADDRESS
                 </label>
                 <input
-                  type="text"
-                  maxLength={6}
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
-                  placeholder="000 000"
-                  className="input-field text-center font-mono tracking-[8px] text-lg bg-white"
+                  type="email"
+                  value={magicEmail}
+                  onChange={(e) => setMagicEmail(e.target.value)}
+                  placeholder="yourname@example.com"
+                  className="input-field bg-white"
+                  required
                 />
               </div>
 
-              <div className="flex justify-between items-center text-xs text-gray-500">
-                <span>Code sent to {phoneNumber}</span>
-                <button type="button" onClick={() => setOtpSent(false)} className="text-gold-600 font-bold hover:underline">
-                  Change number
-                </button>
-              </div>
-
               <button type="submit" disabled={isLoading} className="btn-primary w-full flex items-center justify-center gap-2">
                 {isLoading && <Loader2 size={14} className="animate-spin" />}
-                VERIFY & SIGN IN
+                SEND SECURE SIGN-IN LINK
               </button>
             </form>
+          ) : (
+            <div className="text-center py-4 space-y-3 font-garamond animate-fade-in card bg-ivory/30 border-gold-200">
+              <p className="text-green-700 font-semibold text-base">📩 Link Dispatched!</p>
+              <p className="text-xs text-muted px-4 leading-relaxed">
+                We sent a secure magic authentication link to <strong className="text-brown">{magicEmail}</strong>. 
+                Please open your email inbox and click the link to sign in automatically and continue.
+              </p>
+              <button
+                type="button"
+                onClick={() => setMagicLinkSent(false)}
+                className="text-[11px] text-gold-600 hover:text-gold-700 underline tracking-wider font-cinzel mt-2"
+              >
+                USE A DIFFERENT EMAIL
+              </button>
+            </div>
           )}
         </div>
       )}
 
       {/* Safety warning */}
-      <div className="bg-orange-50 border border-orange-100 p-3 rounded mt-6 flex items-start gap-2.5">
-        <ShieldAlert className="text-orange-500 flex-shrink-0 mt-0.5" size={16} />
-        <p className="text-[10px] text-orange-800 leading-normal">
-          Make sure your Firebase project Console is configured with active SMS quotes for Phone OTP and your client-side environment secrets are properly updated.
+      <div className="bg-emerald-50 border border-emerald-100 p-3 rounded mt-6 flex items-start gap-2.5">
+        <ShieldCheck className="text-emerald-600 flex-shrink-0 mt-0.5" size={16} />
+        <p className="text-[10px] text-emerald-800 leading-normal">
+          Ratnamayuri Spark Auth leverages secure passwordless verification. Emails are transmitted securely, protecting user accounts with zero SMS/Phone budget overhead.
         </p>
       </div>
 

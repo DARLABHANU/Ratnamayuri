@@ -1,13 +1,13 @@
 --- DATABASE SEEDING STATUS REPORT ---
-Timestamp: 2026-06-01T10:37:10.870Z
+Timestamp: 2026-06-01T14:34:37.135Z
 
 COUNTS:
 - users: 10
 - categories: 3
 - products: 22
 - merchantProfiles: 5
-- orders: 20
-- orderItems: 25
+- orders: 21
+- orderItems: 26
 - coupons: 7
 - addresses: 6
 

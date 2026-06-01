@@ -2,13 +2,13 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDmxJe4SQxoD0jk7GlkR8rYbrfwXBX4wsI",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "ratnamayuri-50325.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "ratnamayuri-50325",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "ratnamayuri-50325.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "658052427507",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:658052427507:web:59b55d91c786876c95d186",
-  measurementId: "G-BELYFQR9YN"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyAqqlpBTHC6k61iY1DfTE1vzmDq9GArHqA",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "ratnamayuri-c5106.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "ratnamayuri-c5106",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "ratnamayuri-c5106.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "775859744934",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:775859744934:web:f864d547da48f32d54c467",
+  measurementId: "G-HK8STVSTE4"
 };
 
 // Prevent duplicate initialization during hot reloads in development

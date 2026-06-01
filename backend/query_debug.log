@@ -259,3 +259,9 @@
 [2026-06-01T10:42:14.368Z] req.query: {"category_id":"2","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
 [2026-06-01T10:42:44.698Z] req.query: {"category_id":"2","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
 [2026-06-01T10:42:44.725Z] req.query: {"category_id":"2","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
+[2026-06-01T14:50:07.448Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T14:50:07.577Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T14:51:43.821Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T14:51:43.838Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T15:00:09.400Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T15:00:09.494Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}

@@ -14,6 +14,17 @@ import { Address } from "@/types";
 import { formatPrice, getApiError } from "@/lib/utils";
 import Cookies from "js-cookie";
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const addressSchema = z.object({
   label: z.string().default("Home"),
   full_name: z.string().min(2),
@@ -97,20 +108,76 @@ function CheckoutContent() {
     if (!cart || cart.items.length === 0) { toast.error("Your cart is empty"); return; }
 
     setIsPlacing(true);
+    
+    // Load Razorpay script
+    const isScriptLoaded = await loadRazorpayScript();
+    if (!isScriptLoaded) {
+      toast.error("Failed to load Razorpay payment window. Please check your network connection.");
+      setIsPlacing(false);
+      return;
+    }
+
     try {
       const { data: order } = await orderApi.create({
         address_id: selectedAddressId,
         coupon_code: couponCode || undefined,
         payment_method: paymentMethod,
       });
-      // Clear affiliate coupon cookie after successful use — prevents it
-      // from silently applying to every future order the customer places.
-      Cookies.remove("affiliate_coupon");
-      toast.success("Order placed successfully!");
-      router.push(`/customer/orders/${order.id}`);
+
+      // If Razorpay order ID is missing (e.g. backend keys are not configured),
+      // gracefully fall back to the instant success mock-checkout experience.
+      if (!order.razorpay_order_id) {
+        Cookies.remove("affiliate_coupon");
+        toast.success("Order placed successfully (Mock Mode)!");
+        router.push(`/customer/orders/${order.id}`);
+        return;
+      }
+
+      const activeAddr = addresses.find((a) => a.id === selectedAddressId);
+
+      const options = {
+        key: order.razorpay_key_id,
+        amount: Math.round(order.total_amount * 100), // in paise
+        currency: "INR",
+        name: "Ratnamayuri",
+        description: `Order #${order.order_number}`,
+        order_id: order.razorpay_order_id,
+        handler: async function (response: any) {
+          setIsPlacing(true);
+          try {
+            await orderApi.razorpayVerify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            Cookies.remove("affiliate_coupon");
+            toast.success("Payment verified successfully! Welcome to Ratnamayuri.");
+            router.push(`/customer/orders/${order.id}`);
+          } catch (verifyErr) {
+            toast.error("Payment signature verification failed. Please contact support.");
+          } finally {
+            setIsPlacing(false);
+          }
+        },
+        prefill: {
+          name: activeAddr?.full_name || "",
+          contact: activeAddr?.phone || "",
+        },
+        theme: {
+          color: "#5C1318",
+        },
+        modal: {
+          ondismiss: function () {
+            toast.error("Payment modal closed before completion.");
+            setIsPlacing(false);
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
     } catch (err) {
       toast.error(getApiError(err));
-    } finally {
       setIsPlacing(false);
     }
   };

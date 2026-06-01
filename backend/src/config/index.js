@@ -21,5 +21,7 @@ module.exports = {
   couponPromoterCommission: parseInt(process.env.COUPON_PROMOTER_COMMISSION || '100', 10),
   couponPlatformProfit: parseInt(process.env.COUPON_PLATFORM_PROFIT || '100', 10),
   adminEmail: process.env.ADMIN_EMAIL || 'admin@ratnamayuri.live',
-  adminPassword: process.env.ADMIN_PASSWORD || 'Admin@123!'
+  adminPassword: process.env.ADMIN_PASSWORD || 'Admin@123!',
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || ''
 };

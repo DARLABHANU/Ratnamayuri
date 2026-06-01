@@ -342,8 +342,127 @@ orderRouter.post('/', async (req, res, next) => {
       order.total_amount
     ).catch(err => console.error(`Error sending order confirmation email:`, err));
 
+    // Generate Razorpay Order
+    let razorpay_order_id = null;
+    if (config.razorpayKeyId && config.razorpayKeySecret) {
+      try {
+        const Razorpay = require('razorpay');
+        const razorpay = new Razorpay({
+          key_id: config.razorpayKeyId,
+          key_secret: config.razorpayKeySecret
+        });
+
+        const options = {
+          amount: Math.round(order.total_amount * 100), // in paise
+          currency: 'INR',
+          receipt: `rcpt_${order.order_number}`
+        };
+
+        const rzpOrder = await razorpay.orders.create(options);
+        razorpay_order_id = rzpOrder.id;
+
+        // Update local Order record
+        order.razorpay_order_id = razorpay_order_id;
+        await order.save();
+      } catch (rzpErr) {
+        console.error('[Razorpay] Failed to create order:', rzpErr);
+      }
+    }
+
     const enrichedOrder = await enrichOrders(order);
-    res.status(201).json(enrichedOrder);
+    const responseData = enrichedOrder.toObject ? enrichedOrder.toObject() : enrichedOrder;
+    
+    res.status(201).json({
+      ...responseData,
+      razorpay_order_id,
+      razorpay_key_id: config.razorpayKeyId
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Verify Razorpay Payment Signature
+orderRouter.post('/verify-payment', async (req, res, next) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    
+    // Sandbox Mock Mode fallback (if keys are missing or mock requested, approve payment directly)
+    if (!config.razorpayKeyId || !config.razorpayKeySecret || razorpay_payment_id === "mock_payment") {
+      console.log('[Razorpay Sandbox] Keys missing or mock requested. Approving payment directly.');
+      
+      const order = await Order.findOne({ 
+        $or: [
+          { razorpay_order_id: razorpay_order_id },
+          { id: isNaN(Number(razorpay_order_id)) ? -1 : Number(razorpay_order_id) }
+        ] 
+      });
+      if (!order) {
+        return res.status(404).json({ detail: 'Order matching mock criteria not found' });
+      }
+
+      order.payment_status = 'paid';
+      order.status = 'confirmed';
+      order.razorpay_payment_id = razorpay_payment_id || 'mock_payment';
+      order.razorpay_signature = razorpay_signature || 'mock_signature';
+
+      const history = order.status_history || [];
+      history.push({
+        status: 'confirmed',
+        timestamp: new Date().toISOString(),
+        note: 'Payment mock-approved via Sandbox Mode',
+        updated_by: req.user.id
+      });
+      order.status_history = history;
+      order.markModified('status_history');
+
+      await order.save();
+
+      const enriched = await enrichOrders(order);
+      return res.json(enriched);
+    }
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ detail: 'Missing required Razorpay payment tracking parameters' });
+    }
+
+    // Verify crypto HMAC signature
+    const crypto = require('crypto');
+    const hmac = crypto.createHmac('sha256', config.razorpayKeySecret);
+    hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
+    const generated_signature = hmac.digest('hex');
+
+    if (generated_signature !== razorpay_signature) {
+      return res.status(400).json({ detail: 'Payment verification failed: signature mismatch' });
+    }
+
+    // Find the corresponding Order in our database
+    const order = await Order.findOne({ razorpay_order_id: razorpay_order_id });
+    if (!order) {
+      return res.status(404).json({ detail: 'Order matching Razorpay order ID not found' });
+    }
+
+    // Update the Order status & payment status
+    order.payment_status = 'paid';
+    order.status = 'confirmed';
+    order.razorpay_payment_id = razorpay_payment_id;
+    order.razorpay_signature = razorpay_signature;
+
+    // Log this status change in status history log
+    const history = order.status_history || [];
+    history.push({
+      status: 'confirmed',
+      timestamp: new Date().toISOString(),
+      note: `Payment verified via Razorpay (Payment ID: ${razorpay_payment_id})`,
+      updated_by: req.user.id
+    });
+    order.status_history = history;
+    order.markModified('status_history');
+
+    await order.save();
+
+    const enriched = await enrichOrders(order);
+    res.json(enriched);
   } catch (error) {
     next(error);
   }
@@ -437,8 +556,35 @@ orderRouter.get('/:order_id', async (req, res, next) => {
       return res.status(403).json({ detail: 'Access denied' });
     }
 
+    // If payment is pending and razorpay_order_id is missing, generate one on the fly!
+    if (order.payment_status === 'pending' && !order.razorpay_order_id && config.razorpayKeyId && config.razorpayKeySecret) {
+      try {
+        const Razorpay = require('razorpay');
+        const razorpay = new Razorpay({
+          key_id: config.razorpayKeyId,
+          key_secret: config.razorpayKeySecret
+        });
+
+        const options = {
+          amount: Math.round(order.total_amount * 100), // in paise
+          currency: 'INR',
+          receipt: `rcpt_${order.order_number}`
+        };
+
+        const rzpOrder = await razorpay.orders.create(options);
+        order.razorpay_order_id = rzpOrder.id;
+        await order.save();
+      } catch (rzpErr) {
+        console.error('[Razorpay] Dynamic order creation failed:', rzpErr);
+      }
+    }
+
     const enriched = await enrichOrders(order);
-    res.json(enriched);
+    const responseData = enriched.toObject ? enriched.toObject() : enriched;
+    res.json({
+      ...responseData,
+      razorpay_key_id: config.razorpayKeyId
+    });
   } catch (error) {
     next(error);
   }

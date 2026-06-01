@@ -210,3 +210,14 @@
 [2026-06-01T05:19:32.166Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
 [2026-06-01T05:20:44.702Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
 [2026-06-01T05:20:44.755Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T07:03:52.938Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T07:03:52.989Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T07:04:04.007Z] req.query: {"page":"1","page_size":"12","sort_by":"created_at","sort_order":"desc"} | filter: {"is_active":true,"is_approved":true}
+[2026-06-01T07:04:04.070Z] req.query: {"page":"1","page_size":"12","sort_by":"created_at","sort_order":"desc"} | filter: {"is_active":true,"is_approved":true}
+[2026-06-01T07:04:20.221Z] req.query: {"page":"1","page_size":"12","sort_by":"created_at","sort_order":"desc","category":"jewellery"} | filter: {"is_active":true,"is_approved":true,"category_id":1}
+[2026-06-01T07:04:48.725Z] req.query: {"page":"1","page_size":"12","sort_by":"created_at","sort_order":"desc","category":"sarees"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
+[2026-06-01T07:04:48.749Z] req.query: {"page":"1","page_size":"12","sort_by":"created_at","sort_order":"desc","category":"sarees"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
+[2026-06-01T07:04:52.372Z] req.query: {"category_id":"2","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
+[2026-06-01T07:04:52.567Z] req.query: {"category_id":"2","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
+[2026-06-01T07:09:31.344Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T07:09:31.426Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}

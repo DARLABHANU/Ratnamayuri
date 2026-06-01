@@ -129,6 +129,11 @@ export const orderApi = {
   validateCoupon: (data: object) => api.post("/orders/validate-coupon", data),
   updateStatus: (id: number, data: object) => api.patch(`/orders/${id}/status`, data),
   merchantOrders: (params?: object) => api.get("/orders/merchant/incoming", { params }),
+  razorpayVerify: (data: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) => api.post("/orders/verify-payment", data),
 };
 
 export const merchantApi = {

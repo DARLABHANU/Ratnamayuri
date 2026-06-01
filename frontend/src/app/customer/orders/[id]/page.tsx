@@ -3,7 +3,19 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft, Loader2, Package, MapPin, CreditCard } from "lucide-react";
+import toast from "react-hot-toast";
 import { orderApi } from "@/lib/api";
+
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 import { Order } from "@/types";
 import { formatPrice, formatDate, formatDateTime, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import OrderTracker from "@/components/customer/OrderTracker";
@@ -16,6 +28,75 @@ export default function OrderDetailPage() {
   const { isAuthenticated } = useAuthStore();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const handlePayNow = async () => {
+    setIsProcessingPayment(true);
+    
+    // Load Razorpay script
+    const isScriptLoaded = await loadRazorpayScript();
+    if (!isScriptLoaded) {
+      toast.error("Failed to load Razorpay payment window. Please check your network connection.");
+      setIsProcessingPayment(false);
+      return;
+    }
+
+    // Graceful fallback to sandbox/mock payment if rzp keys are missing in backend
+    if (!order.razorpay_order_id) {
+      toast.error("Keys missing: Simulating instant mock payment confirmation...");
+      try {
+        const { data: updatedOrder } = await orderApi.razorpayVerify({
+          razorpay_order_id: String(order.id),
+          razorpay_payment_id: "mock_payment",
+          razorpay_signature: "mock_signature",
+        });
+        setOrder(updatedOrder);
+        toast.success("Order payment simulated successfully!");
+      } catch (err) {
+        toast.error("Simulation update failed.");
+      } finally {
+        setIsProcessingPayment(false);
+      }
+      return;
+    }
+
+    const options = {
+      key: (order as any).razorpay_key_id,
+      amount: Math.round(order.total_amount * 100), // in paise
+      currency: "INR",
+      name: "Ratnamayuri",
+      description: `Order #${order.order_number}`,
+      order_id: order.razorpay_order_id,
+      handler: async function (response: any) {
+        setIsProcessingPayment(true);
+        try {
+          const { data: updatedOrder } = await orderApi.razorpayVerify({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+          setOrder(updatedOrder);
+          toast.success("Payment verified successfully! Order confirmed.");
+        } catch (verifyErr) {
+          toast.error("Payment signature verification failed. Please contact support.");
+        } finally {
+          setIsProcessingPayment(false);
+        }
+      },
+      theme: {
+        color: "#5C1318",
+      },
+      modal: {
+        ondismiss: function () {
+          toast.error("Payment modal closed.");
+          setIsProcessingPayment(false);
+        },
+      },
+    };
+
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
+  };
 
   useEffect(() => {
     if (!isAuthenticated) { router.push("/auth/login"); return; }
@@ -143,6 +224,17 @@ export default function OrderDetailPage() {
                   {order.payment_status}
                 </span>
               </div>
+              
+              {order.payment_status === "pending" && order.status !== "cancelled" && (
+                <button
+                  onClick={handlePayNow}
+                  disabled={isProcessingPayment}
+                  className="btn-primary w-full mt-4 flex items-center justify-center gap-2 py-2 text-xs tracking-wider"
+                >
+                  {isProcessingPayment && <Loader2 size={12} className="animate-spin" />}
+                  PAY NOW WITH RAZORPAY
+                </button>
+              )}
             </div>
           </div>
 

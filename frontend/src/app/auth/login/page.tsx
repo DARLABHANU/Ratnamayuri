@@ -18,7 +18,7 @@ import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "fi
 const schema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(1, "Password required"),
-  role: z.enum(["customer", "merchant", "admin", "support"] as const),
+  role: z.enum(["customer", "merchant", "admin"] as const),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -26,7 +26,6 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "customer", label: "Customer" },
   { value: "merchant", label: "Merchant" },
   { value: "admin", label: "Admin" },
-  { value: "support", label: "Support" },
 ];
 
 const ROLE_REDIRECTS: Record<UserRole, string> = {
@@ -50,12 +49,22 @@ export default function LoginPage() {
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { role: "customer" },
   });
 
   const selectedRole = watch("role") || "customer";
+
+  // Clear input fields when switching roles
+  useEffect(() => {
+    setValue("email", "");
+    setValue("password", "");
+    setPhoneNumber("+91");
+    setVerificationCode("");
+    setOtpSent(false);
+    setConfirmationResult(null);
+  }, [selectedRole, setValue]);
 
   // Clean up recaptcha widget on unmount
   useEffect(() => {
@@ -204,7 +213,7 @@ export default function LoginPage() {
         <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-1.5 uppercase font-bold">
           LOGIN AS
         </label>
-        <div className="grid grid-cols-4 gap-1 border border-gold-200 p-1 bg-white">
+        <div className="grid grid-cols-3 gap-1 border border-gold-200 p-1 bg-white">
           {ROLE_OPTIONS.map((opt) => (
             <label key={opt.value} className="cursor-pointer">
               <input type="radio" {...register("role")} value={opt.value} className="sr-only" />

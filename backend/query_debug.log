@@ -206,3 +206,7 @@
 [2026-05-30T15:52:47.195Z] req.query: {"page":"1","page_size":"12","sort_by":"created_at","sort_order":"desc","category":"sarees"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
 [2026-05-30T15:52:47.219Z] req.query: {"page":"1","page_size":"12","sort_by":"created_at","sort_order":"desc","category":"sarees"} | filter: {"is_active":true,"is_approved":true,"category_id":2}
 [2026-05-30T15:52:48.996Z] req.query: {"page":"1","page_size":"12","sort_by":"created_at","sort_order":"desc"} | filter: {"is_active":true,"is_approved":true}
+[2026-06-01T05:19:32.059Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T05:19:32.166Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T05:20:44.702Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-01T05:20:44.755Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}

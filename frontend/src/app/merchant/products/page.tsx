@@ -83,7 +83,7 @@ export default function MerchantProductsPage() {
       name: product.name,
       description: product.description || "",
       short_description: product.short_description || "",
-      price: product.price,
+      price: product.base_price || product.price,
       compare_price: product.compare_price || undefined,
       sku: product.sku || "",
       stock_quantity: product.stock_quantity,

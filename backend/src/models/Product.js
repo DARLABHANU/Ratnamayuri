@@ -10,6 +10,7 @@ const ProductSchema = new mongoose.Schema({
   description: { type: String, default: null },
   short_description: { type: String, default: null },
   price: { type: Number, required: true },
+  base_price: { type: Number, default: null },
   compare_price: { type: Number, default: null },
   cost_price: { type: Number, default: null },
   sku: { type: String, unique: true, sparse: true, default: null },
@@ -31,8 +32,23 @@ const ProductSchema = new mongoose.Schema({
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 
-// Auto-increment sequence hook
+// Auto-increment sequence hook and dynamic customer price calculation
 ProductSchema.pre('save', async function (next) {
+  if (this.isModified('price') && !this.isModified('base_price')) {
+    this.base_price = this.price;
+  }
+
+  // If base_price is not set (e.g. initial seed files), default it to price
+  if (this.base_price === undefined || this.base_price === null) {
+    this.base_price = this.price;
+  }
+
+  // Calculate final customer price: base_price + promoter_cut + admin_cut
+  // If base_price < 1000: promoter = 5% of base_price, admin = 5% of base_price (total 10% markup)
+  // If base_price >= 1000: promoter = 10% of base_price, admin = 10% of base_price (total 20% markup)
+  const pct = this.base_price < 1000 ? 0.05 : 0.10;
+  this.price = Math.round(this.base_price * (1 + 2 * pct) * 100) / 100;
+
   if (this.isNew) {
     try {
       const counter = await Counter.findByIdAndUpdate(

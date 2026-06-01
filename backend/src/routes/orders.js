@@ -262,8 +262,21 @@ orderRouter.post('/', async (req, res, next) => {
     // Create Order Items and decrease stock
     const emailItems = [];
     for (const item of enrichedCart) {
-      const platform_fee = item.product.price * item.quantity * 0.10; // 10% platform fee
-      const merchant_payout = (item.product.price * item.quantity) - platform_fee;
+      const base_price = item.product.base_price || item.product.price;
+      const pct = base_price < 1000 ? 0.05 : 0.10;
+      const promoter_cut = base_price * pct;
+      const admin_cut = base_price * pct;
+
+      const merchant_payout = Number((base_price * item.quantity).toFixed(2));
+      
+      let platform_fee;
+      if (coupon && coupon.promoter_id) {
+        // Promoter coupon used: admin gets only admin_cut, promoter gets promoter_cut
+        platform_fee = Number((admin_cut * item.quantity).toFixed(2));
+      } else {
+        // Direct purchase: admin gets both admin_cut and promoter_cut
+        platform_fee = Number(((admin_cut + promoter_cut) * item.quantity).toFixed(2));
+      }
 
       const orderItem = new OrderItem({
         order_id: order.id,
@@ -300,11 +313,19 @@ orderRouter.post('/', async (req, res, next) => {
 
     // Create commission record if promoter applies
     if (coupon && coupon.promoter_id && coupon_id) {
+      let totalPromoterCommission = 0;
+      for (const item of enrichedCart) {
+        const base_price = item.product.base_price || item.product.price;
+        const pct = base_price < 1000 ? 0.05 : 0.10;
+        const promoter_cut = base_price * pct;
+        totalPromoterCommission += promoter_cut * item.quantity;
+      }
+
       const commission = new Commission({
         order_id: order.id,
         coupon_id: coupon_id,
         promoter_id: coupon.promoter_id,
-        amount: coupon.promoter_commission
+        amount: Number(totalPromoterCommission.toFixed(2))
       });
       await commission.save();
     }
@@ -468,14 +489,8 @@ orderRouter.patch('/:order_id/status', requireMerchantOrAdmin, async (req, res, 
         releaseDate.setDate(releaseDate.getDate() + 7); // 7-day observation hold
 
         for (const [merchantId, items] of merchantGroups.entries()) {
-          const total_merchant_price = items.reduce((sum, item) => sum + item.total_price, 0);
-          
-          // Get merchant commission rate
-          const profile = await MerchantProfile.findOne({ id: merchantId });
-          const commission_rate = profile ? profile.commission_rate : 10.0;
-          
-          const platform_commission = Number((total_merchant_price * (commission_rate / 100)).toFixed(2));
-          const merchant_share = Number((total_merchant_price - platform_commission).toFixed(2));
+          const merchant_share = Number(items.reduce((sum, item) => sum + item.merchant_payout, 0).toFixed(2));
+          const platform_commission = Number(items.reduce((sum, item) => sum + item.platform_fee, 0).toFixed(2));
 
           // 1. Create Escrow Settlement record
           const settlement = new Settlement({

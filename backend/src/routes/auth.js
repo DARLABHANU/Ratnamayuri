@@ -388,4 +388,127 @@ router.put('/payout-settings', getCurrentUser, async (req, res, next) => {
   }
 });
 
+// Request Passwordless Magic Link (Option 2)
+router.post('/magic-link-request', async (req, res, next) => {
+  try {
+    const { email, role } = req.body;
+    if (!email || !email.trim() || !email.includes('@')) {
+      return res.status(400).json({ detail: 'Please provide a valid email address' });
+    }
+
+    const targetRole = role || 'customer';
+    if (targetRole === 'admin' || targetRole === 'support') {
+      return res.status(403).json({ detail: 'Cannot request passwordless links for administrative roles' });
+    }
+
+    const jwt = require('jsonwebtoken');
+    const config = require('../config');
+    const { sendPasswordlessLoginLink } = require('../services/email');
+
+    // Create a 15-minute token
+    const token = jwt.sign(
+      { email: email.trim().toLowerCase(), role: targetRole, type: 'magic_link' },
+      config.secretKey,
+      { expiresIn: '15m' }
+    );
+
+    const verificationLink = `${config.frontendUrl}/auth/verify-link?token=${token}`;
+    
+    // Send email asynchronously
+    sendPasswordlessLoginLink(email.trim().toLowerCase(), verificationLink)
+      .catch(err => console.error('Error sending passwordless login email:', err));
+
+    res.json({ message: 'Secure checkout link successfully dispatched to your email inbox.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Verify Custom Passwordless Token (Option 2)
+router.post('/verify-magic-token', async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ detail: 'Verification token is required' });
+    }
+
+    const jwt = require('jsonwebtoken');
+    const config = require('../config');
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, config.secretKey);
+    } catch (err) {
+      return res.status(401).json({ detail: 'Your sign-in link has expired or is invalid. Please request a new one.' });
+    }
+
+    if (!decoded || decoded.type !== 'magic_link') {
+      return res.status(401).json({ detail: 'Invalid token structure' });
+    }
+
+    const email = decoded.email;
+    const role = decoded.role || 'customer';
+
+    let user = await User.findOne({ email });
+
+    // Auto-register if user doesn't exist
+    if (!user) {
+      const { generateAccountNumber } = require('../utils/helpers');
+      const { hashPassword } = require('../middleware/auth');
+      
+      let accountNumber = generateAccountNumber();
+      while (true) {
+        const existingAccount = await User.findOne({ account_number: accountNumber });
+        if (!existingAccount) break;
+        accountNumber = generateAccountNumber();
+      }
+
+      // Generate a strong random password placeholder
+      const randomPass = require('crypto').randomBytes(16).toString('hex');
+      const hashedPassword = await hashPassword(randomPass);
+
+      user = new User({
+        email,
+        hashed_password: hashedPassword,
+        full_name: 'Valued Customer',
+        role,
+        account_number: accountNumber,
+        is_first_login: false,
+        is_verified: true
+      });
+
+      await user.save();
+    }
+
+    if (!user.is_active) {
+      return res.status(403).json({ detail: 'Account is deactivated. Contact support.' });
+    }
+
+    // Mark as verified & not first login since magic link verifies the email
+    if (!user.is_verified || user.is_first_login) {
+      user.is_verified = true;
+      user.is_first_login = false;
+      await user.save();
+    }
+
+    // Generate local JWT access & refresh tokens
+    const { createAccessToken, createRefreshToken } = require('../middleware/auth');
+    const tokenData = { sub: String(user.id), role: user.role, email: user.email };
+    const accessToken = createAccessToken(tokenData);
+    const refreshToken = createRefreshToken(tokenData);
+
+    res.json({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      role: user.role,
+      user_id: user.id,
+      is_first_login: false,
+      requires_otp: false
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
+

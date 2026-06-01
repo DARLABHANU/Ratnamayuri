@@ -168,8 +168,58 @@ const sendOrderConfirmationEmail = async (email, name, orderNumber, items, total
   return sendEmail(email, subject, html, text);
 };
 
+const sendPasswordlessLoginLink = async (email, link) => {
+  const subject = 'Secure Sign-In to Ratnamayuri';
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <style>
+    body { font-family: Georgia, serif; background: #FAF6F0; margin: 0; padding: 0; }
+    .container { max-width: 560px; margin: 40px auto; background: white; border: 1px solid #E8D5A3; }
+    .header { background: #5C1318; padding: 32px; text-align: center; }
+    .header h1 { color: #D4AF37; font-size: 22px; letter-spacing: 4px; margin: 0; }
+    .header p { color: #E8D5A3; font-size: 11px; letter-spacing: 2px; margin: 6px 0 0; }
+    .body { padding: 40px; text-align: center; }
+    .body h2 { color: #5C1318; font-size: 20px; margin-bottom: 16px; font-family: Georgia, serif; }
+    .body p { color: #7A6355; line-height: 1.7; margin-bottom: 24px; font-size: 15px; }
+    .btn { display: inline-block; background: #5C1318; color: #D4AF37 !important; text-decoration: none;
+                 padding: 14px 28px; font-size: 14px; font-weight: bold; border-radius: 4px;
+                 letter-spacing: 2px; border: 1px solid #D4AF37; transition: all 0.3s ease; }
+    .btn:hover { background: #3d0c0f; }
+    .link-note { font-size: 12px; color: #7A6355; margin-top: 24px; word-break: break-all; }
+    .footer { background: #FAF6F0; padding: 20px; text-align: center; border-top: 1px solid #E8D5A3; }
+    .footer p { font-size: 11px; color: #7A6355; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>RATNAMAYURI</h1>
+      <p>LUXURY JEWELLERY &amp; SILK SAREES</p>
+    </div>
+    <div class="body">
+      <h2>Secure Sign-In 🙏</h2>
+      <p>Click the button below to sign in to your Ratnamayuri account instantly. This link is secure and will expire in 15 minutes.</p>
+      <a href="${link}" class="btn">SIGN IN INSTANTLY</a>
+      <p class="link-note">If the button doesn't work, copy and paste this URL into your browser:<br/><br/>${link}</p>
+    </div>
+    <div class="footer">
+      <p>© 2026 Ratnamayuri · Made with ♡ in India</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+  const text = `Secure Sign-In to Ratnamayuri. Use this link to sign in: ${link}`;
+  return sendEmail(email, subject, html, text);
+};
+
 module.exports = {
   sendEmail,
   sendOTPEmail,
-  sendOrderConfirmationEmail
+  sendOrderConfirmationEmail,
+  sendPasswordlessLoginLink
 };
+

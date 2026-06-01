@@ -1,8 +1,8 @@
 --- DATABASE SEEDING STATUS REPORT ---
-Timestamp: 2026-06-01T14:34:37.135Z
+Timestamp: 2026-06-01T15:39:15.644Z
 
 COUNTS:
-- users: 10
+- users: 13
 - categories: 3
 - products: 22
 - merchantProfiles: 5
@@ -22,6 +22,9 @@ USERS:
 - ID: 15 | Email: amit.verma@yahoo.com | Role: customer | Name: Amit Verma
 - ID: 16 | Email: neha.reddy@gmail.com | Role: customer | Name: Neha Reddy
 - ID: 17 | Email: soyav50421@matkind.com | Role: customer | Name: affilate test
+- ID: 18 | Email: darlaappalaraju31@gmail.com | Role: customer | Name: Darla Bhanu Murthy
+- ID: 19 | Email: emmanuelheaney@guerrillamailblock.com | Role: customer | Name: Emmanuel Heaney
+- ID: 20 | Email: micem53350@matkind.com | Role: customer | Name: Mice M
 
 CATEGORIES:
 - ID: 1 | Slug: jewellery | Name: Luxury Jewellery

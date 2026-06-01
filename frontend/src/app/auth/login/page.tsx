@@ -90,7 +90,7 @@ export default function LoginPage() {
     }
   };
 
-  // Firebase Send Email Magic Link
+  // Custom Backend SMTP Magic Link
   const handleSendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!magicEmail || !magicEmail.trim() || !magicEmail.includes("@")) {
@@ -100,21 +100,19 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      const actionCodeSettings = {
-        url: `${window.location.origin}/auth/verify-link`,
-        handleCodeInApp: true,
-      };
-
-      await sendSignInLinkToEmail(firebaseAuth, magicEmail.trim(), actionCodeSettings);
+      await authApi.magicLinkRequest({
+        email: magicEmail.trim().toLowerCase(),
+        role: selectedRole,
+      });
       
       // Save email locally to verify on redirect (prevents having to re-enter)
-      window.localStorage.setItem("emailForSignIn", magicEmail.trim());
+      window.localStorage.setItem("emailForSignIn", magicEmail.trim().toLowerCase());
       
       setMagicLinkSent(true);
-      toast.success("Secure checkout link dispatched to your inbox!");
+      toast.success("Secure sign-in link dispatched to your inbox!");
     } catch (err: any) {
-      toast.error(err.message || "Failed to trigger Magic Link email.");
-      console.error("Firebase Magic Link trigger failed:", err);
+      toast.error(getApiError(err) || "Failed to trigger secure magic link email.");
+      console.error("Local Magic Link trigger failed:", err);
     } finally {
       setIsLoading(false);
     }

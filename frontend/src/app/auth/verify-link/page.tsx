@@ -8,6 +8,7 @@ import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
 import axios from "axios";
 import { Loader2, CheckCircle2, AlertOctagon, Mail } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuthStore } from "@/store/authStore";
 
 // Express Backend Base API Url
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -21,64 +22,125 @@ function VerifyLinkContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Check if the current URL has the Firebase authentication parameters
-    if (isSignInWithEmailLink(auth, window.location.href)) {
-      // 1. Retrieve email from local storage (set during Link sending)
+    const token = params.get("token");
+    if (token) {
+      // ── OPTION 2: Custom Local SMTP Magic Link Verification ─────────────────
+      verifyCustomToken(token);
+    } else if (isSignInWithEmailLink(auth, window.location.href)) {
+      // ── OPTION 1: Firebase Magic Link fallback ─────────────────────────────
       let storedEmail = window.localStorage.getItem("emailForSignIn");
-      
       if (!storedEmail) {
-        // If the link was clicked on a different device or browser, local storage won't have the email.
-        // We must prompt the user to input the email they sent the link to.
         setStatus("input_email");
       } else {
         verifyAndAuthenticate(storedEmail);
       }
     } else {
       setStatus("error");
-      setErrorMsg("This link is invalid or has already been used. Please request a new magic checkout link.");
+      setErrorMsg("This link is invalid or has already been used. Please request a new magic sign-in link.");
     }
-  }, []);
+  }, [params]);
+
+  const verifyCustomToken = async (customToken: string) => {
+    setStatus("verifying");
+    setIsSubmitting(true);
+    try {
+      window.localStorage.removeItem("emailForSignIn");
+
+      // Verify custom local token with Express backend
+      const backendResponse = await axios.post(`${API_URL}/auth/verify-magic-token`, {
+        token: customToken
+      });
+
+      const tokenData = backendResponse.data;
+
+      // Update the global Zustand auth store directly!
+      useAuthStore.getState().setAuth({
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        role: tokenData.role,
+        user_id: tokenData.user_id
+      });
+
+      // Fetch user profile to fully populate store details
+      try {
+        const profileResponse = await axios.get(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` }
+        });
+        useAuthStore.getState().setUser(profileResponse.data);
+      } catch (profileErr) {
+        console.error("Failed to load user profile details:", profileErr);
+      }
+
+      setStatus("success");
+      toast.success("Identity verified successfully!");
+
+      // Seamlessly redirect to the Home Page (/)
+      setTimeout(() => {
+        router.push("/");
+      }, 2000);
+
+    } catch (error: any) {
+      console.error("Custom Magic Link verification failure:", error);
+      setStatus("error");
+      setErrorMsg(
+        error.response?.data?.detail || 
+        error.message || 
+        "Failed to verify your secure link. The link may have expired or already been used."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const verifyAndAuthenticate = async (userEmail: string) => {
     setStatus("verifying");
     setIsSubmitting(true);
     try {
-      // 2. Sign in with Firebase Client Auth using email & landing URL parameters
+      // Sign in with Firebase Client Auth
       const result = await signInWithEmailLink(auth, userEmail, window.location.href);
-      
-      // Clear email from storage
       window.localStorage.removeItem("emailForSignIn");
 
       if (!result.user) {
         throw new Error("Failed to authenticate session with Firebase.");
       }
 
-      // 3. Extract the Firebase JWT ID Token
       const idToken = await result.user.getIdToken();
 
-      // 4. Send Firebase ID Token to Ratnamayuri backend to generate local JWT cookies & session
+      // Send Firebase ID Token to Ratnamayuri backend
       const backendResponse = await axios.post(`${API_URL}/auth/firebase`, {
         token: idToken,
         role: "customer"
       });
 
-      const { access_token, refresh_token } = backendResponse.data;
+      const tokenData = backendResponse.data;
 
-      // Save tokens in document cookies so that frontend API wrappers can fetch them automatically
-      const Cookies = (await import("js-cookie")).default;
-      Cookies.set("access_token", access_token, { expires: 1 });
-      Cookies.set("refresh_token", refresh_token, { expires: 7 });
+      // Update the global Zustand auth store directly!
+      useAuthStore.getState().setAuth({
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        role: tokenData.role,
+        user_id: tokenData.user_id
+      });
+
+      // Fetch user profile to fully populate details
+      try {
+        const profileResponse = await axios.get(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` }
+        });
+        useAuthStore.getState().setUser(profileResponse.data);
+      } catch (profileErr) {
+        console.error("Failed to load user profile details:", profileErr);
+      }
 
       setStatus("success");
       toast.success("Identity verified successfully!");
 
-      // 5. Seamlessly redirect back to the checkout receipt or order gateway
       setTimeout(() => {
-        router.push("/customer/orders/checkout");
+        router.push("/");
       }, 2000);
 
     } catch (error: any) {
-      console.error("Magic Link verification failure:", error);
+      console.error("Firebase Magic Link verification failure:", error);
       setStatus("error");
       setErrorMsg(
         error.response?.data?.detail || 

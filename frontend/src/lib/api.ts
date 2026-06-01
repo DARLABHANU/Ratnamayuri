@@ -103,6 +103,8 @@ export const authApi = {
   resetPassword: (data: object) => api.post("/auth/reset-password", data),
   firebaseLogin: (data: { token: string; role: string }) => api.post("/auth/firebase", data),
   updatePayoutSettings: (data: object) => api.put("/auth/payout-settings", data),
+  magicLinkRequest: (data: { email: string; role: string }) => api.post("/auth/magic-link-request", data),
+  verifyMagicToken: (data: { token: string }) => api.post("/auth/verify-magic-token", data),
 };
 
 export const productApi = {

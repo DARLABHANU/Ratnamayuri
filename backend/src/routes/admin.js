@@ -47,6 +47,11 @@ router.get('/dashboard', requireAdmin, async (req, res, next) => {
     const deliveredOrders = await Order.find({ status: 'delivered' });
     const total_revenue = deliveredOrders.reduce((sum, o) => sum + o.total_amount, 0);
 
+    // Sum platform profit from delivered orders
+    const deliveredOrderIds = deliveredOrders.map(o => o.id);
+    const orderItems = await OrderItem.find({ order_id: { $in: deliveredOrderIds } });
+    const total_profit = Number(orderItems.reduce((sum, item) => sum + (item.platform_fee || 0), 0).toFixed(2));
+
     const pending_orders = await Order.countDocuments({ status: 'pending' });
     const active_coupons = await Coupon.countDocuments({ is_active: true });
 
@@ -61,6 +66,7 @@ router.get('/dashboard', requireAdmin, async (req, res, next) => {
       total_merchants,
       total_orders,
       total_revenue,
+      total_profit,
       pending_orders,
       active_coupons,
       recent_orders: enrichedRecent

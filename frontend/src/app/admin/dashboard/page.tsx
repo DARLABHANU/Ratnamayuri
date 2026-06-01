@@ -30,7 +30,8 @@ export default function AdminDashboardPage() {
     { label: "Customers",      value: data.total_users,              icon: Users,       href: "/admin/users",                 color: "text-blue-600"   },
     { label: "Merchants",      value: data.total_merchants,          icon: Package,     href: "/admin/users?role=merchant",   color: "text-purple-600" },
     { label: "Total Orders",   value: data.total_orders,             icon: ShoppingBag, href: "/admin/orders",                color: "text-orange-600" },
-    { label: "Revenue",        value: formatPrice(data.total_revenue),icon: DollarSign,  href: "/admin/orders",                color: "text-green-600"  },
+    { label: "Total Revenue",  value: formatPrice(data.total_revenue),icon: DollarSign,  href: "/admin/orders",                color: "text-blue-700"  },
+    { label: "Net Profit",     value: formatPrice(data.total_profit), icon: DollarSign,  href: "/admin/orders",                color: "text-green-600"  },
     { label: "Pending Orders", value: data.pending_orders,           icon: Clock,       href: "/admin/orders?status=pending", color: "text-yellow-600" },
     { label: "Active Coupons", value: data.active_coupons,           icon: Tag,         href: "/admin/coupons",               color: "text-gold-600"   },
   ] : [];
@@ -42,7 +43,7 @@ export default function AdminDashboardPage() {
         <h1 className="section-title">Admin <em className="italic">Dashboard</em></h1>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
         {stats.map(({ label, value, icon: Icon, href, color }) => (
           <Link key={label} href={href} className="card p-5 hover:border-gold-300 transition-all group">
             <div className="flex justify-between items-start mb-3">

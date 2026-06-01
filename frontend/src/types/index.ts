@@ -200,6 +200,7 @@ export interface AdminDashboard {
   total_merchants: number;
   total_orders: number;
   total_revenue: number;
+  total_profit: number;
   pending_orders: number;
   active_coupons: number;
   recent_orders: Order[];

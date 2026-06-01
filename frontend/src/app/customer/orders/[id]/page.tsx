@@ -31,6 +31,7 @@ export default function OrderDetailPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const handlePayNow = async () => {
+    if (!order) return;
     setIsProcessingPayment(true);
     
     // Load Razorpay script

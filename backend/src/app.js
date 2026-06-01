@@ -11,6 +11,8 @@ const allowedOrigins = [
   config.frontendUrl,                                         // Dynamically loaded frontend URL
   'https://ratnamayuri.vercel.app',                          // Production frontend
   'https://ratnamayuri-tbu8.vercel.app',                     // Early preview branch
+  'https://ratnamayuri.me',                                   // Root custom domain
+  'https://www.ratnamayuri.me',                               // WWW custom domain variation
   'http://localhost:3000'                                    // Local testing environment
 ];
 

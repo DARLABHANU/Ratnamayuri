@@ -207,7 +207,39 @@ const startServer = async () => {
   // Start Listener
   app.listen(config.port, () => {
     console.log(`[${config.appName}] API server running on port ${config.port} in ${config.appEnv} mode`);
+    
+    // Start self-ping mechanism to bypass Render idle sleep limits in production
+    try {
+      keepServerAwake();
+    } catch (err) {
+      console.error('Failed to initialize keepServerAwake loop:', err);
+    }
   });
+};
+
+// Self-pinging mechanism to keep Render awake in production
+const keepServerAwake = () => {
+  const https = require('https');
+  const http = require('http');
+  const backendUrl = config.backendUrl || 'https://ratnamayuri.onrender.com';
+
+  // Only run this when APP_ENV is production and we have an external onrender domain
+  if (config.appEnv !== 'production' && !backendUrl.includes('onrender.com')) {
+    console.log('[Self-Ping] Skipping self-ping in non-production or local environment.');
+    return;
+  }
+
+  const healthUrl = `${backendUrl.replace(/\/$/, '')}/api/health`;
+  console.log(`[Self-Ping] Starting keep-awake loop. Will ping ${healthUrl} every 10 minutes.`);
+
+  setInterval(() => {
+    const client = healthUrl.startsWith('https') ? https : http;
+    client.get(healthUrl, (res) => {
+      console.log(`[Self-Ping] Awake-Ping sent to ${healthUrl}. Status: ${res.statusCode}`);
+    }).on('error', (err) => {
+      console.error('[Self-Ping] Awake-Ping failed:', err.message);
+    });
+  }, 10 * 60 * 1000); // 10 minutes
 };
 
 startServer().catch(err => {

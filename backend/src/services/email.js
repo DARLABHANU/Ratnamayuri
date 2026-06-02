@@ -43,46 +43,94 @@ const getOTPEmailHtml = (name, otp, purpose) => {
     password_reset: 'reset your password'
   }[purpose] || 'complete your request';
 
+  const titleText = {
+    email_verification: 'Verify Your Email Address',
+    password_reset: 'Reset Your Password'
+  }[purpose] || 'Security Verification';
+
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
-    body { font-family: Georgia, serif; background: #FAF6F0; margin: 0; padding: 0; }
-    .container { max-width: 560px; margin: 40px auto; background: white; border: 1px solid #E8D5A3; }
-    .header { background: #1A0E05; padding: 32px; text-align: center; }
-    .header h1 { color: #C9A96E; font-size: 22px; letter-spacing: 4px; margin: 0; }
-    .header p { color: #E8D5A3; font-size: 11px; letter-spacing: 2px; margin: 6px 0 0; }
-    .body { padding: 40px; }
-    .body h2 { color: #3D2314; font-size: 20px; margin-bottom: 16px; }
-    .body p { color: #7A6355; line-height: 1.7; margin-bottom: 16px; }
-    .otp-box { background: #FAF6F0; border: 2px solid #C9A96E; text-align: center;
-               padding: 24px; margin: 28px 0; border-radius: 2px; }
-    .otp-code { font-size: 40px; font-weight: bold; color: #1A0E05; letter-spacing: 12px;
-                font-family: 'Courier New', monospace; }
-    .otp-note { font-size: 12px; color: #7A6355; margin-top: 8px; }
-    .footer { background: #FAF6F0; padding: 20px; text-align: center; border-top: 1px solid #E8D5A3; }
-    .footer p { font-size: 11px; color: #7A6355; margin: 0; }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FAF6EE; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    .wrapper { background-color: #FAF6EE; width: 100%; padding: 40px 0; }
+    .container { max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E8D5B0; border-radius: 24px; padding: 40px 32px; box-shadow: 0 4px 20px rgba(92, 19, 24, 0.04); text-align: center; position: relative; }
+    .close-btn { position: absolute; top: 20px; right: 24px; color: #D1D5DB; font-size: 22px; font-family: Arial, sans-serif; line-height: 1; cursor: default; }
+    .illustration { text-align: center; margin-bottom: 24px; margin-top: 10px; }
+    .title { color: #5C1318; font-family: Georgia, serif; font-size: 24px; font-weight: bold; margin: 0 0 12px 0; }
+    .desc { color: #7A6355; font-family: Georgia, serif; font-size: 13px; line-height: 1.6; margin: 0 auto 28px auto; max-width: 380px; }
+    .digit-table { margin: 24px auto; border-collapse: collapse; }
+    .digit-box { width: 44px; height: 48px; background-color: #F9FAFB; border: 1.5px solid #E5E7EB; border-radius: 8px; text-align: center; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 22px; font-weight: bold; color: #5C1318; }
+    .digit-box-active { width: 44px; height: 48px; background-color: #F9FAFB; border: 1.5px solid #C9973E; border-radius: 8px; text-align: center; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 22px; font-weight: bold; color: #5C1318; box-shadow: 0 0 5px rgba(201, 151, 62, 0.2); }
+    .note { font-family: Georgia, serif; font-size: 12px; color: #9CA3AF; margin: 20px 0; }
+    .btn-container { margin: 28px 0 12px 0; }
+    .btn { display: inline-block; background-color: #C9973E; color: #ffffff !important; font-family: Georgia, serif; font-size: 14px; font-weight: bold; text-decoration: none; padding: 12px 40px; border-radius: 24px; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(201, 151, 62, 0.25); border: none; }
+    .footer { font-family: Georgia, serif; font-size: 10px; color: #9CA3AF; margin-top: 32px; border-top: 1px solid #FAF6EE; padding-top: 16px; letter-spacing: 1px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>RATNAMAYURI</h1>
-      <p>LUXURY JEWELLERY &amp; SILK SAREES</p>
-    </div>
-    <div class="body">
-      <h2>Hello, ${name} 🙏</h2>
-      <p>You requested to ${purposeText}. Use the OTP below to proceed:</p>
-      <div class="otp-box">
-        <div class="otp-code">${otp}</div>
-        <p class="otp-note">Valid for ${config.otpExpireMinutes} minutes. Do not share this with anyone.</p>
+  <div class="wrapper">
+    <div class="container">
+      <!-- Decorative Close Sign from reference image -->
+      <div class="close-btn">×</div>
+
+      <!-- Envelope & Key Illustration -->
+      <div class="illustration">
+        <svg width="120" height="90" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block;">
+          <!-- Envelope base (amber/orange from image) -->
+          <rect x="15" y="24" width="90" height="54" rx="8" fill="#FBA632" />
+          
+          <!-- Masked password pill inside envelope -->
+          <rect x="42" y="44" width="36" height="15" rx="3" fill="#FFFFFF" />
+          <text x="60" y="55" font-family="'Courier New', monospace" font-size="10" font-weight="bold" fill="#5C1318" text-anchor="middle" letter-spacing="1">******</text>
+          
+          <!-- Envelope flap creases -->
+          <path d="M15 24 L60 55 L105 24" stroke="#E28F1B" stroke-width="2" fill="none" />
+          <path d="M15 78 L48 50" stroke="#E28F1B" stroke-width="1.5" />
+          <path d="M105 78 L72 50" stroke="#E28F1B" stroke-width="1.5" />
+
+          <!-- Overlapping Key (burgundy/gold) -->
+          <circle cx="32" cy="48" r="9" stroke="#5C1318" stroke-width="3" fill="#FAF6EE" />
+          <path d="M32 57 L32 75" stroke="#5C1318" stroke-width="3" stroke-linecap="round" />
+          <path d="M32 64 L39 64" stroke="#5C1318" stroke-width="3" stroke-linecap="round" />
+          <path d="M32 70 L37 70" stroke="#5C1318" stroke-width="3" stroke-linecap="round" />
+        </svg>
       </div>
-      <p>If you did not request this, please ignore this email or contact our support team immediately.</p>
-    </div>
-    <div class="footer">
-      <p>© 2026 Ratnamayuri · Made with ♡ in India</p>
+
+      <!-- Content -->
+      <h2 class="title">${titleText}</h2>
+      <p class="desc">
+        Hello ${name || 'User'}, we have generated a secure verification code to ${purposeText}. Please enter the 6-digit code below in your browser.
+      </p>
+
+      <!-- 6 Individual Digit Blocks (mimicking image typing state) -->
+      <table align="center" border="0" cellpadding="0" cellspacing="8" class="digit-table">
+        <tr>
+          <td class="digit-box">${otp[0] || ''}</td>
+          <td class="digit-box">${otp[1] || ''}</td>
+          <td class="digit-box">${otp[2] || ''}</td>
+          <td class="digit-box-active">${otp[3] || ''}</td>
+          <td class="digit-box">${otp[4] || ''}</td>
+          <td class="digit-box">${otp[5] || ''}</td>
+        </tr>
+      </table>
+
+      <p class="note">
+        Valid for ${config.otpExpireMinutes} minutes · Keep this OTP private
+      </p>
+
+      <!-- Bottom verification seal CTA -->
+      <div class="btn-container">
+        <span class="btn">VERIFY SECURELY</span>
+      </div>
+
+      <!-- Brand Footer -->
+      <div class="footer">
+        RATNAMAYURI LUXURY SERVICES · © 2026
+      </div>
     </div>
   </div>
 </body>

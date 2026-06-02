@@ -18,14 +18,16 @@ interface AuthState {
 }
 
 const isClient = typeof window !== "undefined";
+const cookieToken = isClient ? Cookies.get("access_token") : null;
+const cookieRole = isClient ? (Cookies.get("user_role") as UserRole) : null;
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      role: null,
-      isAuthenticated: false,
-      isLoading: true,  // start as loading so UI waits for rehydration
+      role: cookieRole,
+      isAuthenticated: !!cookieToken,
+      isLoading: !cookieToken,  // start as loading only if we do not have a token yet
 
       setUser: (user) => set({ user, isAuthenticated: true, role: user.role, isLoading: false }),
 

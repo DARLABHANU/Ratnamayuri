@@ -222,15 +222,20 @@ export default function Footer() {
         </div>
 
         {/* ── 4. Legal, Copyright, & Verified Payment Badges ── */}
-        <div className="flex flex-col lg:flex-row justify-between items-center gap-8 pt-4">
-          <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-6 text-center sm:text-left">
+        <div className="flex flex-col lg:flex-row justify-between items-center gap-8 pt-4 border-t border-[#5A1212]/30 mt-8">
+          <div className="flex flex-col xl:flex-row xl:items-center gap-4 text-center xl:text-left w-full xl:w-auto">
             <p className="font-garamond text-xs text-[#9a7070]">
-              © 2026 Ratnamayuri Jewellery & Sarees. All Rights Reserved. Crafted with absolute devotion to Indian Craftsmanship.
+              © 2026 Ratnamayuri Jewellery &amp; Sarees. All Rights Reserved. Crafted with absolute devotion to Indian Craftsmanship.
             </p>
-            <div className="flex items-center gap-4 text-xs font-garamond">
-              <Link href="/terms" className="text-[#9a7070] hover:text-[#E8D5B0] transition-colors">Terms of Service</Link>
+            <div className="flex flex-wrap items-center justify-center xl:justify-start gap-x-3 gap-y-1.5 text-xs font-garamond text-[#9a7070]">
+              <span className="text-[#5A1212] hidden xl:inline">|</span>
+              <Link href="/privacy-policy" className="hover:text-[#E8D5B0] transition-colors">Privacy Policy</Link>
               <span className="text-[#5A1212]">|</span>
-              <Link href="/privacy" className="text-[#9a7070] hover:text-[#E8D5B0] transition-colors">Privacy Policy</Link>
+              <Link href="/terms-of-service" className="hover:text-[#E8D5B0] transition-colors">Terms of Service</Link>
+              <span className="text-[#5A1212]">|</span>
+              <Link href="/shipping-policy" className="hover:text-[#E8D5B0] transition-colors">Shipping &amp; Delivery</Link>
+              <span className="text-[#5A1212]">|</span>
+              <Link href="/refund-policy" className="hover:text-[#E8D5B0] transition-colors">Cancellation &amp; Refund Policy</Link>
             </div>
           </div>
           

@@ -551,7 +551,7 @@ export default function HomePage() {
 
         {/* ── Hero Carousel ─────────────────────────────────────────────────── */}
         {/* Full-bleed rectangular banner carousel — matches reference exactly */}
-        <section className="relative w-full overflow-hidden" style={{ height: "clamp(260px, 45vw, 580px)" }}>
+        <section className="relative w-full overflow-hidden" style={{ height: "clamp(290px, 45vw, 580px)" }}>
 
           {/* Full bleed image background */}
           <div className="relative w-full h-full">
@@ -565,7 +565,7 @@ export default function HomePage() {
 
             {/* Seamless blended text overlay on the left */}
             <div
-              className="absolute inset-y-0 left-0 w-[50%] sm:w-[52%] md:w-[55%] flex flex-col justify-center transition-all duration-700"
+              className="absolute inset-y-0 left-0 w-[55%] sm:w-[52%] md:w-[55%] flex flex-col justify-center transition-all duration-700"
               style={{
                 background: `linear-gradient(to right, ${
                   cur.bg.includes("#FAF0E4") ? "#FAF0E4 70%, rgba(250,240,228,0.85) 85%, transparent 100%" :
@@ -577,20 +577,20 @@ export default function HomePage() {
             >
               {/* Gold tag line: — TIMELESS BEAUTY. — */}
               <p
-                className="flex items-center gap-3 font-semibold tracking-widest mb-5 transition-all duration-500"
-                style={{ color: "#C9973E", fontSize: "11px" }}
+                className="flex items-center gap-3 font-semibold tracking-widest mb-2 sm:mb-4 md:mb-5 transition-all duration-500 text-[9px] sm:text-[11px]"
+                style={{ color: "#C9973E" }}
               >
-                <span style={{ display: "inline-block", width: "28px", height: "1px", backgroundColor: "#C9973E" }} />
+                <span className="hidden sm:inline-block" style={{ width: "28px", height: "1px", backgroundColor: "#C9973E" }} />
                 {cur.tag}
-                <span style={{ display: "inline-block", width: "28px", height: "1px", backgroundColor: "#C9973E" }} />
+                <span className="hidden sm:inline-block" style={{ width: "28px", height: "1px", backgroundColor: "#C9973E" }} />
               </p>
 
               {/* Main heading — large bold serif, very close to reference */}
               <h1
-                className="font-bold leading-[1.1] mb-3 lg:mb-5 transition-all duration-500"
+                className="font-bold leading-[1.1] mb-2 sm:mb-3 md:mb-5 transition-all duration-500"
                 style={{
                   fontFamily: "Georgia, 'Times New Roman', serif",
-                  fontSize: "clamp(1.1rem, 5vw, 3.6rem)",
+                  fontSize: "clamp(1.05rem, 5vw, 3.6rem)",
                   color: "#1a0505",
                   letterSpacing: "-0.5px",
                 }}
@@ -607,8 +607,8 @@ export default function HomePage() {
 
               {/* Subtitle */}
               <p
-                className="mb-9 transition-all duration-500"
-                style={{ color: "#5a4040", fontSize: "clamp(0.9rem, 1.2vw, 1rem)", fontWeight: 400 }}
+                className="mb-4 sm:mb-6 md:mb-9 transition-all duration-500 line-clamp-2 sm:line-clamp-none"
+                style={{ color: "#5a4040", fontSize: "clamp(0.8rem, 1.2vw, 1rem)", fontWeight: 400 }}
               >
                 {cur.sub}
               </p>
@@ -621,7 +621,7 @@ export default function HomePage() {
                   backgroundColor: "#5C1010",
                   color: "#ffffff",
                   padding: "clamp(8px, 1.5vw, 14px) clamp(16px, 3vw, 32px)",
-                  fontSize: "clamp(10px, 1.2vw, 13px)",
+                  fontSize: "clamp(9px, 1.2vw, 13px)",
                   letterSpacing: "0.12em",
                   display: "inline-block",
                 }}
@@ -656,7 +656,7 @@ export default function HomePage() {
           {/* ── Dots — positioned absolutely over text section */}
           <div
             className="absolute z-30 flex items-center gap-2"
-            style={{ bottom: "24px", left: "20%", transform: "translateX(-50%)" }}
+            style={{ bottom: "12px", left: "20%", transform: "translateX(-50%)" }}
           >
             {HERO_SLIDES.map((_, i) => (
               <button

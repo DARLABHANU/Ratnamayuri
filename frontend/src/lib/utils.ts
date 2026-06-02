@@ -44,14 +44,14 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  confirmed: "bg-blue-100 text-blue-800",
-  processing: "bg-purple-100 text-purple-800",
-  shipped: "bg-indigo-100 text-indigo-800",
-  out_for_delivery: "bg-orange-100 text-orange-800",
-  delivered: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
-  refunded: "bg-gray-100 text-gray-800",
+  pending: "!bg-amber-600 !text-white font-semibold",
+  confirmed: "!bg-blue-600 !text-white font-semibold",
+  processing: "!bg-purple-600 !text-white font-semibold",
+  shipped: "!bg-indigo-600 !text-white font-semibold",
+  out_for_delivery: "!bg-orange-600 !text-white font-semibold",
+  delivered: "!bg-emerald-700 !text-white font-semibold",
+  cancelled: "!bg-red-700 !text-white font-semibold",
+  refunded: "!bg-slate-600 !text-white font-semibold",
 };
 
 export const ORDER_STATUS_STEPS: OrderStatus[] = [

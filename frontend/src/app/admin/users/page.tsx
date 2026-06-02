@@ -198,10 +198,10 @@ function UsersContent() {
                         <td className="table-td font-cinzel text-xs text-muted">{user.account_number}</td>
                         <td className="table-td">
                           <span className={`badge text-xs capitalize
-                            ${user.role === "admin" ? "bg-red-100 text-red-700" :
-                              user.role === "merchant" ? "bg-purple-100 text-purple-700" :
-                              user.role === "support" ? "bg-blue-100 text-blue-700" :
-                              "bg-gray-100 text-gray-600"}`}>
+                            ${user.role === "admin" ? "!bg-red-700 !text-white font-semibold" :
+                              user.role === "merchant" ? "!bg-purple-600 !text-white font-semibold" :
+                              user.role === "support" ? "!bg-blue-600 !text-white font-semibold" :
+                              "!bg-slate-600 !text-white font-semibold"}`}>
                             {user.role}
                           </span>
                         </td>
@@ -301,8 +301,8 @@ function UsersContent() {
                       <td className="table-td py-4">
                         <span className={`badge text-[10px] tracking-wide font-cinzel font-medium inline-block py-1 px-2.5 rounded-full
                           ${merchant.is_approved
-                            ? "bg-green-50 text-green-700 border border-green-200"
-                            : "bg-yellow-50 text-yellow-700 border border-yellow-200 animate-pulse"}`}>
+                            ? "!bg-emerald-700 !text-white font-semibold"
+                            : "!bg-amber-600 !text-white font-semibold animate-pulse"}`}>
                           {merchant.is_approved ? "✓ APPROVED" : "⏳ PENDING"}
                         </span>
                       </td>

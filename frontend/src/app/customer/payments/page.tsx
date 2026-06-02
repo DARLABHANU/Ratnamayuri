@@ -94,10 +94,10 @@ export default function PaymentHistoryPage() {
                 {payments.map((p) => {
                   const paymentStatus = p.payment_status || "paid";
                   const statusColors: Record<string, string> = {
-                    paid: "bg-green-100 text-green-700",
-                    pending: "bg-yellow-100 text-yellow-700",
-                    failed: "bg-red-100 text-red-700",
-                    refunded: "bg-blue-100 text-blue-700",
+                    paid: "!bg-emerald-700 !text-white font-semibold",
+                    pending: "!bg-amber-600 !text-white font-semibold",
+                    failed: "!bg-red-700 !text-white font-semibold",
+                    refunded: "!bg-blue-600 !text-white font-semibold",
                   };
 
                   return (

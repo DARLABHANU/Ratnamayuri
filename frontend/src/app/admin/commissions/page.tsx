@@ -10,10 +10,10 @@ import { Commission, CommissionStatus } from "@/types";
 import { formatPrice, formatDate, getApiError } from "@/lib/utils";
 
 const STATUS_COLORS: Record<CommissionStatus, string> = {
-  pending:  "bg-yellow-100 text-yellow-700",
-  approved: "bg-blue-100 text-blue-700",
-  paid:     "bg-green-100 text-green-700",
-  rejected: "bg-red-100 text-red-700",
+  pending:  "!bg-amber-600 !text-white font-semibold",
+  approved: "!bg-blue-600 !text-white font-semibold",
+  paid:     "!bg-emerald-700 !text-white font-semibold",
+  rejected: "!bg-red-700 !text-white font-semibold",
 };
 
 export default function AdminCommissionsPage() {

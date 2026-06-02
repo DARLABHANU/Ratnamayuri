@@ -213,7 +213,7 @@ export default function AdminCouponsPage() {
                     {coupon.valid_until ? formatDate(coupon.valid_until) : "No expiry"}
                   </td>
                   <td className="table-td">
-                    <span className={`badge text-xs ${coupon.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                    <span className={`badge text-xs ${coupon.is_active ? "!bg-emerald-700 !text-white font-semibold" : "!bg-slate-600 !text-white font-semibold"}`}>
                       {coupon.is_active ? "Active" : "Inactive"}
                     </span>
                   </td>

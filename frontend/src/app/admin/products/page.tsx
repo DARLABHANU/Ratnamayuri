@@ -150,12 +150,12 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="table-td font-garamond text-sm text-muted">{p.total_sold}</td>
                   <td className="table-td">
-                    <span className={`badge text-xs ${p.is_approved ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                    <span className={`badge text-xs ${p.is_approved ? "!bg-emerald-700 !text-white font-semibold" : "!bg-red-700 !text-white font-semibold"}`}>
                       {p.is_approved ? "Approved" : "Pending Review"}
                     </span>
                   </td>
                   <td className="table-td">
-                    <span className={`badge text-xs ${p.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                    <span className={`badge text-xs ${p.is_active ? "!bg-emerald-700 !text-white font-semibold" : "!bg-slate-600 !text-white font-semibold"}`}>
                       {p.is_active ? "Active" : "Hidden"}
                     </span>
                   </td>

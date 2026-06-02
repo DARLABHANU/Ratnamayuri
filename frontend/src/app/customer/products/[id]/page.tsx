@@ -4,24 +4,35 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { 
   ShoppingBag, Star, Package, ChevronLeft, Plus, Minus, 
-  Loader2, Heart, Truck, MapPin, BadgePercent, ShieldCheck, 
-  Map, ThumbsUp, RefreshCw, MessageSquare 
+  Loader2, Heart, BadgePercent, ShieldCheck, 
+  ThumbsUp, RefreshCw, MessageSquare, Camera, Trash2, Image as ImageIcon
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { productApi, addressApi } from "@/lib/api";
-import { Product, Address } from "@/types";
-import { formatPrice, getProductImage, getApiError } from "@/lib/utils";
+import { productApi } from "@/lib/api";
+import { Product } from "@/types";
+import { formatPrice, getProductImage, getApiError, formatDate } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import Link from "next/link";
 import ProductCard from "@/components/customer/ProductCard";
 
+interface Review {
+  id: number;
+  product_id: number;
+  rating: number;
+  comment: string;
+  images: string[];
+  created_at: string;
+  reviewer_name: string;
+  reviewer_avatar: string | null;
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { addItem } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [product, setProduct] = useState<Product | null>(null);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,16 +42,14 @@ export default function ProductDetailPage() {
   const { toggleWishlist, isWishlisted } = useWishlistStore();
   const wishlisted = product ? isWishlisted(product.id) : false;
 
-  // Delivery & Map States
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
-  const [customPincode, setCustomPincode] = useState("");
-  const [customCity, setCustomCity] = useState("");
-  const [customState, setCustomState] = useState("");
-  const [mapDestination, setMapDestination] = useState("Guntur (Godown)");
-  const [mapDistance, setMapDistance] = useState(0);
-  const [mapETA, setMapETA] = useState("");
-  const [mapPathProgress, setMapPathProgress] = useState(0);
+  // Reviews States
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isFetchingReviews, setIsFetchingReviews] = useState(true);
+  const [userRating, setUserRating] = useState(5);
+  const [userRatingHover, setUserRatingHover] = useState(0);
+  const [commentText, setCommentText] = useState("");
+  const [selectedReviewFiles, setSelectedReviewFiles] = useState<{ file: File; preview: string }[]>([]);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -62,124 +71,113 @@ export default function ProductDetailPage() {
       .finally(() => setIsLoading(false));
   }, [id]);
 
-  // Load addresses when logged in
+  // Load real reviews for the product
   useEffect(() => {
-    if (isAuthenticated) {
-      addressApi.list()
+    if (product) {
+      setIsFetchingReviews(true);
+      productApi.getReviews(product.id)
         .then((res) => {
-          setAddresses(res.data);
-          const def = res.data.find((a: Address) => a.is_default);
-          if (def) {
-            setSelectedAddressId(def.id);
-            updateDeliveryMetrics(def.city, def.state);
-          } else if (res.data.length > 0) {
-            setSelectedAddressId(res.data[0].id);
-            updateDeliveryMetrics(res.data[0].city, res.data[0].state);
-          } else {
-            // Default to AP/Guntur local
-            updateDeliveryMetrics("Guntur", "Andhra Pradesh");
-          }
+          setReviews(res.data);
         })
-        .catch(() => {});
-    } else {
-      // Default to Guntur Godown local
-      updateDeliveryMetrics("Guntur", "Andhra Pradesh");
+        .catch((err) => {
+          console.error("Failed to load reviews:", err);
+        })
+        .finally(() => setIsFetchingReviews(false));
     }
-  }, [isAuthenticated]);
+  }, [product]);
 
-  // Trigger metrics update when user changes selected address
-  const handleAddressChange = (addrId: number) => {
-    setSelectedAddressId(addrId);
-    const addr = addresses.find((a) => a.id === addrId);
-    if (addr) {
-      updateDeliveryMetrics(addr.city, addr.state);
-      toast.success(`Shipping route recalculated to ${addr.city}!`);
+  // Review Photo Helpers
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      const newFiles = filesArray.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      setSelectedReviewFiles((prev) => [...prev, ...newFiles]);
     }
   };
 
-  const handleCustomPincodeSubmit = (e: React.FormEvent) => {
+  const handleRemoveFile = (index: number) => {
+    setSelectedReviewFiles((prev) => {
+      const newFiles = [...prev];
+      URL.revokeObjectURL(newFiles[index].preview);
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
+  };
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customPincode.trim()) return;
-
-    // Simple mock geolocation mapping from pincodes
-    let city = "Hyderabad";
-    let state = "Telangana";
-    const digit = customPincode.charAt(0);
-
-    if (customPincode.startsWith("522")) {
-      city = "Guntur Local";
-      state = "Andhra Pradesh";
-    } else if (digit === "5") {
-      city = "Vijayawada / Nellore";
-      state = "Andhra Pradesh";
-    } else if (digit === "6") {
-      city = "Chennai / Bangalore";
-      state = "Tamil Nadu / Karnataka";
-    } else if (digit === "4") {
-      city = "Mumbai / Pune";
-      state = "Maharashtra";
-    } else if (digit === "1" || digit === "2") {
-      city = "New Delhi / NCR";
-      state = "Delhi";
-    } else if (digit === "7") {
-      city = "Kolkata / Guwahati";
-      state = "West Bengal";
+    if (!isAuthenticated) {
+      toast.error("Please sign in to write a review.");
+      router.push("/auth/login");
+      return;
+    }
+    if (!commentText.trim()) {
+      toast.error("Please write some review text.");
+      return;
     }
 
-    setCustomCity(city);
-    setCustomState(state);
-    setSelectedAddressId(null); // Deselect address cards
-    updateDeliveryMetrics(city, state);
-    toast.success(`Delivery calculated for ${city}, ${customPincode}`);
-  };
+    setIsSubmittingReview(true);
+    try {
+      const uploadedUrls: string[] = [];
 
-  const updateDeliveryMetrics = (city: string, state: string) => {
-    const dest = `${city}, ${state}`;
-    setMapDestination(dest);
+      // 1. Upload each selected photo converting it to base64
+      for (const item of selectedReviewFiles) {
+        const base64Str = await convertToBase64(item.file);
+        const uploadRes = await productApi.upload({
+          filename: item.file.name,
+          base64: base64Str,
+        });
+        if (uploadRes.data?.url) {
+          uploadedUrls.push(uploadRes.data.url);
+        }
+      }
 
-    // Dynamic routing parameters calculated from GUNTUR, AP
-    let dist = 15;
-    let days = 1;
-    let progressVal = 98; // almost immediate
+      // 2. Submit the completed review payload to the backend router
+      const addRes = await productApi.addReview(product!.id, {
+        rating: userRating,
+        comment: commentText.trim(),
+        images: uploadedUrls,
+      });
 
-    const lowerState = state.toLowerCase();
-    const lowerCity = city.toLowerCase();
+      // 3. Prepend the newly created review dynamically to update UI instantly!
+      setReviews((prev) => [addRes.data, ...prev]);
 
-    if (lowerCity.includes("guntur")) {
-      dist = 12;
-      days = 1;
-      progressVal = 98;
-    } else if (lowerState.includes("andhra pradesh")) {
-      dist = Math.floor(Math.random() * 250) + 50;
-      days = 2;
-      progressVal = 75;
-    } else if (lowerState.includes("telangana") || lowerCity.includes("hyderabad")) {
-      dist = Math.floor(Math.random() * 100) + 260;
-      days = 2;
-      progressVal = 65;
-    } else if (lowerState.includes("karnataka") || lowerState.includes("tamil nadu") || lowerState.includes("odisha")) {
-      dist = Math.floor(Math.random() * 300) + 500;
-      days = 3;
-      progressVal = 50;
-    } else if (lowerState.includes("maharashtra") || lowerState.includes("gujarat") || lowerState.includes("west bengal")) {
-      dist = Math.floor(Math.random() * 500) + 800;
-      days = 4;
-      progressVal = 35;
-    } else {
-      // North India / North East
-      dist = Math.floor(Math.random() * 800) + 1400;
-      days = 6;
-      progressVal = 20;
+      // 4. Update the local product review stats
+      if (product) {
+        const newCount = (product.rating_count || 0) + 1;
+        const newAvg = ((product.rating_avg || 0) * (product.rating_count || 0) + userRating) / newCount;
+        setProduct({
+          ...product,
+          rating_count: newCount,
+          rating_avg: Math.round(newAvg * 10) / 10,
+        });
+      }
+
+      toast.success("Thank you for your feedback!");
+
+      // 5. Reset input fields
+      setCommentText("");
+      setUserRating(5);
+      // Revoke preview object URLs to release memory
+      selectedReviewFiles.forEach((f) => URL.revokeObjectURL(f.preview));
+      setSelectedReviewFiles([]);
+    } catch (err) {
+      toast.error(getApiError(err) || "Failed to submit review.");
+    } finally {
+      setIsSubmittingReview(false);
     }
-
-    setMapDistance(dist);
-    setMapPathProgress(progressVal);
-
-    // Calculate delivery date formatted like Amazon: "Wednesday, June 3"
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + days);
-    const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
-    setMapETA(targetDate.toLocaleDateString('en-US', options));
   };
 
   const handleAddToCart = async () => {
@@ -214,6 +212,23 @@ export default function ProductDetailPage() {
     } finally {
       setIsAdding(false);
     }
+  };
+
+  // Dynamic reviews metrics calculations
+  const totalReviewsCount = reviews.length > 0 ? reviews.length : (product?.rating_count || 0);
+  const averageRating = reviews.length > 0 
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length)
+    : (product?.rating_avg || 0);
+
+  // Compute percentages
+  const getStarPercentage = (starNum: number) => {
+    if (reviews.length === 0) {
+      // Return beautiful default static layouts if there are no reviews yet
+      const staticMap: Record<number, number> = { 5: 70, 4: 18, 3: 8, 2: 3, 1: 1 };
+      return staticMap[starNum] || 0;
+    }
+    const count = reviews.filter(r => r.rating === starNum).length;
+    return Math.round((count / reviews.length) * 100);
   };
 
   if (isLoading) return (
@@ -309,13 +324,13 @@ export default function ProductDetailPage() {
                 <Star 
                   key={i} 
                   size={15}
-                  fill={i < (product.rating_avg || 4.5) ? "#F5A623" : "none"}
+                  fill={i < Math.round(averageRating) ? "#F5A623" : "none"}
                   className="text-[#F5A623]" 
                 />
               ))}
             </div>
             <span className="text-xs text-blue-600 hover:text-red-700 cursor-pointer font-medium mt-0.5">
-              {(product.rating_avg || 4.5).toFixed(1)} rating · {product.rating_count || 12} customer reviews
+              {averageRating.toFixed(1)} rating · {totalReviewsCount} customer reviews
             </span>
           </div>
 
@@ -400,10 +415,10 @@ export default function ProductDetailPage() {
             {/* expected Delivery Date Widget */}
             <div className="border-t border-b border-gray-100 py-3 space-y-1 text-sm">
               <div className="flex items-center gap-1.5 text-gray-800">
-                <Truck size={16} className="text-gold-600" />
-                <span>Delivery by: <strong className="text-green-700">{mapETA}</strong></span>
+                <Package size={16} className="text-gold-600" />
+                <span>Shipping: <strong className="text-green-700">Free Express Delivery</strong></span>
               </div>
-              <p className="text-xs text-gray-500 pl-5">Direct dispatch from master godown hub</p>
+              <p className="text-xs text-gray-500 pl-5">Fully insured 3-5 business days dispatch</p>
             </div>
 
             {/* Stock status */}
@@ -474,117 +489,6 @@ export default function ProductDetailPage() {
             </button>
           </div>
 
-          {/* ================= GUNTUR DELIVERY LIVE ROUTE MAP ================= */}
-          <div className="border border-gold-200 rounded-lg overflow-hidden bg-ivory shadow-sm">
-            <div className="bg-[#6B1A1A] text-white p-3 flex items-center gap-2">
-              <Map size={16} className="text-gold-400 animate-pulse" />
-              <span className="font-cinzel text-xs font-bold tracking-wider">Transit Route Planner</span>
-            </div>
-
-            <div className="p-4 space-y-4">
-              {/* Address Picker Dropdown */}
-              {isAuthenticated && addresses.length > 0 ? (
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-gray-500 tracking-wider">SELECT DELIVERY ADDRESS</label>
-                  <select 
-                    value={selectedAddressId || ""} 
-                    onChange={(e) => handleAddressChange(Number(e.target.value))}
-                    className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs bg-white text-gray-700"
-                  >
-                    {addresses.map((addr) => (
-                      <option key={addr.id} value={addr.id}>
-                        {addr.label.toUpperCase()} - {addr.city}, {addr.state}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
-
-              {/* Custom Pincode Check */}
-              <form onSubmit={handleCustomPincodeSubmit} className="space-y-1">
-                <label className="block text-[10px] font-bold text-gray-500 tracking-wider">ENTER CUSTOM PINCODE</label>
-                <div className="flex gap-1.5">
-                  <input 
-                    type="text" 
-                    placeholder="E.g. 500001 or 400001" 
-                    value={customPincode}
-                    onChange={(e) => setCustomPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    className="flex-1 border border-gray-300 rounded px-2.5 py-1 text-xs outline-none focus:border-gold-500 bg-white text-gray-800"
-                  />
-                  <button type="submit" className="bg-[#6B1A1A] text-gold-400 font-cinzel font-bold text-[10px] px-3 py-1 rounded hover:bg-gold-600 transition-colors">
-                    CALCULATE
-                  </button>
-                </div>
-              </form>
-
-              {/* Interactive Shipping Road Map Vector representation */}
-              <div className="relative h-28 w-full bg-[#FAF9F6] border border-gold-100 rounded-md overflow-hidden p-2">
-                {/* Visual Route Grid Lines */}
-                <div className="absolute inset-0 opacity-5 pointer-events-none" 
-                  style={{ 
-                    backgroundImage: "radial-gradient(#C9A96E 1px, transparent 1px)", 
-                    backgroundSize: "10px 10px" 
-                  }} 
-                />
-
-                <svg className="w-full h-full" viewBox="0 0 300 90" preserveAspectRatio="none">
-                  {/* Highway Line Guntur to Dest */}
-                  <path d="M 30,55 Q 150,15 270,45" fill="none" stroke="#E5E7EB" strokeWidth="3" strokeLinecap="round" />
-                  
-                  {/* Flow Route Line */}
-                  <path d="M 30,55 Q 150,15 270,45" fill="none" stroke="#C9973E" strokeWidth="3" strokeLinecap="round"
-                    strokeDasharray="300" strokeDashoffset={300 - (3 * mapPathProgress)} className="transition-all duration-1000 ease-out" />
-                  
-                  {/* Hub (Guntur) */}
-                  <g transform="translate(30, 55)">
-                    <circle r="5" fill="#FAF6EE" stroke="#6B1A1A" strokeWidth="2" />
-                    <circle r="2.5" fill="#6B1A1A" />
-                    <text y="-8" textAnchor="middle" className="font-mono text-[7px] font-bold fill-brown">Guntur Hub</text>
-                  </g>
-
-                  {/* Destination */}
-                  <g transform="translate(270, 45)">
-                    <circle r="6" fill="#FAF6EE" stroke="#22C55E" strokeWidth="2" className="animate-pulse" />
-                    <circle r="3" fill="#22C55E" />
-                    <text y="-10" textAnchor="middle" className="font-mono text-[7px] font-bold fill-brown">Destination</text>
-                  </g>
-
-                  {/* Truck Node */}
-                  <g transform="translate(150, 26)">
-                    <circle r="10" fill="#6B1A1A" className="animate-ping opacity-15" />
-                    <circle r="6" fill="#6B1A1A" />
-                    <Truck size={6} className="text-white absolute -mt-1 -ml-1 text-[6px] translate-x-1.5 translate-y-1.5" />
-                  </g>
-                </svg>
-
-                {/* Details absolute tooltip card */}
-                <div className="absolute bottom-1 right-1 bg-white/95 px-2 py-0.5 border border-gold-200 text-[8px] font-mono tracking-tighter text-gray-500 rounded">
-                  Route: Guntur → {mapDestination.split(",")[0]}
-                </div>
-              </div>
-
-              {/* Delivery stats list */}
-              <div className="space-y-1.5 text-xs border-t border-gold-100 pt-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Dispatch Godown:</span>
-                  <span className="font-bold text-gray-800">Guntur (Andhra Pradesh)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Delivery Location:</span>
-                  <span className="font-bold text-gray-800">{mapDestination}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Estimated Distance:</span>
-                  <span className="font-bold text-green-700 font-mono">{mapDistance} KM</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Estimated Duration:</span>
-                  <span className="font-bold text-green-700">{Math.ceil(mapDistance / 350)} Transit Days</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
 
@@ -609,7 +513,7 @@ export default function ProductDetailPage() {
       )}
 
       {/* ================= CUSTOMER REVIEWS & FEEDBACK BREAKDOWN ================= */}
-      <div className="mt-16 pt-10 border-t border-gray-100 grid md:grid-cols-12 gap-8">
+      <div className="mt-16 pt-10 border-t border-gray-100 grid md:grid-cols-12 gap-8 lg:gap-12">
         
         {/* Left Review Matrix */}
         <div className="md:col-span-4 space-y-4">
@@ -618,108 +522,207 @@ export default function ProductDetailPage() {
           <div className="flex items-center gap-2">
             <div className="flex gap-0.5">
               {Array(5).fill(0).map((_, i) => (
-                <Star key={i} size={18} fill={i < 4 ? "#F5A623" : "none"} className="text-[#F5A623]" />
+                <Star 
+                  key={i} 
+                  size={18} 
+                  fill={i < Math.round(averageRating) ? "#F5A623" : "none"} 
+                  className="text-[#F5A623]" 
+                />
               ))}
             </div>
-            <span className="text-sm font-semibold text-gray-800">4.5 out of 5</span>
+            <span className="text-sm font-semibold text-gray-800">
+              {averageRating.toFixed(1)} out of 5
+            </span>
           </div>
-          <p className="text-xs text-gray-400">{(product.rating_count || 12) * 4} global ratings</p>
+          <p className="text-xs text-gray-400">{totalReviewsCount} customer ratings</p>
 
-          {/* Progress matrix */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 text-xs text-blue-600 hover:underline cursor-pointer">
-              <span>5 star</span>
-              <div className="flex-1 h-4 bg-gray-200 rounded overflow-hidden">
-                <div className="h-full bg-[#F5A623]" style={{ width: "70%" }} />
-              </div>
-              <span>70%</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-blue-600 hover:underline cursor-pointer">
-              <span>4 star</span>
-              <div className="flex-1 h-4 bg-gray-200 rounded overflow-hidden">
-                <div className="h-full bg-[#F5A623]" style={{ width: "18%" }} />
-              </div>
-              <span>18%</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-blue-600 hover:underline cursor-pointer">
-              <span>3 star</span>
-              <div className="flex-1 h-4 bg-gray-200 rounded overflow-hidden">
-                <div className="h-full bg-[#F5A623]" style={{ width: "8%" }} />
-              </div>
-              <span>8%</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-blue-600 hover:underline cursor-pointer">
-              <span>2 star</span>
-              <div className="flex-1 h-4 bg-gray-200 rounded overflow-hidden">
-                <div className="h-full bg-[#F5A623]" style={{ width: "3%" }} />
-              </div>
-              <span>3%</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-blue-600 hover:underline cursor-pointer">
-              <span>1 star</span>
-              <div className="flex-1 h-4 bg-gray-200 rounded overflow-hidden">
-                <div className="h-full bg-[#F5A623]" style={{ width: "1%" }} />
-              </div>
-              <span>1%</span>
-            </div>
+          {/* Dynamic Progress matrix */}
+          <div className="space-y-2.5">
+            {[5, 4, 3, 2, 1].map((star) => {
+              const pct = getStarPercentage(star);
+              return (
+                <div key={star} className="flex items-center gap-3 text-xs text-blue-600 hover:underline cursor-pointer">
+                  <span className="w-8 flex-shrink-0 text-right">{star} star</span>
+                  <div className="flex-1 h-3.5 bg-gray-100 border border-gray-200 rounded overflow-hidden">
+                    <div className="h-full bg-[#F5A623] transition-all duration-500" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="w-8 flex-shrink-0 text-left font-medium text-gray-700">{pct}%</span>
+                </div>
+              );
+            })}
           </div>
+
+          {/* Add Review Panel */}
+          {isAuthenticated ? (
+            <div className="border-t border-gray-100 pt-6 mt-6 space-y-4">
+              <h3 className="font-cinzel text-xs font-bold tracking-widest text-[#6B1A1A] uppercase">Share Your Feedback</h3>
+              <form onSubmit={handleSubmitReview} className="space-y-4 bg-[#FAF9F6] border border-gold-200 p-4 rounded-md shadow-sm">
+                <div>
+                  <label className="block text-[9px] font-bold text-gray-500 mb-1 font-cinzel tracking-widest">SELECT RATING</label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setUserRating(star)}
+                        onMouseEnter={() => setUserRatingHover(star)}
+                        onMouseLeave={() => setUserRatingHover(0)}
+                        className="hover:scale-110 transition-transform"
+                      >
+                        <Star
+                          size={20}
+                          fill={star <= (userRatingHover || userRating) ? "#F5A623" : "none"}
+                          className="text-[#F5A623]"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold text-gray-500 mb-1 font-cinzel tracking-widest">WRITE A CRITIQUE</label>
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Describe the design quality, material texture, and weaving precision of this masterpiece."
+                    rows={4}
+                    className="w-full border border-gray-300 rounded p-2.5 text-xs outline-none focus:border-gold-500 font-serif bg-white text-gray-800 leading-relaxed"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold text-gray-500 mb-1.5 font-cinzel tracking-widest">ADD PRODUCT IMAGES (OPTIONAL)</label>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <label className="w-12 h-12 border border-dashed border-gray-400 hover:border-gold-500 rounded flex flex-col items-center justify-center cursor-pointer bg-white transition-colors">
+                      <Camera size={16} className="text-gray-400" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleFileChange}
+                        className="sr-only"
+                      />
+                    </label>
+                    {selectedReviewFiles.map((fileItem, idx) => (
+                      <div key={idx} className="relative w-12 h-12 border border-gray-200 rounded overflow-hidden">
+                        <img src={fileItem.preview} alt="" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(idx)}
+                          className="absolute -top-0.5 -right-0.5 bg-red-600 text-white rounded-full p-0.5 hover:bg-red-700 shadow-sm transition-colors"
+                        >
+                          <Trash2 size={8} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="w-full bg-[#6B1A1A] hover:bg-gold-600 text-white font-cinzel font-bold text-[10px] py-2.5 px-4 rounded tracking-widest transition-colors shadow-sm flex items-center justify-center gap-2"
+                >
+                  {isSubmittingReview ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin text-white" />
+                      SUBMITTING FEEDBACK...
+                    </>
+                  ) : (
+                    "SUBMIT REVIEW"
+                  )}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="border-t border-gray-100 pt-6 mt-6 p-4 rounded bg-ivory border border-gold-200">
+              <p className="text-xs text-gray-500 font-serif leading-relaxed mb-3">
+                Want to share your experience with this premium product? Please sign in to write a customer review.
+              </p>
+              <Link href="/auth/login" className="btn-primary py-2 text-center text-xs block font-cinzel font-bold tracking-wider">
+                SIGN IN TO REVIEW
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Right Comments panel */}
         <div className="md:col-span-8 space-y-6">
-          <h3 className="text-sm font-bold text-[#111]">Top reviews from India</h3>
+          <h3 className="text-sm font-bold text-[#111] uppercase tracking-wider font-cinzel border-b border-gray-100 pb-2">Top reviews from India</h3>
           
-          <div className="border-b border-gray-100 pb-5 space-y-2">
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">SR</div>
-              <span className="font-semibold text-gray-800">Sita Rao</span>
+          {isFetchingReviews ? (
+            <div className="py-12 flex items-center justify-center">
+              <Loader2 className="animate-spin text-gold-500" size={24} />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex gap-0.5">
-                {Array(5).fill(0).map((_, i) => (
-                  <Star key={i} size={11} fill="#F5A623" className="text-[#F5A623]" />
-                ))}
-              </div>
-              <span className="text-xs font-bold text-gray-800">Outstanding Handloom saree! Absolute masterpiece</span>
+          ) : reviews.length === 0 ? (
+            <div className="py-12 text-center font-serif text-gray-500">
+              <MessageSquare className="mx-auto text-gold-300 w-12 h-12 mb-3" />
+              <p className="text-lg">No reviews yet</p>
+              <p className="text-xs text-gray-400 mt-1">Be the first to share your thoughts about this masterpiece!</p>
             </div>
-            <p className="text-[10px] text-gray-500">Reviewed in India on May 15, 2026</p>
-            <p className="text-xs text-gray-600 font-serif">
-              Purchased for my daughter&apos;s wedding. The silk is extraordinarily soft, pure, and heavy. The Guntur dispatch was rapid — arrived in Vizag in less than 24 hours under pristine packing. Extremely happy!
-            </p>
-            <div className="flex items-center gap-3 text-xs text-gray-400 mt-2">
-              <button className="border border-gray-300 hover:bg-gray-50 px-2.5 py-0.5 rounded text-[10px] font-medium text-gray-700 flex items-center gap-1 shadow-sm">
-                <ThumbsUp size={10} /> Helpful
-              </button>
-              <span>|</span>
-              <span>Report abuse</span>
-            </div>
-          </div>
+          ) : (
+            <div className="space-y-6">
+              {reviews.map((review) => (
+                <div key={review.id} className="border-b border-gray-100 pb-5 space-y-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    {review.reviewer_avatar ? (
+                      <img src={review.reviewer_avatar} alt="" className="w-6 h-6 rounded-full object-cover border border-gray-200" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-[#FAF6EE] border border-gold-300 flex items-center justify-center font-bold text-[#6B1A1A] text-[10px]">
+                        {review.reviewer_name?.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="font-semibold text-gray-800">{review.reviewer_name}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-0.5">
+                      {Array(5).fill(0).map((_, i) => (
+                        <Star 
+                          key={i} 
+                          size={11} 
+                          fill={i < review.rating ? "#F5A623" : "none"} 
+                          className="text-[#F5A623]" 
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs font-bold text-gray-800">
+                      {review.rating === 5 ? "Highly Recommended!" : review.rating >= 4 ? "Very Good Purchase" : "Verified Purchase"}
+                    </span>
+                  </div>
+                  
+                  <p className="text-[10px] text-gray-500 font-mono">Reviewed in India on {formatDate(review.created_at)}</p>
+                  
+                  <p className="text-xs text-gray-600 font-serif leading-relaxed">
+                    {review.comment}
+                  </p>
 
-          <div className="border-b border-gray-100 pb-5 space-y-2">
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">PK</div>
-              <span className="font-semibold text-gray-800">Prasad K.</span>
+                  {/* Review Photos Clickable Grid */}
+                  {review.images && review.images.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1.5">
+                      {review.images.map((imgUrl, idx) => (
+                        <a 
+                          key={idx} 
+                          href={imgUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="relative w-16 h-16 border border-gray-200 rounded overflow-hidden hover:opacity-90 transition-opacity bg-[#FAF9F6] block flex-shrink-0"
+                        >
+                          <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 text-xs text-gray-400 mt-3 pt-1">
+                    <button className="border border-gray-300 hover:bg-gray-50 px-2.5 py-0.5 rounded text-[10px] font-medium text-gray-700 flex items-center gap-1 shadow-sm transition-colors">
+                      <ThumbsUp size={10} /> Helpful
+                    </button>
+                    <span>|</span>
+                    <span className="cursor-pointer hover:text-red-600 text-[10px] transition-colors">Report abuse</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex gap-0.5">
-                {Array(5).fill(0).map((_, i) => (
-                  <Star key={i} size={11} fill={i < 4 ? "#F5A623" : "none"} className="text-[#F5A623]" />
-                ))}
-              </div>
-              <span className="text-xs font-bold text-gray-800">Exquisite gold plating</span>
-            </div>
-            <p className="text-[10px] text-gray-500">Reviewed in India on May 20, 2026</p>
-            <p className="text-xs text-gray-600 font-serif">
-              Very premium packaging and finish. Highly detailed artwork. Route planner tracking was surprisingly fun and reliable. Delivering from Guntur directly makes it feel incredibly reliable. Highly recommended!
-            </p>
-            <div className="flex items-center gap-3 text-xs text-gray-400 mt-2">
-              <button className="border border-gray-300 hover:bg-gray-50 px-2.5 py-0.5 rounded text-[10px] font-medium text-gray-700 flex items-center gap-1 shadow-sm">
-                <ThumbsUp size={10} /> Helpful
-              </button>
-              <span>|</span>
-              <span>Report abuse</span>
-            </div>
-          </div>
+          )}
         </div>
 
       </div>

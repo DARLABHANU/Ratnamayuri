@@ -267,3 +267,18 @@
 [2026-06-01T15:00:09.494Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
 [2026-06-02T05:22:28.502Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
 [2026-06-02T05:22:28.591Z] req.query: {"is_featured":"true","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"is_featured":true}
+[2026-06-02T05:40:09.991Z] req.query: {"page":"1","page_size":"12","search":"Royal Temple Gold Choker Set","sort_by":"created_at","sort_order":"desc"} | filter: {"is_active":true,"is_approved":true,"$or":[{"name":{}},{"description":{}}]}
+[2026-06-02T05:40:10.257Z] req.query: {"page":"1","page_size":"12","search":"Royal Temple Gold Choker Set","sort_by":"created_at","sort_order":"desc"} | filter: {"is_active":true,"is_approved":true,"$or":[{"name":{}},{"description":{}}]}
+[2026-06-02T05:40:18.449Z] req.query: {"category_id":"1","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":1}
+[2026-06-02T05:40:18.604Z] req.query: {"category_id":"1","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":1}
+[2026-06-02T05:48:04.232Z] req.query: {"category_id":"1","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":1}
+[2026-06-02T05:48:04.310Z] req.query: {"category_id":"1","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":1}
+[2026-06-02T05:49:58.486Z] req.query: {"category_id":"1","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":1}
+[2026-06-02T05:49:58.505Z] req.query: {"category_id":"1","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":1}
+[2026-06-02T05:50:22.468Z] req.query: {"category_id":"1","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":1}
+[2026-06-02T05:50:22.612Z] req.query: {"category_id":"1","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":1}
+[2026-06-02T05:52:21.498Z] req.query: {"page":"1","page_size":"12","search":"Royal Temple Gold Choker Set","sort_by":"created_at","sort_order":"desc"} | filter: {"is_active":true,"is_approved":true,"$or":[{"name":{}},{"description":{}}]}
+[2026-06-02T05:52:21.536Z] req.query: {"page":"1","page_size":"12","search":"Royal Temple Gold Choker Set","sort_by":"created_at","sort_order":"desc"} | filter: {"is_active":true,"is_approved":true,"$or":[{"name":{}},{"description":{}}]}
+[2026-06-02T05:52:24.837Z] req.query: {"page":"1","page_size":"12","search":"Royal Temple Gold Choker Set","sort_by":"created_at","sort_order":"desc"} | filter: {"is_active":true,"is_approved":true,"$or":[{"name":{}},{"description":{}}]}
+[2026-06-02T05:52:26.457Z] req.query: {"category_id":"1","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":1}
+[2026-06-02T05:52:26.491Z] req.query: {"category_id":"1","page_size":"6"} | filter: {"is_active":true,"is_approved":true,"category_id":1}

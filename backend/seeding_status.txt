@@ -1,5 +1,5 @@
 --- DATABASE SEEDING STATUS REPORT ---
-Timestamp: 2026-06-02T04:54:41.434Z
+Timestamp: 2026-06-02T05:45:18.973Z
 
 COUNTS:
 - users: 14
@@ -33,8 +33,8 @@ CATEGORIES:
 - ID: 3 | Slug: bridal | Name: Bridal
 
 PRODUCTS (First 5):
-- SKU: RMJ-001 | Price: 145000 | CatID: 1 | Name: Royal Temple Gold Choker Set
-- SKU: RMJ-002 | Price: 34000 | CatID: 1 | Name: Kundan Polki Pearl Jhumkas
-- SKU: RMJ-003 | Price: 85000 | CatID: 1 | Name: Nakshi Antique Gold Kada
+- SKU: RMJ-001 | Price: 174000 | CatID: 1 | Name: Royal Temple Gold Choker Set
+- SKU: RMJ-002 | Price: 40800 | CatID: 1 | Name: Kundan Polki Pearl Jhumkas
+- SKU: RMJ-003 | Price: 102000 | CatID: 1 | Name: Nakshi Antique Gold Kada
 - SKU: RMJ-004 | Price: 120000 | CatID: 1 | Name: Traditional Nakshi Kasu Mala
 - SKU: RMJ-005 | Price: 95000 | CatID: 1 | Name: Diamond Emerald Floral Ring

@@ -116,6 +116,8 @@ export const productApi = {
   myProducts: (params?: object) => api.get("/products/merchant/my-products", { params }),
   upload: (data: { filename: string; base64: string }) => api.post("/upload", data),
   categories: () => api.get("/products/categories/all"),
+  getReviews: (id: number) => api.get(`/products/${id}/reviews`),
+  addReview: (id: number, data: { rating: number; comment: string; images?: string[] }) => api.post(`/products/${id}/reviews`, data),
 };
 
 export const cartApi = {

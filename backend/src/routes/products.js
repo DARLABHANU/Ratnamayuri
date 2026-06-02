@@ -2,6 +2,8 @@ const express = require('express');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const MerchantProfile = require('../models/MerchantProfile');
+const Review = require('../models/Review');
+const User = require('../models/User');
 const { getCurrentUser, requireMerchantOrAdmin } = require('../middleware/auth');
 const { slugify } = require('../utils/helpers');
 
@@ -282,6 +284,98 @@ router.delete('/:product_id', getCurrentUser, requireMerchantOrAdmin, async (req
     await CartItem.deleteMany({ product_id: productId });
 
     res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─── Product Reviews Endpoints ───────────────────────────────────────────────
+
+// Get reviews for a product
+router.get('/:product_id/reviews', async (req, res, next) => {
+  try {
+    const productId = Number(req.params.product_id);
+    const reviews = await Review.find({ product_id: productId })
+      .sort({ created_at: -1 });
+
+    // Manually fetch user details using numeric user IDs to avoid Mongoose populate ObjectId CastError
+    const userIds = [...new Set(reviews.map(r => r.user_id).filter(id => id !== null && id !== undefined))];
+    const users = await User.find({ id: { $in: userIds } }, 'id full_name avatar_url');
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    // Format for frontend response
+    const formatted = reviews.map(r => {
+      const rObj = r.toObject();
+      const user = userMap.get(rObj.user_id);
+      return {
+        id: rObj.id,
+        product_id: rObj.product_id,
+        rating: rObj.rating,
+        comment: rObj.comment,
+        images: rObj.images || [],
+        created_at: rObj.created_at,
+        reviewer_name: user ? user.full_name : 'Valued Customer',
+        reviewer_avatar: user ? user.avatar_url : null
+      };
+    });
+
+    res.json(formatted);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Add a review to a product
+router.post('/:product_id/reviews', getCurrentUser, async (req, res, next) => {
+  try {
+    const productId = Number(req.params.product_id);
+    const { rating, comment, images } = req.body;
+
+    const product = await Product.findOne({ id: productId, is_active: true });
+    if (!product) {
+      return res.status(404).json({ detail: 'Product not found' });
+    }
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ detail: 'Rating must be between 1 and 5 stars' });
+    }
+
+    if (!comment || !comment.trim()) {
+      return res.status(400).json({ detail: 'Review comment cannot be empty' });
+    }
+
+    const review = new Review({
+      product_id: productId,
+      user_id: req.user.id,
+      rating: Number(rating),
+      comment: comment.trim(),
+      images: Array.isArray(images) ? images : []
+    });
+
+    await review.save();
+
+    // Recalculate average rating & rating count on the product
+    const allReviews = await Review.find({ product_id: productId });
+    const count = allReviews.length;
+    const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / count;
+
+    product.rating_count = count;
+    product.rating_avg = Math.round(avg * 10) / 10;
+    await product.save();
+
+    // Return the newly created review with user info attached
+    const enrichedReview = {
+      id: review.id,
+      product_id: review.product_id,
+      rating: review.rating,
+      comment: review.comment,
+      images: review.images,
+      created_at: review.created_at,
+      reviewer_name: req.user.full_name,
+      reviewer_avatar: req.user.avatar_url
+    };
+
+    res.status(201).json(enrichedReview);
   } catch (error) {
     next(error);
   }

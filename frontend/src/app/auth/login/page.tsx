@@ -1,26 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import toast from "react-hot-toast";
-import { Eye, EyeOff, Loader2, Mail, Sparkles, ShieldCheck } from "lucide-react";
+import { Mail, Phone, Loader2, ShieldCheck, ChevronLeft } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { UserRole } from "@/types";
 import { getApiError } from "@/lib/utils";
-import { auth as firebaseAuth } from "@/lib/firebase";
-import { sendSignInLinkToEmail } from "firebase/auth";
-
-const schema = z.object({
-  email: z.string().email("Invalid email"),
-  password: z.string().min(1, "Password required"),
-  role: z.enum(["customer", "merchant", "admin"] as const),
-});
-type FormData = z.infer<typeof schema>;
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "customer", label: "Customer" },
@@ -38,42 +26,108 @@ const ROLE_REDIRECTS: Record<UserRole, string> = {
 export default function LoginPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   
-  // Auth Method States
-  const [authMethod, setAuthMethod] = useState<"password" | "magic_link">("password");
-  const [magicEmail, setMagicEmail] = useState("");
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  // App states
+  const [role, setRole] = useState<UserRole>("customer");
+  const [channel, setChannel] = useState<"sms" | "email">("email");
+  const [identifier, setIdentifier] = useState("");
+  const [step, setStep] = useState<"request" | "verify">("request");
+  const [otpCode, setOtpCode] = useState<string[]>(Array(6).fill(""));
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: { role: "customer" },
-  });
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const selectedRole = watch("role") || "customer";
-
-  // Clear input fields when switching roles
+  // Focus the first input of OTP on step change
   useEffect(() => {
-    setValue("email", "");
-    setValue("password", "");
-    setMagicEmail("");
-    setMagicLinkSent(false);
-  }, [selectedRole, setValue]);
+    if (step === "verify") {
+      otpInputRefs.current[0]?.focus();
+    }
+  }, [step]);
 
-  // Standard Email/Password onSubmit
-  const onSubmit = async (data: FormData) => {
+  // Handle OTP digit changes
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otpCode];
+    newOtp[index] = value.slice(-1);
+    setOtpCode(newOtp);
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otpCode[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 6) {
+      setOtpCode(pasted.split(""));
+      otpInputRefs.current[5]?.focus();
+    }
+  };
+
+  // Submit OTP Request
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    if (!identifier.trim()) {
+      setErrorMsg("Identifier is required");
+      return;
+    }
+
+    if (channel === "email" && !identifier.includes("@")) {
+      setErrorMsg("Please enter a valid email address");
+      return;
+    }
+
+    if (channel === "sms" && !identifier.startsWith("+")) {
+      setErrorMsg("Phone number must include country code (e.g., +919876543210)");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const res = await authApi.login(data);
+      await authApi.sendOtp({
+        identifier: identifier.trim(),
+        channel: channel
+      });
+      toast.success(`Verification code dispatched via ${channel.toUpperCase()}!`);
+      setStep("verify");
+    } catch (err: any) {
+      const apiErr = getApiError(err) || "Failed to transmit OTP. Please verify details.";
+      setErrorMsg(apiErr);
+      toast.error(apiErr);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Verify OTP & Sign In
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    const codeStr = otpCode.join("");
+    
+    if (codeStr.length < 6) {
+      setErrorMsg("Please enter all 6 digits of the verification code");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await authApi.verifyOtp({
+        identifier: identifier.trim(),
+        channel: channel,
+        otpCode: codeStr,
+        role: role
+      });
+
       const tokenData = res.data;
-
-      if (tokenData.requires_otp) {
-        toast.success("OTP sent to your email!");
-        router.push(`/auth/verify-otp?email=${encodeURIComponent(data.email)}&purpose=email_verification`);
-        return;
-      }
-
       setAuth({
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
@@ -81,213 +135,170 @@ export default function LoginPage() {
         user_id: tokenData.user_id,
       });
 
-      toast.success("Welcome back!");
-      router.push(ROLE_REDIRECTS[tokenData.role as UserRole]);
-    } catch (err) {
-      toast.error(getApiError(err));
+      toast.success("Successfully authenticated!");
+      router.push(ROLE_REDIRECTS[tokenData.role as UserRole] || "/");
+    } catch (err: any) {
+      const apiErr = getApiError(err) || "Invalid OTP code. Please try again.";
+      setErrorMsg(apiErr);
+      toast.error(apiErr);
+      setOtpCode(Array(6).fill(""));
+      otpInputRefs.current[0]?.focus();
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Custom Backend SMTP Magic Link
-  const handleSendMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!magicEmail || !magicEmail.trim() || !magicEmail.includes("@")) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await authApi.magicLinkRequest({
-        email: magicEmail.trim().toLowerCase(),
-        role: selectedRole,
-      });
-      
-      // Save email locally to verify on redirect (prevents having to re-enter)
-      window.localStorage.setItem("emailForSignIn", magicEmail.trim().toLowerCase());
-      
-      setMagicLinkSent(true);
-      toast.success("Secure sign-in link dispatched to your inbox!");
-    } catch (err: any) {
-      toast.error(getApiError(err) || "Failed to trigger secure magic link email.");
-      console.error("Local Magic Link trigger failed:", err);
-    } finally {
-      setIsLoading(false);
-    }
+  // Back to input screen
+  const handleBackToRequest = () => {
+    setStep("request");
+    setOtpCode(Array(6).fill(""));
+    setErrorMsg("");
   };
 
   return (
     <div className="animate-fade-up">
-      <div className="mb-6">
-        <span className="section-tag">WELCOME BACK</span>
-        <h2 className="font-cormorant text-3xl font-light text-brown">Sign In</h2>
-        <p className="font-garamond text-sm text-muted mt-2">
-          Access your Ratnamayuri account using standard passwords or our 100% free, secure passwordless Email Magic Link.
-        </p>
-      </div>
-
-      {/* Role selector */}
-      <div className="mb-4">
-        <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-1.5 uppercase font-bold">
-          LOGIN AS
-        </label>
-        <div className="grid grid-cols-3 gap-1 border border-gold-200 p-1 bg-white">
-          {ROLE_OPTIONS.map((opt) => (
-            <label key={opt.value} className="cursor-pointer">
-              <input type="radio" {...register("role")} value={opt.value} className="sr-only" />
-              <div className={`text-center py-2 font-cinzel text-xs tracking-wide transition-all
-                ${selectedRole === opt.value
-                  ? "bg-deep text-gold-300"
-                  : "text-muted hover:text-brown"}`}>
-                {opt.label}
-              </div>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Login method selectors */}
-      <div className="grid grid-cols-2 border border-gray-200 rounded overflow-hidden mb-6">
-        <button
-          type="button"
-          onClick={() => setAuthMethod("password")}
-          className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-cinzel tracking-wider transition-all
-            ${authMethod === "password" ? "bg-gold-50 text-brown border-b-2 border-gold-500 font-bold" : "bg-white text-muted hover:text-brown"}`}
-        >
-          <Mail size={13} />
-          EMAIL & PASSWORD
-        </button>
-        <button
-          type="button"
-          onClick={() => setAuthMethod("magic_link")}
-          className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-cinzel tracking-wider transition-all
-            ${authMethod === "magic_link" ? "bg-gold-50 text-brown border-b-2 border-gold-500 font-bold" : "bg-white text-muted hover:text-brown"}`}
-        >
-          <Sparkles size={13} />
-          PASSWORDLESS LINK
-        </button>
-      </div>
-
-      {/* Method A: Standard password form */}
-      {authMethod === "password" && (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-              EMAIL ADDRESS
-            </label>
-            <input
-              {...register("email")}
-              type="email"
-              placeholder="you@example.com"
-              className="input-field bg-white"
-              autoComplete="email"
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1 font-garamond">{errors.email.message}</p>
-            )}
+      {step === "request" ? (
+        <>
+          <div className="mb-6">
+            <span className="section-tag">WELCOME TO RATNAMAYURI</span>
+            <h2 className="font-cormorant text-3xl font-light text-brown">Sign In / Register</h2>
+            <p className="font-garamond text-sm text-muted mt-2">
+              Sign in securely using Twilio Verify. Choose your verification channel below.
+            </p>
           </div>
 
-          <div>
-            <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-              PASSWORD
+          {/* Role selector */}
+          <div className="mb-6">
+            <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-1.5 uppercase font-bold">
+              ROLE SELECTOR
             </label>
-            <div className="relative">
-              <input
-                {...register("password")}
-                type={showPassword ? "text" : "password"}
-                placeholder="Your password"
-                className="input-field pr-10 bg-white"
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-brown"
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+            <div className="grid grid-cols-3 gap-1 border border-gold-200 p-1 bg-white">
+              {ROLE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRole(opt.value)}
+                  className={`text-center py-2 font-cinzel text-xs tracking-wide transition-all
+                    ${role === opt.value ? "bg-deep text-gold-300 font-bold" : "text-muted hover:text-brown"}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
-            {errors.password && (
-              <p className="text-red-500 text-xs mt-1 font-garamond">{errors.password.message}</p>
-            )}
           </div>
 
-          <div className="flex justify-end">
-            <Link
-              href="/auth/forgot-password"
-              className="font-cinzel text-xs text-gold-600 hover:text-gold-500 tracking-wide"
+          {/* Channel selector */}
+          <div className="grid grid-cols-2 border border-gray-200 rounded overflow-hidden mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setChannel("email");
+                setIdentifier("");
+                setErrorMsg("");
+              }}
+              className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-cinzel tracking-wider transition-all
+                ${channel === "email" ? "bg-gold-50 text-brown border-b-2 border-gold-500 font-bold" : "bg-white text-muted hover:text-brown"}`}
             >
-              Forgot password?
-            </Link>
+              <Mail size={13} />
+              EMAIL ADDRESS
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setChannel("sms");
+                setIdentifier("");
+                setErrorMsg("");
+              }}
+              className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-cinzel tracking-wider transition-all
+                ${channel === "sms" ? "bg-gold-50 text-brown border-b-2 border-gold-500 font-bold" : "bg-white text-muted hover:text-brown"}`}
+            >
+              <Phone size={13} />
+              MOBILE SMS
+            </button>
           </div>
 
-          <button type="submit" disabled={isLoading} className="btn-primary w-full flex items-center justify-center gap-2">
-            {isLoading && <Loader2 size={14} className="animate-spin" />}
-            SIGN IN
-          </button>
-        </form>
-      )}
+          {/* Request OTP form */}
+          <form onSubmit={handleSendOtp} className="space-y-4">
+            <div>
+              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+                {channel === "email" ? "EMAIL ADDRESS" : "MOBILE NUMBER"}
+              </label>
+              <input
+                type={channel === "email" ? "email" : "tel"}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder={channel === "email" ? "you@example.com" : "+919876543210 (include country code)"}
+                className="input-field bg-white text-gray-800"
+                required
+              />
+              {errorMsg && (
+                <p className="text-red-500 text-xs mt-1.5 font-garamond">{errorMsg}</p>
+              )}
+            </div>
 
-      {/* Method B: Passwordless Magic Link form */}
-      {authMethod === "magic_link" && (
-        <div className="space-y-4">
-          {!magicLinkSent ? (
-            <form onSubmit={handleSendMagicLink} className="space-y-4">
-              <div>
-                <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-                  EMAIL ADDRESS
-                </label>
+            <button type="submit" disabled={isLoading} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
+              {isLoading && <Loader2 size={14} className="animate-spin" />}
+              SEND VERIFICATION CODE
+            </button>
+          </form>
+        </>
+      ) : (
+        <>
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={handleBackToRequest}
+              className="flex items-center gap-1 text-gold-600 hover:text-gold-500 font-cinzel text-xs tracking-wider mb-4"
+            >
+              <ChevronLeft size={16} />
+              EDIT {channel === "email" ? "EMAIL" : "MOBILE"}
+            </button>
+            <span className="section-tag">VERIFICATION REQUIRED</span>
+            <h2 className="font-cormorant text-3xl font-light text-brown">Enter Code</h2>
+            <p className="font-garamond text-sm text-muted mt-2">
+              Please enter the 6-digit OTP code dispatched to <strong className="text-brown">{identifier}</strong>.
+            </p>
+          </div>
+
+          {/* Verification Code form */}
+          <form onSubmit={handleVerifyOtp} className="space-y-6">
+            <div className="flex gap-3 justify-center" onPaste={handleOtpPaste}>
+              {otpCode.map((digit, i) => (
                 <input
-                  type="email"
-                  value={magicEmail}
-                  onChange={(e) => setMagicEmail(e.target.value)}
-                  placeholder="yourname@example.com"
-                  className="input-field bg-white"
+                  key={i}
+                  ref={(el) => { otpInputRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                  className={`w-12 h-14 text-center text-2xl font-cinzel border-2 bg-white
+                    focus:outline-none transition-all rounded-md
+                    ${digit ? "border-gold-500 text-brown font-bold" : "border-gold-200 text-muted"}
+                    focus:border-gold-500`}
                   required
                 />
-              </div>
-
-              <button type="submit" disabled={isLoading} className="btn-primary w-full flex items-center justify-center gap-2">
-                {isLoading && <Loader2 size={14} className="animate-spin" />}
-                SEND SECURE SIGN-IN LINK
-              </button>
-            </form>
-          ) : (
-            <div className="text-center py-4 space-y-3 font-garamond animate-fade-in card bg-ivory/30 border-gold-200">
-              <p className="text-green-700 font-semibold text-base">📩 Link Dispatched!</p>
-              <p className="text-xs text-muted px-4 leading-relaxed">
-                We sent a secure magic authentication link to <strong className="text-brown">{magicEmail}</strong>. 
-                Please open your email inbox and click the link to sign in automatically and continue.
-              </p>
-              <button
-                type="button"
-                onClick={() => setMagicLinkSent(false)}
-                className="text-[11px] text-gold-600 hover:text-gold-700 underline tracking-wider font-cinzel mt-2"
-              >
-                USE A DIFFERENT EMAIL
-              </button>
+              ))}
             </div>
-          )}
-        </div>
+
+            {errorMsg && (
+              <p className="text-red-500 text-xs text-center font-garamond">{errorMsg}</p>
+            )}
+
+            <button type="submit" disabled={isLoading || otpCode.join("").length < 6} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
+              {isLoading && <Loader2 size={14} className="animate-spin" />}
+              VERIFY & SIGN IN
+            </button>
+          </form>
+        </>
       )}
 
       {/* Safety warning */}
-      <div className="bg-emerald-50 border border-emerald-100 p-3 rounded mt-6 flex items-start gap-2.5">
+      <div className="bg-emerald-50 border border-emerald-100 p-3 rounded mt-8 flex items-start gap-2.5">
         <ShieldCheck className="text-emerald-600 flex-shrink-0 mt-0.5" size={16} />
-        <p className="text-[10px] text-emerald-800 leading-normal">
-          Ratnamayuri Spark Auth leverages secure passwordless verification. Emails are transmitted securely, protecting user accounts with zero SMS/Phone budget overhead.
-        </p>
-      </div>
-
-      <div className="mt-6 text-center">
-        <div className="divider-gold" />
-        <p className="font-garamond text-sm text-muted mt-4">
-          New to Ratnamayuri?{" "}
-          <Link href="/auth/signup" className="text-gold-600 hover:text-gold-500 underline">
-            Create an account
-          </Link>
+        <p className="text-[10px] text-emerald-800 leading-normal font-sans">
+          Ratnamayuri uses Twilio Verify cryptography. Verification checks are securely validated with real-time token synchronization.
         </p>
       </div>
     </div>

@@ -7,7 +7,7 @@ module.exports = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   backendUrl: process.env.BACKEND_URL || 'http://localhost:8000',
   mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/ratnamayuri',
-  secretKey: process.env.SECRET_KEY || 'replace_this_with_a_secure_random_string',
+  secretKey: process.env.JWT_SECRET || process.env.SECRET_KEY || 'replace_this_with_a_secure_random_string',
   accessTokenExpireMinutes: parseInt(process.env.ACCESS_TOKEN_EXPIRE_MINUTES || '60', 10),
   refreshTokenExpireDays: parseInt(process.env.REFRESH_TOKEN_EXPIRE_DAYS || '30', 10),
   smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -23,5 +23,8 @@ module.exports = {
   adminEmail: process.env.ADMIN_EMAIL || 'admin@ratnamayuri.live',
   adminPassword: process.env.ADMIN_PASSWORD || 'Admin@123!',
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
-  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || ''
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
+  twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || '',
+  twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || '',
+  twilioVerifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID || ''
 };

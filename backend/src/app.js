@@ -64,6 +64,7 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/v1', router);
 
 // Global Error Handler

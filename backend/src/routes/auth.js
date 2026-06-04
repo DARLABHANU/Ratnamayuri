@@ -1,4 +1,5 @@
 const express = require('express');
+const config = require('../config');
 const User = require('../models/User');
 const {
   hashPassword,
@@ -107,39 +108,94 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
-// Verify OTP
+// Verify OTP using Twilio Verify API
 router.post('/verify-otp', async (req, res, next) => {
   try {
-    const { email, otp, purpose } = req.body;
+    const { identifier, channel, otpCode, role } = req.body;
+    if (!identifier || !channel || !otpCode) {
+      return res.status(400).json({ detail: 'Identifier, channel, and otpCode are required' });
+    }
 
-    const user = await User.findOne({ email });
+    if (!config.twilioAccountSid || !config.twilioAuthToken || !config.twilioVerifyServiceSid) {
+      return res.status(500).json({ detail: 'Twilio Verify credentials are not configured in this environment.' });
+    }
+
+    const twilio = require('twilio');
+    const client = twilio(config.twilioAccountSid, config.twilioAuthToken);
+    
+    const verificationCheck = await client.verify.v2.services(config.twilioVerifyServiceSid)
+      .verificationChecks
+      .create({ to: identifier, code: otpCode });
+
+    if (verificationCheck.status !== 'approved') {
+      return res.status(400).json({ detail: 'Invalid or expired verification code' });
+    }
+
+    const isEmail = identifier.includes('@');
+    let query = isEmail ? { email: identifier.toLowerCase() } : { phone: identifier };
+    
+    let user = await User.findOne(query);
+
+    // Auto-register user if they do not exist
     if (!user) {
-      return res.status(404).json({ detail: 'User not found' });
+      const { generateAccountNumber } = require('../utils/helpers');
+      
+      let accountNumber = generateAccountNumber();
+      while (true) {
+        const existingAccount = await User.findOne({ account_number: accountNumber });
+        if (!existingAccount) break;
+        accountNumber = generateAccountNumber();
+      }
+
+      // Generate a strong random password placeholder
+      const randomPass = require('crypto').randomBytes(16).toString('hex');
+      const hashedPassword = await hashPassword(randomPass);
+
+      user = new User({
+        email: isEmail ? identifier.toLowerCase() : `${identifier.replace('+', '')}@ratnamayuri.phone`,
+        phone: isEmail ? undefined : identifier,
+        hashed_password: hashedPassword,
+        full_name: 'Valued Customer',
+        role: role || 'customer',
+        account_number: accountNumber,
+        is_first_login: false,
+        is_verified: true
+      });
+
+      await user.save();
     }
 
-    const isValid = await verifyOTP(user, otp, purpose);
-    if (!isValid) {
-      return res.status(400).json({ detail: 'Invalid or expired OTP' });
+    if (!user.is_active) {
+      return res.status(403).json({ detail: 'Account is deactivated. Contact support.' });
     }
 
-    user.is_verified = true;
-    user.is_first_login = false;
-    await user.save();
+    // Generate local JWT signed token with 7-day expiration containing identifier
+    const jwt = require('jsonwebtoken');
+    const tokenData = {
+      sub: String(user.id),
+      role: user.role,
+      email: user.email,
+      identifier: identifier,
+      type: 'access'
+    };
 
-    const tokenData = { sub: String(user.id), role: user.role, email: user.email };
-    const accessToken = createAccessToken(tokenData);
-    const refreshToken = createRefreshToken(tokenData);
+    const token = jwt.sign(
+      tokenData,
+      config.secretKey,
+      { expiresIn: '7d' }
+    );
 
     res.json({
-      access_token: accessToken,
-      refresh_token: refreshToken,
+      access_token: token,
+      refresh_token: token,
       role: user.role,
       user_id: user.id,
       is_first_login: false,
       requires_otp: false
     });
   } catch (error) {
-    next(error);
+    console.error('Twilio Verify OTP error:', error);
+    res.status(500).json({ detail: error.message || 'Verification process failed' });
   }
 });
 
@@ -272,81 +328,36 @@ router.get('/me', getCurrentUser, async (req, res) => {
   });
 });
 
-// Firebase Auth Verification and Automatic Registration callback
-router.post('/firebase', async (req, res, next) => {
+// Send OTP using Twilio Verify API
+router.post('/send-otp', async (req, res, next) => {
   try {
-    const { token, role } = req.body;
-    if (!token) {
-      return res.status(400).json({ detail: 'Firebase Token is required' });
+    const { identifier, channel } = req.body;
+    if (!identifier || !channel) {
+      return res.status(400).json({ detail: 'Identifier and channel are required' });
     }
 
-    const { verifyFirebaseIdToken } = require('../services/firebaseAdmin');
-    const decoded = await verifyFirebaseIdToken(token);
-
-    // Extract verified phone or email from Firebase payload
-    const phone = decoded.phone_number;
-    const email = decoded.email;
-
-    if (!phone && !email) {
-      return res.status(400).json({ detail: 'Firebase payload has neither phone nor email' });
+    if (channel !== 'sms' && channel !== 'email') {
+      return res.status(400).json({ detail: 'Channel must be either sms or email' });
     }
 
-    let user;
-    if (phone) {
-      // Find by verified phone
-      user = await User.findOne({ phone });
-    } else if (email) {
-      // Find by verified email
-      user = await User.findOne({ email });
+    if (!config.twilioAccountSid || !config.twilioAuthToken || !config.twilioVerifyServiceSid) {
+      return res.status(500).json({ detail: 'Twilio Verify credentials are not configured in this environment.' });
     }
 
-    // Auto-register if user doesn't exist
-    if (!user) {
-      const { generateAccountNumber } = require('../utils/helpers');
-      const { hashPassword } = require('../middleware/auth');
-      
-      let accountNumber = generateAccountNumber();
-      while (true) {
-        const existingAccount = await User.findOne({ account_number: accountNumber });
-        if (!existingAccount) break;
-        accountNumber = generateAccountNumber();
-      }
+    const twilio = require('twilio');
+    const client = twilio(config.twilioAccountSid, config.twilioAuthToken);
 
-      // Generate a strong random password placeholder
-      const randomPass = require('crypto').randomBytes(16).toString('hex');
-      const hashedPassword = await hashPassword(randomPass);
-
-      user = new User({
-        email: email || `${phone.replace('+', '')}@ratnamayuri.phone`,
-        hashed_password: hashedPassword,
-        full_name: decoded.name || 'Valued Customer',
-        phone: phone || undefined,
-        role: role || 'customer',
-        account_number: accountNumber,
-        is_first_login: false,
-        is_verified: true
-      });
-
-      await user.save();
-    }
-
-    // Generate local JWT access & refresh tokens
-    const { createAccessToken, createRefreshToken } = require('../middleware/auth');
-    const tokenData = { sub: String(user.id), role: user.role, email: user.email };
-    const accessToken = createAccessToken(tokenData);
-    const refreshToken = createRefreshToken(tokenData);
+    const verification = await client.verify.v2.services(config.twilioVerifyServiceSid)
+      .verifications
+      .create({ to: identifier, channel: channel });
 
     res.json({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      role: user.role,
-      user_id: user.id,
-      is_first_login: false,
-      requires_otp: false
+      message: `Verification code sent via ${channel}`,
+      sid: verification.sid
     });
   } catch (error) {
-    console.error('Firebase Auth callback error:', error);
-    res.status(401).json({ detail: 'Invalid or expired Firebase ID token' });
+    console.error('Twilio Send OTP error:', error);
+    res.status(500).json({ detail: error.message || 'Failed to send verification code' });
   }
 });
 

@@ -45,7 +45,7 @@ export const metadata: Metadata = {
 // Set to true to enable the maintenance screen.
 // Set to false to restore the normal website.
 // ==========================================
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

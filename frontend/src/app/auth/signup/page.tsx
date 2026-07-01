@@ -1,23 +1,302 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import toast from "react-hot-toast";
+import { Loader2, ShieldCheck, Sparkles, User, Mail, Lock, Phone, ChevronLeft } from "lucide-react";
+import { authApi } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
+import { getApiError } from "@/lib/utils";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { setAuth } = useAuthStore();
+
+  const [step, setStep] = useState<"register" | "verify">("register");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // Register Fields
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+
+  // OTP Verification state
+  const [otpCode, setOtpCode] = useState<string[]>(Array(6).fill(""));
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
-    // Re-route to the unified passwordless sign-in & register form
-    router.replace("/auth/login");
-  }, [router]);
+    if (step === "verify") {
+      otpInputRefs.current[0]?.focus();
+    }
+  }, [step]);
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otpCode];
+    newOtp[index] = value.slice(-1);
+    setOtpCode(newOtp);
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otpCode[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 6) {
+      setOtpCode(pasted.split(""));
+      otpInputRefs.current[5]?.focus();
+    }
+  };
+
+  // Submit Registration Form
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    if (!fullName.trim() || !email.trim() || !password || !phone.trim()) {
+      setErrorMsg("All fields are required.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await authApi.signup({
+        email: email.trim().toLowerCase(),
+        password,
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+        role: "merchant", // Hardcoded to Merchant signup
+      });
+
+      toast.success("Merchant account created! Verification code sent to email.");
+      setStep("verify");
+    } catch (err: any) {
+      const apiErr = getApiError(err) || "Registration failed. Email might already be in use.";
+      setErrorMsg(apiErr);
+      toast.error(apiErr);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Submit OTP Verification
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    const codeStr = otpCode.join("");
+
+    if (codeStr.length < 6) {
+      setErrorMsg("Please enter all 6 digits of the verification code.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await authApi.verifyEmailOtp({
+        email: email.trim().toLowerCase(),
+        otp: codeStr,
+      });
+
+      const tokenData = res.data;
+      setAuth({
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        role: tokenData.role,
+        user_id: tokenData.user_id,
+      });
+
+      toast.success("Email verified and account activated!");
+      router.push("/merchant/dashboard");
+    } catch (err: any) {
+      const apiErr = getApiError(err) || "Invalid OTP code. Please try again.";
+      setErrorMsg(apiErr);
+      toast.error(apiErr);
+      setOtpCode(Array(6).fill(""));
+      otpInputRefs.current[0]?.focus();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToRegister = () => {
+    setStep("register");
+    setOtpCode(Array(6).fill(""));
+    setErrorMsg("");
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <Loader2 size={24} className="animate-spin text-gold-600 mb-4" />
-      <p className="font-cinzel text-xs tracking-widest text-muted uppercase">
-        Redirecting to Unified Secure Authentication...
-      </p>
+    <div className="animate-fade-up max-w-sm mx-auto">
+      {step === "register" ? (
+        <>
+          <div className="mb-6 text-center">
+            <span className="section-tag flex items-center justify-center gap-1">
+              <Sparkles size={10} className="text-gold-500 animate-pulse" />
+              MERCHANT PORTAL
+              <Sparkles size={10} className="text-gold-500 animate-pulse" />
+            </span>
+            <h2 className="font-cormorant text-3xl font-light text-brown mt-1">Partner With Us</h2>
+            <p className="font-garamond text-sm text-muted mt-2">
+              Create your seller account and showcase your luxury products to our audience.
+            </p>
+          </div>
+
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+                FULL NAME
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="John Doe"
+                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+                EMAIL ADDRESS
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="merchant@example.com"
+                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+                PHONE NUMBER
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+919876543210"
+                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+                PASSWORD
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  required
+                />
+              </div>
+            </div>
+
+            {errorMsg && (
+              <p className="text-red-500 text-xs font-garamond text-center">{errorMsg}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-4"
+            >
+              {isLoading && <Loader2 size={14} className="animate-spin" />}
+              REGISTER AS MERCHANT
+            </button>
+          </form>
+
+          <p className="text-center font-garamond text-sm text-muted mt-6">
+            Already have a partner account?{" "}
+            <Link href="/auth/login" className="text-gold-600 underline font-semibold hover:text-gold-500 transition-colors">
+              Sign In
+            </Link>
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={handleBackToRegister}
+              className="flex items-center gap-1 text-gold-600 hover:text-gold-500 font-cinzel text-xs tracking-wider mb-4"
+            >
+              <ChevronLeft size={16} />
+              EDIT REGISTER DETAILS
+            </button>
+            <span className="section-tag">VERIFICATION REQUIRED</span>
+            <h2 className="font-cormorant text-3xl font-light text-brown">Enter Code</h2>
+            <p className="font-garamond text-sm text-muted mt-2">
+              We sent a 6-digit verification code to your email <strong className="text-brown">{email}</strong>.
+            </p>
+          </div>
+
+          <form onSubmit={handleVerifyOtp} className="space-y-6">
+            <div className="flex gap-3 justify-center" onPaste={handleOtpPaste}>
+              {otpCode.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { otpInputRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                  className={`w-12 h-14 text-center text-2xl font-cinzel border-2 bg-white
+                    focus:outline-none transition-all rounded-md
+                    ${digit ? "border-gold-500 text-brown font-bold" : "border-gold-200 text-muted"}
+                    focus:border-gold-500`}
+                  required
+                />
+              ))}
+            </div>
+
+            {errorMsg && (
+              <p className="text-red-500 text-xs text-center font-garamond">{errorMsg}</p>
+            )}
+
+            <button type="submit" disabled={isLoading || otpCode.join("").length < 6} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
+              {isLoading && <Loader2 size={14} className="animate-spin" />}
+              VERIFY & ACTIVATE ACCOUNT
+            </button>
+          </form>
+        </>
+      )}
+
+      {/* Safety warning */}
+      <div className="bg-emerald-50 border border-emerald-100 p-3 rounded mt-8 flex items-start gap-2.5 shadow-sm">
+        <ShieldCheck className="text-emerald-600 flex-shrink-0 mt-0.5" size={16} />
+        <p className="text-[10px] text-emerald-800 leading-normal font-sans">
+          Ratnamayuri partner registration uses automated email verification checks to validate genuine merchant submissions.
+        </p>
+      </div>
     </div>
   );
 }

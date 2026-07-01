@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Mail, Phone, Loader2, ShieldCheck, ChevronLeft } from "lucide-react";
+import { Loader2, ShieldCheck, Sparkles, Mail, Lock, ChevronLeft } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { UserRole } from "@/types";
@@ -27,25 +27,25 @@ export default function LoginPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
   
-  // App states
   const [role, setRole] = useState<UserRole>("customer");
-  const [channel, setChannel] = useState<"sms" | "email">("email");
-  const [identifier, setIdentifier] = useState("");
-  const [step, setStep] = useState<"request" | "verify">("request");
-  const [otpCode, setOtpCode] = useState<string[]>(Array(6).fill(""));
+  const [step, setStep] = useState<"login" | "verify">("login");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // Credentials state for Admin & Merchant
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // OTP Verification state for Admin & Merchant first login
+  const [otpCode, setOtpCode] = useState<string[]>(Array(6).fill(""));
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Focus the first input of OTP on step change
   useEffect(() => {
     if (step === "verify") {
       otpInputRefs.current[0]?.focus();
     }
   }, [step]);
 
-  // Handle OTP digit changes
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otpCode];
@@ -70,60 +70,19 @@ export default function LoginPage() {
     }
   };
 
-  // Submit OTP Request
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg("");
-
-    if (!identifier.trim()) {
-      setErrorMsg("Identifier is required");
-      return;
-    }
-
-    if (channel === "email" && !identifier.includes("@")) {
-      setErrorMsg("Please enter a valid email address");
-      return;
-    }
-
-    if (channel === "sms" && !identifier.startsWith("+")) {
-      setErrorMsg("Phone number must include country code (e.g., +919876543210)");
+  // Handle Google Login Success for Customers
+  const handleGoogleLoginSuccess = async (response: any) => {
+    const idToken = response.credential;
+    if (!idToken) {
+      toast.error("Failed to receive Google credential token.");
       return;
     }
 
     setIsLoading(true);
-    try {
-      await authApi.sendOtp({
-        identifier: identifier.trim(),
-        channel: channel
-      });
-      toast.success(`Verification code dispatched via ${channel.toUpperCase()}!`);
-      setStep("verify");
-    } catch (err: any) {
-      const apiErr = getApiError(err) || "Failed to transmit OTP. Please verify details.";
-      setErrorMsg(apiErr);
-      toast.error(apiErr);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Verify OTP & Sign In
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
     setErrorMsg("");
-    const codeStr = otpCode.join("");
-    
-    if (codeStr.length < 6) {
-      setErrorMsg("Please enter all 6 digits of the verification code");
-      return;
-    }
-
-    setIsLoading(true);
     try {
-      const res = await authApi.verifyOtp({
-        identifier: identifier.trim(),
-        channel: channel,
-        otpCode: codeStr,
+      const res = await authApi.googleLogin({
+        idToken,
         role: role
       });
 
@@ -135,7 +94,87 @@ export default function LoginPage() {
         user_id: tokenData.user_id,
       });
 
-      toast.success("Successfully authenticated!");
+      toast.success("Successfully authenticated with Google!");
+      router.push(ROLE_REDIRECTS[tokenData.role as UserRole] || "/");
+    } catch (err: any) {
+      const apiErr = getApiError(err) || "Google authentication failed. Please try again.";
+      setErrorMsg(apiErr);
+      toast.error(apiErr);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Credentials Login for Admins & Merchants
+  const handleCredentialsLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    if (!email.trim() || !password) {
+      setErrorMsg("Email and password are required.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await authApi.login({
+        email: email.trim().toLowerCase(),
+        password,
+        role
+      });
+
+      const tokenData = res.data;
+
+      if (tokenData.requires_otp) {
+        toast.success("First-time login: verification code sent to your email.");
+        setStep("verify");
+      } else {
+        setAuth({
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          role: tokenData.role,
+          user_id: tokenData.user_id,
+        });
+
+        toast.success("Successfully signed in!");
+        router.push(ROLE_REDIRECTS[tokenData.role as UserRole] || "/");
+      }
+    } catch (err: any) {
+      const apiErr = getApiError(err) || "Invalid credentials. Please verify and try again.";
+      setErrorMsg(apiErr);
+      toast.error(apiErr);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle OTP Verification for email login codes
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    const codeStr = otpCode.join("");
+
+    if (codeStr.length < 6) {
+      setErrorMsg("Please enter all 6 digits of the verification code.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await authApi.verifyEmailOtp({
+        email: email.trim().toLowerCase(),
+        otp: codeStr,
+      });
+
+      const tokenData = res.data;
+      setAuth({
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        role: tokenData.role,
+        user_id: tokenData.user_id,
+      });
+
+      toast.success("Email verified and account signed in!");
       router.push(ROLE_REDIRECTS[tokenData.role as UserRole] || "/");
     } catch (err: any) {
       const apiErr = getApiError(err) || "Invalid OTP code. Please try again.";
@@ -148,37 +187,91 @@ export default function LoginPage() {
     }
   };
 
-  // Back to input screen
-  const handleBackToRequest = () => {
-    setStep("request");
+  const handleBackToLogin = () => {
+    setStep("login");
     setOtpCode(Array(6).fill(""));
     setErrorMsg("");
   };
 
+  // Load Google Identity Services Script dynamically for customer role
+  useEffect(() => {
+    if (role !== "customer") return;
+
+    const g = typeof window !== "undefined" ? (window as any).google : null;
+    const initializeGoogleSignIn = () => {
+      const currentGoogle = typeof window !== "undefined" ? (window as any).google : null;
+      if (typeof window !== "undefined" && currentGoogle) {
+        currentGoogle.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "752302768597-nqun52pubevqjlhp9c6lvrjg2q8qelif.apps.googleusercontent.com",
+          callback: handleGoogleLoginSuccess,
+        });
+
+        currentGoogle.accounts.id.renderButton(
+          document.getElementById("google-signin-button"),
+          {
+            theme: "outline",
+            size: "large",
+            width: 320,
+            text: "continue_with",
+            shape: "rectangular",
+            logo_alignment: "left"
+          }
+        );
+      }
+    };
+
+    if (g) {
+      initializeGoogleSignIn();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = initializeGoogleSignIn;
+      document.body.appendChild(script);
+      return () => {
+        const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+        if (existingScript) {
+          existingScript.remove();
+        }
+      };
+    }
+  }, [role]);
+
   return (
     <div className="animate-fade-up">
-      {step === "request" ? (
+      {step === "login" ? (
         <>
-          <div className="mb-6">
-            <span className="section-tag">WELCOME TO RATNAMAYURI</span>
-            <h2 className="font-cormorant text-3xl font-light text-brown">Sign In / Register</h2>
-            <p className="font-garamond text-sm text-muted mt-2">
-              Sign in securely using Twilio Verify. Choose your verification channel below.
+          <div className="mb-6 text-center">
+            <span className="section-tag flex items-center justify-center gap-1">
+              <Sparkles size={10} className="text-gold-500 animate-pulse" />
+              WELCOME TO RATNAMAYURI
+              <Sparkles size={10} className="text-gold-500 animate-pulse" />
+            </span>
+            <h2 className="font-cormorant text-3xl font-light text-brown mt-1">Sign In / Register</h2>
+            <p className="font-garamond text-sm text-muted mt-2 max-w-sm mx-auto">
+              {role === "customer" 
+                ? "Experience handcrafted luxury. Sign in or register instantly using Google."
+                : `Secure credential portal for authorized ${role} logins.`
+              }
             </p>
           </div>
 
           {/* Role selector */}
-          <div className="mb-6">
-            <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-1.5 uppercase font-bold">
-              ROLE SELECTOR
+          <div className="mb-8">
+            <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2 text-center uppercase font-bold">
+              ACCOUNT ROLE
             </label>
-            <div className="grid grid-cols-3 gap-1 border border-gold-200 p-1 bg-white">
+            <div className="grid grid-cols-3 gap-1 border border-gold-200 p-1 bg-white max-w-sm mx-auto rounded shadow-sm">
               {ROLE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setRole(opt.value)}
-                  className={`text-center py-2 font-cinzel text-xs tracking-wide transition-all
+                  onClick={() => {
+                    setRole(opt.value);
+                    setErrorMsg("");
+                  }}
+                  className={`text-center py-2 font-cinzel text-xs tracking-wide transition-all rounded
                     ${role === opt.value ? "bg-deep text-gold-300 font-bold" : "text-muted hover:text-brown"}`}
                 >
                   {opt.label}
@@ -187,80 +280,106 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Channel selector */}
-          <div className="grid grid-cols-2 border border-gray-200 rounded overflow-hidden mb-6">
-            <button
-              type="button"
-              onClick={() => {
-                setChannel("email");
-                setIdentifier("");
-                setErrorMsg("");
-              }}
-              className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-cinzel tracking-wider transition-all
-                ${channel === "email" ? "bg-gold-50 text-brown border-b-2 border-gold-500 font-bold" : "bg-white text-muted hover:text-brown"}`}
-            >
-              <Mail size={13} />
-              EMAIL ADDRESS
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setChannel("sms");
-                setIdentifier("");
-                setErrorMsg("");
-              }}
-              className={`flex items-center justify-center gap-1.5 py-2.5 text-xs font-cinzel tracking-wider transition-all
-                ${channel === "sms" ? "bg-gold-50 text-brown border-b-2 border-gold-500 font-bold" : "bg-white text-muted hover:text-brown"}`}
-            >
-              <Phone size={13} />
-              MOBILE SMS
-            </button>
-          </div>
-
-          {/* Request OTP form */}
-          <form onSubmit={handleSendOtp} className="space-y-4">
-            <div>
-              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-                {channel === "email" ? "EMAIL ADDRESS" : "MOBILE NUMBER"}
-              </label>
-              <input
-                type={channel === "email" ? "email" : "tel"}
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder={channel === "email" ? "you@example.com" : "+919876543210 (include country code)"}
-                className="input-field bg-white text-gray-800"
-                required
-              />
-              {errorMsg && (
-                <p className="text-red-500 text-xs mt-1.5 font-garamond">{errorMsg}</p>
+          {/* Google Button Container for Customer / Credentials form for Admin & Merchant */}
+          {role === "customer" ? (
+            <div className="flex flex-col items-center justify-center py-4 mb-6 min-h-[100px]">
+              {isLoading ? (
+                <div className="flex flex-col items-center gap-3 py-4">
+                  <Loader2 size={32} className="animate-spin text-gold-500" />
+                  <p className="font-garamond text-sm text-muted">Authenticating secure session...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-4">
+                  <div 
+                    id="google-signin-button" 
+                    className="min-h-[44px] transition-all hover:scale-[1.02] active:scale-[0.98] duration-300"
+                  />
+                  {errorMsg && (
+                    <p className="text-red-500 text-xs font-garamond text-center max-w-xs">{errorMsg}</p>
+                  )}
+                </div>
               )}
             </div>
+          ) : (
+            <>
+              <form onSubmit={handleCredentialsLogin} className="space-y-4 max-w-sm mx-auto">
+                <div>
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+                    EMAIL ADDRESS
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={`${role}@ratnamayuri.live`}
+                      className="input-field bg-white text-gray-800 pl-10 w-full"
+                      required
+                    />
+                  </div>
+                </div>
 
-            <button type="submit" disabled={isLoading} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
-              {isLoading && <Loader2 size={14} className="animate-spin" />}
-              SEND VERIFICATION CODE
-            </button>
-          </form>
+                <div>
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+                    PASSWORD
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="input-field bg-white text-gray-800 pl-10 w-full"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {errorMsg && (
+                  <p className="text-red-500 text-xs font-garamond text-center">{errorMsg}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-4"
+                >
+                  {isLoading && <Loader2 size={14} className="animate-spin" />}
+                  SIGN IN AS {role.toUpperCase()}
+                </button>
+              </form>
+
+              {role === "merchant" && (
+                <p className="text-center font-garamond text-sm text-muted mt-6">
+                  Want to sell with us?{" "}
+                  <Link href="/auth/signup" className="text-gold-600 underline font-semibold hover:text-gold-500 transition-colors">
+                    Register as Merchant
+                  </Link>
+                </p>
+              )}
+            </>
+          )}
         </>
       ) : (
-        <>
+        <div className="max-w-sm mx-auto">
           <div className="mb-6">
             <button
               type="button"
-              onClick={handleBackToRequest}
+              onClick={handleBackToLogin}
               className="flex items-center gap-1 text-gold-600 hover:text-gold-500 font-cinzel text-xs tracking-wider mb-4"
             >
               <ChevronLeft size={16} />
-              EDIT {channel === "email" ? "EMAIL" : "MOBILE"}
+              EDIT LOGIN DETAILS
             </button>
             <span className="section-tag">VERIFICATION REQUIRED</span>
             <h2 className="font-cormorant text-3xl font-light text-brown">Enter Code</h2>
             <p className="font-garamond text-sm text-muted mt-2">
-              Please enter the 6-digit OTP code dispatched to <strong className="text-brown">{identifier}</strong>.
+              Please enter the 6-digit verification code sent to your email <strong className="text-brown">{email}</strong>.
             </p>
           </div>
 
-          {/* Verification Code form */}
           <form onSubmit={handleVerifyOtp} className="space-y-6">
             <div className="flex gap-3 justify-center" onPaste={handleOtpPaste}>
               {otpCode.map((digit, i) => (
@@ -291,14 +410,17 @@ export default function LoginPage() {
               VERIFY & SIGN IN
             </button>
           </form>
-        </>
+        </div>
       )}
 
       {/* Safety warning */}
-      <div className="bg-emerald-50 border border-emerald-100 p-3 rounded mt-8 flex items-start gap-2.5">
+      <div className="bg-emerald-50 border border-emerald-100 p-3 rounded mt-8 flex items-start gap-2.5 max-w-sm mx-auto shadow-sm">
         <ShieldCheck className="text-emerald-600 flex-shrink-0 mt-0.5" size={16} />
         <p className="text-[10px] text-emerald-800 leading-normal font-sans">
-          Ratnamayuri uses Twilio Verify cryptography. Verification checks are securely validated with real-time token synchronization.
+          {role === "customer"
+            ? "Ratnamayuri uses Google OAuth2 cryptography. Authentication sessions are securely synced with MERN-stack JWT authorization keys."
+            : "Authorized system login portal. Attempts to bypass this credential shield will be automatically logged and audited."
+          }
         </p>
       </div>
     </div>

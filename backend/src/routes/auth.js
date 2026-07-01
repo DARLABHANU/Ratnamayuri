@@ -64,6 +64,46 @@ router.post('/signup', async (req, res, next) => {
   }
 });
 
+// Verify Email Verification OTP
+router.post('/verify-email-otp', async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ detail: 'Email and otp are required' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ detail: 'User not found' });
+    }
+
+    const isValid = await verifyOTP(user, otp, 'email_verification');
+    if (!isValid) {
+      return res.status(400).json({ detail: 'Invalid or expired verification code' });
+    }
+
+    user.is_verified = true;
+    user.is_first_login = false;
+    await user.save();
+
+    const tokenData = { sub: String(user.id), role: user.role, email: user.email };
+    const accessToken = createAccessToken(tokenData);
+    const refreshToken = createRefreshToken(tokenData);
+
+    res.json({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      role: user.role,
+      user_id: user.id,
+      is_first_login: false,
+      requires_otp: false
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
 // Login
 router.post('/login', async (req, res, next) => {
   try {
@@ -198,6 +238,95 @@ router.post('/verify-otp', async (req, res, next) => {
     res.status(500).json({ detail: error.message || 'Verification process failed' });
   }
 });
+
+// Google Sign-In Verification
+router.post('/google', async (req, res, next) => {
+  try {
+    const { idToken, role } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ detail: 'idToken is required' });
+    }
+
+    if (role !== 'customer') {
+      return res.status(403).json({ detail: 'Administrative or merchant accounts must login using email and password credentials.' });
+    }
+
+    // Call Google Tokeninfo API to verify the ID token
+    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      return res.status(400).json({ detail: errorData.error_description || 'Invalid Google token' });
+    }
+
+    const payload = await response.json();
+    const email = payload.email;
+    const name = payload.name || payload.given_name || 'Valued Customer';
+    const emailVerified = payload.email_verified === 'true' || payload.email_verified === true;
+
+    if (!email) {
+      return res.status(400).json({ detail: 'Email not provided by Google account' });
+    }
+
+    let user = await User.findOne({ email: email.toLowerCase() });
+
+    // Auto-register user if they do not exist
+    if (!user) {
+      const { generateAccountNumber } = require('../utils/helpers');
+      
+      let accountNumber = generateAccountNumber();
+      while (true) {
+        const existingAccount = await User.findOne({ account_number: accountNumber });
+        if (!existingAccount) break;
+        accountNumber = generateAccountNumber();
+      }
+
+      // Generate a strong random password placeholder
+      const randomPass = require('crypto').randomBytes(16).toString('hex');
+      const hashedPassword = await hashPassword(randomPass);
+
+      user = new User({
+        email: email.toLowerCase(),
+        hashed_password: hashedPassword,
+        full_name: name,
+        role: role || 'customer',
+        account_number: accountNumber,
+        is_first_login: false,
+        is_verified: emailVerified
+      });
+
+      await user.save();
+    }
+
+    if (!user.is_active) {
+      return res.status(403).json({ detail: 'Account is deactivated. Contact support.' });
+    }
+
+    // Mark as verified if verified on Google side
+    if (emailVerified && !user.is_verified) {
+      user.is_verified = true;
+      await user.save();
+    }
+
+    // Generate local JWT access & refresh tokens
+    const { createAccessToken, createRefreshToken } = require('../middleware/auth');
+    const tokenData = { sub: String(user.id), role: user.role, email: user.email };
+    const accessToken = createAccessToken(tokenData);
+    const refreshToken = createRefreshToken(tokenData);
+
+    res.json({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      role: user.role,
+      user_id: user.id,
+      is_first_login: false,
+      requires_otp: false
+    });
+  } catch (error) {
+    console.error('Google Auth error:', error);
+    next(error);
+  }
+});
+
 
 // Resend OTP
 router.post('/resend-otp', async (req, res, next) => {

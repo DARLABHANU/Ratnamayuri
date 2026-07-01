@@ -105,6 +105,8 @@ export const authApi = {
   updatePayoutSettings: (data: object) => api.put("/auth/payout-settings", data),
   magicLinkRequest: (data: { email: string; role: string }) => api.post("/auth/magic-link-request", data),
   verifyMagicToken: (data: { token: string }) => api.post("/auth/verify-magic-token", data),
+  googleLogin: (data: { idToken: string; role?: string }) => api.post("/auth/google", data),
+  verifyEmailOtp: (data: { email: string; otp: string }) => api.post("/auth/verify-email-otp", data),
 };
 
 export const productApi = {

@@ -100,7 +100,7 @@ export default function MerchantOrdersPage() {
                     {ORDER_STATUS_LABELS[order.status]}
                   </span>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   <div className="text-right">
                     <p className="font-cinzel text-sm text-brown">{formatPrice(order.total_amount)}</p>
                     <p className="font-garamond text-xs text-muted">{formatDate(order.created_at)}</p>
@@ -108,7 +108,7 @@ export default function MerchantOrdersPage() {
                   <select value={order.status}
                     onChange={(e) => handleStatusUpdate(order.id, e.target.value as OrderStatus)}
                     disabled={updatingId === order.id || ["delivered","cancelled","refunded"].includes(order.status)}
-                    className="input-field py-1.5 text-xs font-cinzel w-44 disabled:opacity-50">
+                    className="input-field py-1.5 text-xs font-cinzel w-full sm:w-44 disabled:opacity-50">
                     {STATUS_OPTIONS.map(s => <option key={s} value={s}>{ORDER_STATUS_LABELS[s]}</option>)}
                   </select>
                   {updatingId === order.id && <Loader2 size={14} className="animate-spin text-gold-500" />}

@@ -58,6 +58,36 @@ router.get('/tickets', getCurrentUser, async (req, res, next) => {
   }
 });
 
+// Get all support tickets (Support/Admin only)
+router.get('/tickets/all', requireAdminOrSupport, async (req, res, next) => {
+  try {
+    const { status, priority, category, page = 1, page_size = 20 } = req.query;
+
+    const filter = {};
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+    if (category) filter.category = category;
+
+    const pageNum = Math.max(1, parseInt(page, 10));
+    const sizeNum = Math.min(100, Math.max(1, parseInt(page_size, 10)));
+
+    const total = await SupportTicket.countDocuments(filter);
+    const tickets = await SupportTicket.find(filter)
+      .sort({ updated_at: -1 })
+      .skip((pageNum - 1) * sizeNum)
+      .limit(sizeNum);
+
+    res.json({
+      items: tickets,
+      total,
+      page: pageNum,
+      page_size: sizeNum
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get a single ticket details (Customer or Support/Admin)
 router.get('/tickets/:id', getCurrentUser, async (req, res, next) => {
   try {
@@ -123,36 +153,6 @@ router.post('/tickets/:id/reply', getCurrentUser, async (req, res, next) => {
 
 
 // ── AGENT SUPPORT TICKET ROUTE HANDLERS ───────────────────────────────────────
-
-// Get all support tickets (Support/Admin only)
-router.get('/tickets/all', requireAdminOrSupport, async (req, res, next) => {
-  try {
-    const { status, priority, category, page = 1, page_size = 20 } = req.query;
-
-    const filter = {};
-    if (status) filter.status = status;
-    if (priority) filter.priority = priority;
-    if (category) filter.category = category;
-
-    const pageNum = Math.max(1, parseInt(page, 10));
-    const sizeNum = Math.min(100, Math.max(1, parseInt(page_size, 10)));
-
-    const total = await SupportTicket.countDocuments(filter);
-    const tickets = await SupportTicket.find(filter)
-      .sort({ updated_at: -1 })
-      .skip((pageNum - 1) * sizeNum)
-      .limit(sizeNum);
-
-    res.json({
-      items: tickets,
-      total,
-      page: pageNum,
-      page_size: sizeNum
-    });
-  } catch (error) {
-    next(error);
-  }
-});
 
 // Update support ticket status/priority (Support/Admin only)
 router.patch('/tickets/:id/status', requireAdminOrSupport, async (req, res, next) => {

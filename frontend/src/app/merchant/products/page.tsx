@@ -192,7 +192,7 @@ export default function MerchantProductsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <span className="section-tag">INVENTORY</span>
           <h1 className="section-title">My <em className="italic">Products</em></h1>
@@ -216,14 +216,14 @@ export default function MerchantProductsPage() {
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">PRODUCT NAME *</label>
                   <input {...register("name")} className="input-field" />
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
                 </div>
 
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">CATEGORY</label>
                   <select {...register("category_id")} className="input-field py-2.5 font-cinzel text-xs tracking-wide">
                     <option value="">Select Category</option>
@@ -263,16 +263,16 @@ export default function MerchantProductsPage() {
                   <input {...register("weight_grams")} type="number" className="input-field" />
                 </div>
 
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">SHORT DESCRIPTION</label>
                   <input {...register("short_description")} className="input-field" placeholder="Brief product summary" />
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">FULL DESCRIPTION</label>
                   <textarea {...register("description")} rows={3} className="input-field resize-none" />
                 </div>
 
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <div className="flex items-center justify-between mb-1">
                     <label className="font-cinzel text-xs tracking-widest text-muted block">
                       PRODUCT IMAGES (5 ANGLES FOR SLIDESHOW)
@@ -368,7 +368,7 @@ export default function MerchantProductsPage() {
                   </label>
                   <input {...register("images")} className="input-field text-xs font-mono" placeholder="https://image1.jpg, https://image2.jpg" />
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
                     TAGS <span className="font-garamond normal-case tracking-normal text-muted">(comma-separated)</span>
                   </label>

@@ -87,7 +87,7 @@ export default function AdminWithdrawalsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <span className="section-tag">FINANCE</span>
           <h1 className="section-title">Withdrawal <em className="italic">Requests</em></h1>
@@ -104,7 +104,7 @@ export default function AdminWithdrawalsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {(["", "pending", "approved", "rejected"] as const).map((s) => (
           <button key={s} onClick={() => { setFilter(s); setPage(1); }}
             className={`font-cinzel text-xs tracking-wide px-4 py-2 capitalize transition-all

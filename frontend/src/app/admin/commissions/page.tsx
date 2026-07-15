@@ -63,7 +63,7 @@ export default function AdminCommissionsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <span className="section-tag">PAYOUTS</span>
           <h1 className="section-title">Commission <em className="italic">Management</em></h1>
@@ -80,7 +80,7 @@ export default function AdminCommissionsPage() {
       </div>
 
       {/* Filter */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {(["","pending","approved","paid","rejected"] as const).map((s) => (
           <button key={s} onClick={() => setFilter(s)}
             className={`font-cinzel text-xs tracking-wide px-4 py-2 capitalize transition-all
@@ -94,7 +94,8 @@ export default function AdminCommissionsPage() {
         <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-gold-500" size={28} /></div>
       ) : (
         <div className="card overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full">
             <thead className="bg-ivory">
               <tr>
                 <th className="table-th">Commission ID</th>
@@ -148,7 +149,8 @@ export default function AdminCommissionsPage() {
                 <tr><td colSpan={7} className="table-td text-center py-10 font-garamond text-muted">No commissions found</td></tr>
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
 
@@ -172,12 +174,12 @@ export default function AdminCommissionsPage() {
             <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
               
               {/* Commission Summary */}
-              <div className="flex justify-between items-center bg-ivory p-4 border border-gold-200">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-ivory p-4 border border-gold-200">
                 <div>
                   <p className="font-cinzel text-xs text-muted">COMMISSION AMOUNT</p>
                   <p className="font-cormorant text-2xl font-semibold text-deep mt-1">{formatPrice(selectedCommission.amount)}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="font-cinzel text-xs text-muted">ORDER REFERENCE</p>
                   <p className="font-garamond text-base text-deep mt-1">Order #{selectedCommission.order_id}</p>
                 </div>

@@ -179,7 +179,8 @@ export default function AdminCouponsPage() {
         <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-gold-500" size={28} /></div>
       ) : (
         <div className="card overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full">
             <thead className="bg-ivory">
               <tr>
                 <th className="table-th">Code</th>
@@ -231,7 +232,8 @@ export default function AdminCouponsPage() {
                 <tr><td colSpan={7} className="table-td text-center py-10 font-garamond text-muted">No coupons yet</td></tr>
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
     </div>

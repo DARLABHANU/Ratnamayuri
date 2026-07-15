@@ -177,7 +177,8 @@ function UsersContent() {
               <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-gold-500" size={28} /></div>
             ) : (
               <>
-                <table className="w-full">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
                   <thead className="bg-ivory">
                     <tr>
                       <th className="table-th">User</th>
@@ -247,6 +248,7 @@ function UsersContent() {
                     )}
                   </tbody>
                 </table>
+              </div>
 
                 <div className="p-4 border-t border-gold-100 flex justify-between items-center">
                   <p className="font-garamond text-xs text-muted">{total} total users</p>
@@ -267,7 +269,8 @@ function UsersContent() {
             <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-gold-500" size={28} /></div>
           ) : (
             <>
-              <table className="w-full">
+              <div className="overflow-x-auto">
+                <table className="w-full">
                 <thead className="bg-ivory">
                   <tr>
                     <th className="table-th text-left">Store Details</th>
@@ -353,6 +356,7 @@ function UsersContent() {
                   )}
                 </tbody>
               </table>
+            </div>
 
               <div className="p-4 border-t border-gold-100 flex justify-between items-center">
                 <p className="font-garamond text-xs text-muted">{merchantsTotal} merchant profiles</p>

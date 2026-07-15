@@ -114,7 +114,8 @@ export default function AdminProductsPage() {
         <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-gold-500" size={28} /></div>
       ) : (
         <div className="card overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full">
             <thead className="bg-ivory">
               <tr>
                 <th className="table-th">Product</th>
@@ -199,7 +200,8 @@ export default function AdminProductsPage() {
                 </tr>
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
           <div className="p-4 border-t border-gold-100 flex justify-between items-center">
             <p className="font-garamond text-xs text-muted">{total} total products</p>
             <div className="flex gap-2">

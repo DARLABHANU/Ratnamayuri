@@ -65,7 +65,8 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="card overflow-hidden mb-8">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="w-full">
           <thead className="bg-ivory">
             <tr>
               <th className="table-th">Order</th>
@@ -93,7 +94,8 @@ export default function AdminDashboardPage() {
               <tr><td colSpan={5} className="table-td text-center py-8 font-garamond text-muted">No orders yet</td></tr>
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

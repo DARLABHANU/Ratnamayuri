@@ -136,7 +136,7 @@ export default function OrderDetailPage() {
           <h1 className="font-cormorant text-3xl font-light text-brown">#{order.order_number}</h1>
           <p className="font-garamond text-sm text-muted mt-1">Placed on {formatDate(order.created_at)}</p>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-start sm:items-end gap-2">
           <span className={`badge py-1 px-3 ${ORDER_STATUS_COLORS[order.status]}`}>
             {ORDER_STATUS_LABELS[order.status]}
           </span>

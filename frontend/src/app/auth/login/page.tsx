@@ -10,12 +10,6 @@ import { useAuthStore } from "@/store/authStore";
 import { UserRole } from "@/types";
 import { getApiError } from "@/lib/utils";
 
-const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
-  { value: "customer", label: "Customer" },
-  { value: "merchant", label: "Merchant" },
-  { value: "admin", label: "Admin" },
-];
-
 const ROLE_REDIRECTS: Record<UserRole, string> = {
   customer: "/",
   merchant: "/merchant/dashboard",
@@ -27,16 +21,15 @@ export default function LoginPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
   
-  const [role, setRole] = useState<UserRole>("customer");
   const [step, setStep] = useState<"login" | "verify">("login");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Credentials state for Admin & Merchant
+  // Credentials state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // OTP Verification state for Admin & Merchant first login
+  // OTP Verification state for first login
   const [otpCode, setOtpCode] = useState<string[]>(Array(6).fill(""));
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -70,7 +63,7 @@ export default function LoginPage() {
     }
   };
 
-  // Handle Google Login Success for Customers
+  // Handle Google Login Success
   const handleGoogleLoginSuccess = async (response: any) => {
     const idToken = response.credential;
     if (!idToken) {
@@ -81,12 +74,9 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMsg("");
     try {
-      const res = await authApi.googleLogin({
-        idToken,
-        role: role
-      });
-
+      const res = await authApi.googleLogin({ idToken });
       const tokenData = res.data;
+      
       setAuth({
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
@@ -105,7 +95,7 @@ export default function LoginPage() {
     }
   };
 
-  // Handle Credentials Login for Admins & Merchants
+  // Handle Credentials Login
   const handleCredentialsLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
@@ -119,8 +109,7 @@ export default function LoginPage() {
     try {
       const res = await authApi.login({
         email: email.trim().toLowerCase(),
-        password,
-        role
+        password
       });
 
       const tokenData = res.data;
@@ -193,10 +182,8 @@ export default function LoginPage() {
     setErrorMsg("");
   };
 
-  // Load Google Identity Services Script dynamically for customer role
+  // Load Google Identity Services Script dynamically
   useEffect(() => {
-    if (role !== "customer") return;
-
     const g = typeof window !== "undefined" ? (window as any).google : null;
     const initializeGoogleSignIn = () => {
       const currentGoogle = typeof window !== "undefined" ? (window as any).google : null;
@@ -236,7 +223,7 @@ export default function LoginPage() {
         }
       };
     }
-  }, [role]);
+  }, []);
 
   return (
     <div className="animate-fade-up">
@@ -248,119 +235,87 @@ export default function LoginPage() {
               WELCOME TO RATNAMAYURI
               <Sparkles size={10} className="text-gold-500 animate-pulse" />
             </span>
-            <h2 className="font-cormorant text-3xl font-light text-brown mt-1">Sign In / Register</h2>
+            <h2 className="font-cormorant text-3xl font-light text-brown mt-1">Sign In</h2>
             <p className="font-garamond text-sm text-muted mt-2 max-w-sm mx-auto">
-              {role === "customer" 
-                ? "Experience handcrafted luxury. Sign in or register instantly using Google."
-                : `Secure credential portal for authorized ${role} logins.`
-              }
+              Access your personal account or dashboard. Sign in using your email or Google account.
             </p>
           </div>
 
-          {/* Role selector */}
-          <div className="mb-8">
-            <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2 text-center uppercase font-bold">
-              ACCOUNT ROLE
-            </label>
-            <div className="grid grid-cols-3 gap-1 border border-gold-200 p-1 bg-white max-w-sm mx-auto rounded shadow-sm">
-              {ROLE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    setRole(opt.value);
-                    setErrorMsg("");
-                  }}
-                  className={`text-center py-2 font-cinzel text-xs tracking-wide transition-all rounded
-                    ${role === opt.value ? "bg-deep text-gold-300 font-bold" : "text-muted hover:text-brown"}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+          <form onSubmit={handleCredentialsLogin} className="space-y-4 max-w-sm mx-auto">
+            <div>
+              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+                EMAIL ADDRESS
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  required
+                />
+              </div>
             </div>
+
+            <div>
+              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+                PASSWORD
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  required
+                />
+              </div>
+            </div>
+
+            {errorMsg && (
+              <p className="text-red-500 text-xs font-garamond text-center">{errorMsg}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-4"
+            >
+              {isLoading && <Loader2 size={14} className="animate-spin" />}
+              SIGN IN
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative flex py-5 items-center max-w-sm mx-auto">
+            <div className="flex-grow border-t border-gold-200"></div>
+            <span className="flex-shrink mx-4 text-xs font-cinzel text-muted tracking-wider">OR</span>
+            <div className="flex-grow border-t border-gold-200"></div>
           </div>
 
-          {/* Google Button Container for Customer / Credentials form for Admin & Merchant */}
-          {role === "customer" ? (
-            <div className="flex flex-col items-center justify-center py-4 mb-6 min-h-[100px]">
-              {isLoading ? (
-                <div className="flex flex-col items-center gap-3 py-4">
-                  <Loader2 size={32} className="animate-spin text-gold-500" />
-                  <p className="font-garamond text-sm text-muted">Authenticating secure session...</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-4">
-                  <div 
-                    id="google-signin-button" 
-                    className="min-h-[44px] transition-all hover:scale-[1.02] active:scale-[0.98] duration-300"
-                  />
-                  {errorMsg && (
-                    <p className="text-red-500 text-xs font-garamond text-center max-w-xs">{errorMsg}</p>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <form onSubmit={handleCredentialsLogin} className="space-y-4 max-w-sm mx-auto">
-                <div>
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-                    EMAIL ADDRESS
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder={`${role}@ratnamayuri.live`}
-                      className="input-field bg-white text-gray-800 pl-10 w-full"
-                      required
-                    />
-                  </div>
-                </div>
+          {/* Google Sign-in */}
+          <div className="flex flex-col items-center justify-center py-2 mb-6 min-h-[60px]">
+            {isLoading ? (
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 size={24} className="animate-spin text-gold-500" />
+                <p className="font-garamond text-xs text-muted">Securing session...</p>
+              </div>
+            ) : (
+              <div id="google-signin-button" className="transition-all hover:scale-[1.02] active:scale-[0.98] duration-300" />
+            )}
+          </div>
 
-                <div>
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-                    PASSWORD
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="input-field bg-white text-gray-800 pl-10 w-full"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {errorMsg && (
-                  <p className="text-red-500 text-xs font-garamond text-center">{errorMsg}</p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-4"
-                >
-                  {isLoading && <Loader2 size={14} className="animate-spin" />}
-                  SIGN IN AS {role.toUpperCase()}
-                </button>
-              </form>
-
-              {role === "merchant" && (
-                <p className="text-center font-garamond text-sm text-muted mt-6">
-                  Want to sell with us?{" "}
-                  <Link href="/auth/signup" className="text-gold-600 underline font-semibold hover:text-gold-500 transition-colors">
-                    Register as Merchant
-                  </Link>
-                </p>
-              )}
-            </>
-          )}
+          {/* Merchant Signup Redirect */}
+          <p className="text-center font-garamond text-sm text-muted mt-4">
+            Want to sell with us?{" "}
+            <Link href="/auth/signup" className="text-gold-600 underline font-semibold hover:text-gold-500 transition-colors">
+              Register as Merchant
+            </Link>
+          </p>
         </>
       ) : (
         <div className="max-w-sm mx-auto">
@@ -417,10 +372,7 @@ export default function LoginPage() {
       <div className="bg-emerald-50 border border-emerald-100 p-3 rounded mt-8 flex items-start gap-2.5 max-w-sm mx-auto shadow-sm">
         <ShieldCheck className="text-emerald-600 flex-shrink-0 mt-0.5" size={16} />
         <p className="text-[10px] text-emerald-800 leading-normal font-sans">
-          {role === "customer"
-            ? "Ratnamayuri uses Google OAuth2 cryptography. Authentication sessions are securely synced with MERN-stack JWT authorization keys."
-            : "Authorized system login portal. Attempts to bypass this credential shield will be automatically logged and audited."
-          }
+          Ratnamayuri uses cryptographic security. Authentication sessions are securely synced with JWT authorization keys.
         </p>
       </div>
     </div>

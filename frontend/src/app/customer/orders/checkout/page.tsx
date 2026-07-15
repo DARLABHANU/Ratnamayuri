@@ -16,6 +16,10 @@ import Cookies from "js-cookie";
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
+    if (typeof window !== "undefined" && (window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
@@ -42,9 +46,11 @@ type AddressForm = z.infer<typeof addressSchema>;
 function CheckoutContent() {
   const router = useRouter();
   const params = useSearchParams();
-  const couponCode = params.get("coupon") || Cookies.get("affiliate_coupon") || "";
+  const [couponCode, setCouponCode] = useState("");
+  const [typedCoupon, setTypedCoupon] = useState("");
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const { cart, fetchCart } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
@@ -61,8 +67,34 @@ function CheckoutContent() {
     if (!isAuthenticated) { router.push("/auth/login"); return; }
     fetchCart();
     loadAddresses();
-    if (couponCode) validateCoupon();
-  }, [isAuthenticated]);
+
+    const code = params.get("coupon") || Cookies.get("affiliate_coupon") || "";
+    if (code) {
+      setCouponCode(code);
+      setTypedCoupon(code);
+    }
+  }, [isAuthenticated, params]);
+
+  useEffect(() => {
+    if (couponCode && cart) {
+      orderApi.validateCoupon({
+        code: couponCode,
+        order_amount: cart.subtotal,
+      }).then(({ data }) => {
+        if (data.valid) {
+          setCouponDiscount(data.discount_amount);
+        } else {
+          setCouponDiscount(0);
+          setCouponCode("");
+          Cookies.remove("affiliate_coupon");
+        }
+      }).catch(() => {
+        setCouponDiscount(0);
+        setCouponCode("");
+        Cookies.remove("affiliate_coupon");
+      });
+    }
+  }, [couponCode, cart]);
 
   const loadAddresses = async () => {
     try {
@@ -75,15 +107,35 @@ function CheckoutContent() {
     } catch {}
   };
 
-  const validateCoupon = async () => {
-    if (!couponCode || !cart) return;
+  const validateCouponCode = async (code: string) => {
+    if (!code.trim() || !cart) return;
+    setIsValidatingCoupon(true);
     try {
       const { data } = await orderApi.validateCoupon({
-        code: couponCode,
+        code: code.trim(),
         order_amount: cart.subtotal,
       });
-      if (data.valid) setCouponDiscount(data.discount_amount);
-    } catch {}
+      if (data.valid) {
+        setCouponDiscount(data.discount_amount);
+        setCouponCode(code.trim());
+        Cookies.set("affiliate_coupon", code.trim(), { expires: 7, sameSite: "Lax" });
+        toast.success(`Coupon "${code}" applied successfully!`);
+      } else {
+        toast.error("Invalid coupon code or total total condition not met.");
+      }
+    } catch (err) {
+      toast.error("Invalid or expired coupon code.");
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponCode("");
+    setTypedCoupon("");
+    setCouponDiscount(0);
+    Cookies.remove("affiliate_coupon");
+    toast.success("Coupon removed.");
   };
 
   const onAddressSubmit = async (data: AddressForm) => {
@@ -122,9 +174,20 @@ function CheckoutContent() {
       // If Razorpay order ID is missing (e.g. backend keys are not configured),
       // gracefully fall back to the instant success mock-checkout experience.
       if (!(order as any).razorpay_order_id) {
-        Cookies.remove("affiliate_coupon");
-        toast.success("Order placed successfully (Mock Mode)!");
-        router.push(`/customer/orders/${order.id}`);
+        try {
+          await orderApi.razorpayVerify({
+            razorpay_order_id: String(order.id),
+            razorpay_payment_id: "mock_payment",
+            razorpay_signature: "mock_signature",
+          });
+          Cookies.remove("affiliate_coupon");
+          toast.success("Order placed and payment mock-approved successfully!");
+          router.push(`/customer/orders/${order.id}`);
+        } catch (err) {
+          console.error("Mock verification failed:", err);
+          toast.error("Failed to verify mock payment status. Order remains pending.");
+          router.push(`/customer/orders/${order.id}`);
+        }
         return;
       }
 
@@ -156,6 +219,7 @@ function CheckoutContent() {
         },
         prefill: {
           name: activeAddr?.full_name || "",
+          email: user?.email || "",
           contact: activeAddr?.phone || "",
         },
         theme: {
@@ -302,6 +366,42 @@ function CheckoutContent() {
                   <span className="font-garamond text-brown flex-shrink-0">{formatPrice(item.product.price * item.quantity)}</span>
                 </div>
               ))}
+            </div>
+
+            {/* Coupon Code Panel */}
+            <div className="border-t border-gold-100 pt-4 mb-4">
+              <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-1.5 uppercase font-bold">
+                COUPON / PROMO CODE
+              </label>
+              {couponCode ? (
+                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-3 py-2 rounded">
+                  <div className="flex items-center gap-1.5 font-garamond">
+                    <span className="font-bold tracking-wider font-cinzel text-emerald-900">{couponCode}</span>
+                    <span className="text-[10px] text-emerald-600">({formatPrice(couponDiscount)} off)</span>
+                  </div>
+                  <button type="button" onClick={handleRemoveCoupon} className="text-red-500 font-bold hover:text-red-700">
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. WELCOME15"
+                    value={typedCoupon}
+                    onChange={(e) => setTypedCoupon(e.target.value.toUpperCase())}
+                    className="flex-1 bg-white border border-gold-200 text-xs p-2 rounded focus:outline-none focus:border-gold-500 uppercase font-cinzel font-bold text-brown"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => validateCouponCode(typedCoupon)}
+                    disabled={isValidatingCoupon || !typedCoupon.trim()}
+                    className="bg-[#4A0F0F] hover:bg-[#6B1A1A] text-gold-400 text-xs font-bold tracking-widest px-4 py-2 rounded disabled:opacity-40"
+                  >
+                    {isValidatingCoupon ? "..." : "APPLY"}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2 border-t border-gold-100 pt-4 mb-4">

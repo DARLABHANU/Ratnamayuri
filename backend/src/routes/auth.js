@@ -107,9 +107,9 @@ router.post('/verify-email-otp', async (req, res, next) => {
 // Login
 router.post('/login', async (req, res, next) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
 
-    const user = await User.findOne({ email, role });
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user || !(await verifyPassword(password, user.hashed_password))) {
       return res.status(401).json({ detail: 'Invalid credentials' });
     }
@@ -242,13 +242,9 @@ router.post('/verify-otp', async (req, res, next) => {
 // Google Sign-In Verification
 router.post('/google', async (req, res, next) => {
   try {
-    const { idToken, role } = req.body;
+    const { idToken } = req.body;
     if (!idToken) {
       return res.status(400).json({ detail: 'idToken is required' });
-    }
-
-    if (role !== 'customer') {
-      return res.status(403).json({ detail: 'Administrative or merchant accounts must login using email and password credentials.' });
     }
 
     // Call Google Tokeninfo API to verify the ID token
@@ -288,7 +284,7 @@ router.post('/google', async (req, res, next) => {
         email: email.toLowerCase(),
         hashed_password: hashedPassword,
         full_name: name,
-        role: role || 'customer',
+        role: 'customer',
         account_number: accountNumber,
         is_first_login: false,
         is_verified: emailVerified

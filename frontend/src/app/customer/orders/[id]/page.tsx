@@ -8,6 +8,10 @@ import { orderApi } from "@/lib/api";
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
+    if (typeof window !== "undefined" && (window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
@@ -25,7 +29,7 @@ import { useAuthStore } from "@/store/authStore";
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -83,6 +87,10 @@ export default function OrderDetailPage() {
         } finally {
           setIsProcessingPayment(false);
         }
+      },
+      prefill: {
+        name: user?.full_name || "",
+        email: user?.email || "",
       },
       theme: {
         color: "#5C1318",

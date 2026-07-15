@@ -9,6 +9,7 @@ const adminRouter = require('./admin');
 const wishlistRouter = require('./wishlist');
 const promoterRouter = require('./promoter');
 
+const config = require('../config');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
@@ -49,9 +50,7 @@ router.post('/upload', async (req, res, next) => {
     const filePath = path.join(uploadDir, uniqueFilename);
     fs.writeFileSync(filePath, dataBuffer);
 
-    const isLocal = req.get('host').includes('localhost') || req.get('host').includes('127.0.0.1');
-    const protocol = isLocal ? 'http' : 'https';
-    const publicUrl = `${protocol}://${req.get('host')}/uploads/${uniqueFilename}`;
+    const publicUrl = `${config.backendUrl}/uploads/${uniqueFilename}`;
     res.status(201).json({ url: publicUrl });
   } catch (error) {
     next(error);

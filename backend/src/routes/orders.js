@@ -412,7 +412,7 @@ orderRouter.post('/verify-payment', async (req, res, next) => {
         status: 'confirmed',
         timestamp: new Date().toISOString(),
         note: 'Payment mock-approved via Sandbox Mode',
-        updated_by: req.user.id
+        updated_by: req.user ? req.user.id : null
       });
       order.status_history = history;
       order.markModified('status_history');
@@ -427,13 +427,28 @@ orderRouter.post('/verify-payment', async (req, res, next) => {
       return res.status(400).json({ detail: 'Missing required Razorpay payment tracking parameters' });
     }
 
-    // Verify crypto HMAC signature
-    const crypto = require('crypto');
-    const hmac = crypto.createHmac('sha256', config.razorpayKeySecret);
-    hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
-    const generated_signature = hmac.digest('hex');
+    // Verify crypto HMAC signature using official SDK or fallback manual generation
+    let isSignatureValid = false;
+    let generated_signature = '';
+    
+    try {
+      const Razorpay = require('razorpay');
+      isSignatureValid = Razorpay.validatePaymentVerification(
+        { "order_id": razorpay_order_id, "payment_id": razorpay_payment_id },
+        razorpay_signature,
+        config.razorpayKeySecret
+      );
+    } catch (rzpErr) {
+      console.warn('[Razorpay SDK] validatePaymentVerification failed, using crypto fallback:', rzpErr);
+      const crypto = require('crypto');
+      const hmac = crypto.createHmac('sha256', config.razorpayKeySecret);
+      hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
+      generated_signature = hmac.digest('hex');
+      isSignatureValid = (generated_signature === razorpay_signature);
+    }
 
-    if (generated_signature !== razorpay_signature) {
+    if (!isSignatureValid) {
+      console.error(`[Razorpay Signature Mismatch] Expected validation to pass. Razorpay Signature: ${razorpay_signature}${generated_signature ? `, Fallback Generated: ${generated_signature}` : ''}`);
       return res.status(400).json({ detail: 'Payment verification failed: signature mismatch' });
     }
 
@@ -455,7 +470,7 @@ orderRouter.post('/verify-payment', async (req, res, next) => {
       status: 'confirmed',
       timestamp: new Date().toISOString(),
       note: `Payment verified via Razorpay (Payment ID: ${razorpay_payment_id})`,
-      updated_by: req.user.id
+      updated_by: req.user ? req.user.id : null
     });
     order.status_history = history;
     order.markModified('status_history');

@@ -185,9 +185,9 @@ const startServer = async () => {
   await bootstrapAdmin();
   await bootstrapCategories();
   
-  // Seed Merchant & Demo Products/Orders/Analytics
-  await bootstrapMerchant();
-  await bootstrapDemoData();
+  // Seed Merchant & Demo Products/Orders/Analytics (Disabled to maintain a completely fresh database)
+  // await bootstrapMerchant();
+  // await bootstrapDemoData();
 
   // Generate database status report
   try {

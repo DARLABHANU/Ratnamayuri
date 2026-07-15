@@ -38,7 +38,7 @@ export default function LiveTrackingMap({ order }: Props) {
       setProgress(82);
       setEta(12);
       setDistance(1.8);
-      setCurrentLoc(order.current_location || "Local Distribution Hub, Indiranagar");
+      setCurrentLoc(order.current_location || "Local Distribution Hub, Guntur");
       setSpeed(28);
     } else {
       setProgress(35);

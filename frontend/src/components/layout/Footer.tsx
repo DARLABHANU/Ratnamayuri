@@ -112,7 +112,7 @@ export default function Footer() {
               </p>
               <p className="flex items-center gap-2">
                 <MapPin size={13} className="text-[#C9973E] flex-shrink-0" />
-                <span>Indiranagar Double Road, Bengaluru, KA</span>
+                <span>Guntur, Andhra Pradesh</span>
               </p>
             </div>
           </div>
@@ -252,7 +252,7 @@ export default function Footer() {
             {/* Social handles */}
             <div className="flex gap-2">
               {[
-                { icon: <Instagram size={14} />, href: "https://instagram.com" },
+                { icon: <Instagram size={14} />, href: "https://www.instagram.com/ratna.mayuri" },
                 { icon: <Facebook size={14} />, href: "https://facebook.com" },
                 { icon: <Youtube size={14} />, href: "https://youtube.com" },
                 { icon: <Twitter size={14} />, href: "https://twitter.com" },

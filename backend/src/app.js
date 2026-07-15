@@ -5,6 +5,7 @@ const router = require('./routes');
 const errorMiddleware = require('./middleware/error');
 
 const app = express();
+app.set('trust proxy', true);
 
 // 1. STRICT CORS CONFIGURATION (Must be the very first middleware)
 const allowedOrigins = [

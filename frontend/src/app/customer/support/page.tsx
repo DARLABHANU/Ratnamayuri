@@ -8,8 +8,6 @@ import toast from "react-hot-toast";
 import { supportApi, orderApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { formatDate, getApiError } from "@/lib/utils";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 
 export default function CustomerSupportPage() {
   const router = useRouter();
@@ -112,10 +110,8 @@ export default function CustomerSupportPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#FAF6EE]">
-      <Navbar />
-
-      <main className="flex-grow max-w-5xl w-full mx-auto px-4 py-8">
+    <div className="bg-[#FAF6EE] min-h-screen">
+      <main className="max-w-5xl w-full mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[#E8D5B0] pb-6 mb-8 gap-4">
           <div>
@@ -308,8 +304,6 @@ export default function CustomerSupportPage() {
           </div>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 }

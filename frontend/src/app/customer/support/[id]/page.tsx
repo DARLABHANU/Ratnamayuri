@@ -8,8 +8,6 @@ import toast from "react-hot-toast";
 import { supportApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { formatDate, formatDateTime, getApiError } from "@/lib/utils";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 
 export default function CustomerTicketDetailsPage() {
   const router = useRouter();
@@ -88,13 +86,9 @@ export default function CustomerTicketDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen bg-[#FAF6EE]">
-        <Navbar />
-        <div className="flex-grow flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="animate-spin text-[#C9973E]" size={36} />
-          <p className="font-cinzel text-xs tracking-widest text-[#7A5C5C]">LOAD TICKET DETAILS...</p>
-        </div>
-        <Footer />
+      <div className="flex flex-col items-center justify-center py-20 gap-4 bg-[#FAF6EE] min-h-screen">
+        <Loader2 className="animate-spin text-[#C9973E]" size={36} />
+        <p className="font-cinzel text-xs tracking-widest text-[#7A5C5C]">LOAD TICKET DETAILS...</p>
       </div>
     );
   }
@@ -102,10 +96,8 @@ export default function CustomerTicketDetailsPage() {
   if (!ticket) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#FAF6EE]">
-      <Navbar />
-
-      <main className="flex-grow max-w-4xl w-full mx-auto px-4 py-8">
+    <div className="bg-[#FAF6EE] min-h-screen">
+      <main className="max-w-4xl w-full mx-auto px-4 py-8">
         {/* Back Link */}
         <Link
           href="/customer/support"
@@ -252,8 +244,6 @@ export default function CustomerTicketDetailsPage() {
           )}
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

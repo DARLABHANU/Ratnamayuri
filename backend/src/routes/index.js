@@ -49,7 +49,9 @@ router.post('/upload', async (req, res, next) => {
     const filePath = path.join(uploadDir, uniqueFilename);
     fs.writeFileSync(filePath, dataBuffer);
 
-    const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${uniqueFilename}`;
+    const isLocal = req.get('host').includes('localhost') || req.get('host').includes('127.0.0.1');
+    const protocol = isLocal ? 'http' : 'https';
+    const publicUrl = `${protocol}://${req.get('host')}/uploads/${uniqueFilename}`;
     res.status(201).json({ url: publicUrl });
   } catch (error) {
     next(error);

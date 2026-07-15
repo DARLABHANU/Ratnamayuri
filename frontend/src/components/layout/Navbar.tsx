@@ -161,6 +161,11 @@ export default function Navbar() {
                           text-brown hover:bg-cream transition-colors">
                         <User size={12} /> Profile
                       </Link>
+                      <Link href="/customer/support" onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 font-cinzel text-xs tracking-wide
+                          text-brown hover:bg-cream transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Support Help
+                      </Link>
                       {user?.is_promoter && (
                         <Link href="/promoter/dashboard" onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2 px-4 py-3 font-cinzel text-xs tracking-wide
@@ -202,6 +207,11 @@ export default function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="block font-cinzel text-xs tracking-widest text-brown py-2 border-b border-gold-50">
                   MY ACCOUNT
+                </Link>
+                <Link href="/customer/support"
+                  onClick={() => setMobileOpen(false)}
+                  className="block font-cinzel text-xs tracking-widest text-brown py-2 border-b border-gold-50">
+                  SUPPORT HELP
                 </Link>
                 {user?.is_promoter && (
                   <Link href="/promoter/dashboard"

@@ -242,11 +242,11 @@ export default function HomePage() {
           });
           setTrending(mapped);
         } else {
-          setTrending(TRENDING);
+          setTrending([]);
         }
       } catch (err) {
         console.error("Failed to load trending products:", err);
-        setTrending(TRENDING);
+        setTrending([]);
       } finally {
         setLoading(false);
       }
@@ -780,61 +780,63 @@ export default function HomePage() {
         </section>
 
         {/* ── Trending Now ──────────────────────────────────────────────────── */}
-        <section className="py-6 sm:py-8 px-4 max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-5 sm:mb-6">
-            <h2 className="text-[#1a0505] font-black text-lg sm:text-xl tracking-wide"
-              style={{ fontFamily: "Georgia, serif" }}>TRENDING NOW</h2>
-            <Link href="/customer/products"
-              className="flex items-center gap-1 text-[#6B1A1A] text-xs font-bold tracking-widest hover:underline">
-              View All <ArrowRight size={14} />
-            </Link>
-          </div>
+        {((!loading && trending.length > 0) || loading) && (
+          <section className="py-6 sm:py-8 px-4 max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-5 sm:mb-6">
+              <h2 className="text-[#1a0505] font-black text-lg sm:text-xl tracking-wide"
+                style={{ fontFamily: "Georgia, serif" }}>TRENDING NOW</h2>
+              <Link href="/customer/products"
+                className="flex items-center gap-1 text-[#6B1A1A] text-xs font-bold tracking-widest hover:underline">
+                View All <ArrowRight size={14} />
+              </Link>
+            </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-            {loading ? (
-              Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)
-            ) : (
-              trending.map((p, i) => {
-                const isWish = p.id && isAuthenticated ? isWishlisted(p.id) : wishlistedLocal.includes(i);
-                return (
-                  <Link key={i} href={p.id ? `/customer/products/${p.id}` : "/customer/products"}
-                    className="group bg-white border border-[#E8D5B0] hover:border-[#C9973E] hover:shadow-lg
-                      transition-all duration-300 flex flex-col rounded-lg overflow-hidden">
-                    <div className="relative overflow-hidden aspect-square bg-[#FAF6EE]">
-                      <img src={p.img} alt={p.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=300&auto=format&fit=crop"; }} />
-                      <button
-                        onClick={(e) => handleToggleWish(e, p, i)}
-                        className="absolute top-2 right-2 w-7 h-7 bg-white rounded-full shadow flex items-center justify-center">
-                        <Heart size={13} className={isWish ? "fill-[#6B1A1A] text-[#6B1A1A]" : "text-[#9a7070]"} />
-                      </button>
-                      {p.discount > 0 && (
-                        <div className="absolute top-2 left-2 bg-[#6B1A1A] text-white text-[10px] font-bold px-1.5 py-0.5">
-                          {p.discount}% OFF
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-2 sm:p-2.5 flex flex-col gap-1">
-                      <p className="text-[#1a0505] text-xs font-semibold leading-tight line-clamp-2">{p.name}</p>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[#1a0505] text-sm font-black">&#8377;{p.price.toLocaleString()}</span>
-                        {p.original > p.price && (
-                          <span className="text-[#9a7070] text-xs line-through">&#8377;{p.original.toLocaleString()}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+              {loading ? (
+                Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)
+              ) : (
+                trending.map((p, i) => {
+                  const isWish = p.id && isAuthenticated ? isWishlisted(p.id) : wishlistedLocal.includes(i);
+                  return (
+                    <Link key={i} href={p.id ? `/customer/products/${p.id}` : "/customer/products"}
+                      className="group bg-white border border-[#E8D5B0] hover:border-[#C9973E] hover:shadow-lg
+                        transition-all duration-300 flex flex-col rounded-lg overflow-hidden">
+                      <div className="relative overflow-hidden aspect-square bg-[#FAF6EE]">
+                        <img src={p.img} alt={p.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=300&auto=format&fit=crop"; }} />
+                        <button
+                          onClick={(e) => handleToggleWish(e, p, i)}
+                          className="absolute top-2 right-2 w-7 h-7 bg-white rounded-full shadow flex items-center justify-center">
+                          <Heart size={13} className={isWish ? "fill-[#6B1A1A] text-[#6B1A1A]" : "text-[#9a7070]"} />
+                        </button>
+                        {p.discount > 0 && (
+                          <div className="absolute top-2 left-2 bg-[#6B1A1A] text-white text-[10px] font-bold px-1.5 py-0.5">
+                            {p.discount}% OFF
+                          </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Star size={10} className="fill-[#C9973E] text-[#C9973E]" />
-                        <span className="text-[10px] font-bold text-[#3a2020]">{p.rating}</span>
-                        <span className="text-[10px] text-[#9a7070]">({p.sold} Sold)</span>
+                      <div className="p-2 sm:p-2.5 flex flex-col gap-1">
+                        <p className="text-[#1a0505] text-xs font-semibold leading-tight line-clamp-2">{p.name}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[#1a0505] text-sm font-black">&#8377;{p.price.toLocaleString()}</span>
+                          {p.original > p.price && (
+                            <span className="text-[#9a7070] text-xs line-through">&#8377;{p.original.toLocaleString()}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Star size={10} className="fill-[#C9973E] text-[#C9973E]" />
+                          <span className="text-[10px] font-bold text-[#3a2020]">{p.rating}</span>
+                          <span className="text-[10px] text-[#9a7070]">({p.sold} Sold)</span>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                );
-              })
-            )}
-          </div>
-        </section>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ── Shop by Collection ────────────────────────────────────────────── */}
         <section className="py-6 sm:py-8 px-4 max-w-7xl mx-auto border-t border-[#E8D5B0]">

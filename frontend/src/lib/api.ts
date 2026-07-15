@@ -186,6 +186,13 @@ export const supportApi = {
   userOrders: (userId: number) => api.get(`/support/user/${userId}/orders`),
   resetPassword: (userId: number, data: object) =>
     api.patch(`/support/user/${userId}/reset-password`, data),
+  createTicket: (data: object) => api.post("/support/tickets", data),
+  getMyTickets: () => api.get("/support/tickets"),
+  getTicketDetails: (id: number) => api.get(`/support/tickets/${id}`),
+  replyToTicket: (id: number, data: object) => api.post(`/support/tickets/${id}/reply`, data),
+  getAllTickets: (params?: object) => api.get("/support/tickets/all", { params }),
+  updateTicketStatus: (id: number, data: object) => api.patch(`/support/tickets/${id}/status`, data),
+  agentReplyToTicket: (id: number, data: object) => api.post(`/support/tickets/${id}/agent-reply`, data),
 };
 
 export const addressApi = {

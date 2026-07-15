@@ -3,19 +3,231 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
 const AuditLog = require('../models/AuditLog');
+const SupportTicket = require('../models/SupportTicket');
 const {
   requireAdminOrSupport,
   hashPassword,
   createImpersonationToken,
-  getClientIp
+  getClientIp,
+  getCurrentUser
 } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.use(requireAdminOrSupport);
+// ── CUSTOMER SUPPORT TICKET ROUTE HANDLERS ────────────────────────────────────
+
+// Create support ticket (Customer)
+router.post('/tickets', getCurrentUser, async (req, res, next) => {
+  try {
+    const { subject, category, priority, message, order_id } = req.body;
+
+    if (!subject || !category || !message) {
+      return res.status(400).json({ detail: 'Subject, category, and message are required' });
+    }
+
+    const ticket = new SupportTicket({
+      user_id: req.user.id,
+      subject,
+      category,
+      priority: priority || 'medium',
+      order_id: order_id || null,
+      status: 'open',
+      replies: [{
+        sender_id: req.user.id,
+        sender_name: req.user.full_name,
+        sender_role: req.user.role,
+        message: message
+      }]
+    });
+
+    await ticket.save();
+    res.status(201).json(ticket);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// List logged-in customer's tickets
+router.get('/tickets', getCurrentUser, async (req, res, next) => {
+  try {
+    const tickets = await SupportTicket.find({ user_id: req.user.id })
+      .sort({ updated_at: -1 });
+    res.json(tickets);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get a single ticket details (Customer or Support/Admin)
+router.get('/tickets/:id', getCurrentUser, async (req, res, next) => {
+  try {
+    const ticketId = Number(req.params.id);
+    const ticket = await SupportTicket.findOne({ id: ticketId });
+
+    if (!ticket) {
+      return res.status(404).json({ detail: 'Ticket not found' });
+    }
+
+    // Ensure customer owns the ticket, or requesting user is support/admin
+    const isAgent = ['admin', 'support'].includes(req.user.role);
+    if (ticket.user_id !== req.user.id && !isAgent) {
+      return res.status(403).json({ detail: 'Access denied' });
+    }
+
+    res.json(ticket);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Customer reply to a ticket
+router.post('/tickets/:id/reply', getCurrentUser, async (req, res, next) => {
+  try {
+    const ticketId = Number(req.params.id);
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ detail: 'Message is required' });
+    }
+
+    const ticket = await SupportTicket.findOne({ id: ticketId });
+    if (!ticket) {
+      return res.status(404).json({ detail: 'Ticket not found' });
+    }
+
+    if (ticket.user_id !== req.user.id) {
+      return res.status(403).json({ detail: 'Access denied' });
+    }
+
+    // Push new reply
+    ticket.replies.push({
+      sender_id: req.user.id,
+      sender_name: req.user.full_name,
+      sender_role: req.user.role,
+      message
+    });
+
+    // Re-open ticket if it was resolved
+    if (ticket.status === 'resolved') {
+      ticket.status = 'open';
+    }
+
+    ticket.updated_at = new Date();
+    await ticket.save();
+
+    res.status(201).json(ticket);
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+// ── AGENT SUPPORT TICKET ROUTE HANDLERS ───────────────────────────────────────
+
+// Get all support tickets (Support/Admin only)
+router.get('/tickets/all', requireAdminOrSupport, async (req, res, next) => {
+  try {
+    const { status, priority, category, page = 1, page_size = 20 } = req.query;
+
+    const filter = {};
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+    if (category) filter.category = category;
+
+    const pageNum = Math.max(1, parseInt(page, 10));
+    const sizeNum = Math.min(100, Math.max(1, parseInt(page_size, 10)));
+
+    const total = await SupportTicket.countDocuments(filter);
+    const tickets = await SupportTicket.find(filter)
+      .sort({ updated_at: -1 })
+      .skip((pageNum - 1) * sizeNum)
+      .limit(sizeNum);
+
+    res.json({
+      items: tickets,
+      total,
+      page: pageNum,
+      page_size: sizeNum
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update support ticket status/priority (Support/Admin only)
+router.patch('/tickets/:id/status', requireAdminOrSupport, async (req, res, next) => {
+  try {
+    const ticketId = Number(req.params.id);
+    const { status, priority } = req.body;
+
+    const ticket = await SupportTicket.findOne({ id: ticketId });
+    if (!ticket) {
+      return res.status(404).json({ detail: 'Ticket not found' });
+    }
+
+    if (status) {
+      if (!['open', 'in_progress', 'resolved'].includes(status)) {
+        return res.status(400).json({ detail: 'Invalid status value' });
+      }
+      ticket.status = status;
+    }
+
+    if (priority) {
+      if (!['low', 'medium', 'high'].includes(priority)) {
+        return res.status(400).json({ detail: 'Invalid priority value' });
+      }
+      ticket.priority = priority;
+    }
+
+    ticket.updated_at = new Date();
+    await ticket.save();
+
+    res.json(ticket);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Agent reply to a ticket (Support/Admin only)
+router.post('/tickets/:id/agent-reply', requireAdminOrSupport, async (req, res, next) => {
+  try {
+    const ticketId = Number(req.params.id);
+    const { message, status } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ detail: 'Message is required' });
+    }
+
+    const ticket = await SupportTicket.findOne({ id: ticketId });
+    if (!ticket) {
+      return res.status(404).json({ detail: 'Ticket not found' });
+    }
+
+    // Append agent reply
+    ticket.replies.push({
+      sender_id: req.user.id,
+      sender_name: req.user.full_name,
+      sender_role: req.user.role,
+      message
+    });
+
+    // Auto-update status to in_progress or resolve as selected
+    ticket.status = status || 'in_progress';
+    ticket.updated_at = new Date();
+
+    await ticket.save();
+
+    res.status(201).json(ticket);
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+// ── AGENT ACCESS ROUTE HANDLERS ───────────────────────────────────────────────
 
 // Look up user (account number, email, or name)
-router.post('/lookup', async (req, res, next) => {
+router.post('/lookup', requireAdminOrSupport, async (req, res, next) => {
   try {
     const { account_number, email, name } = req.body;
 
@@ -66,7 +278,7 @@ router.post('/lookup', async (req, res, next) => {
 });
 
 // Impersonate User
-router.post('/impersonate', async (req, res, next) => {
+router.post('/impersonate', requireAdminOrSupport, async (req, res, next) => {
   try {
     const { target_user_id, reason } = req.body;
 
@@ -123,7 +335,7 @@ router.post('/impersonate', async (req, res, next) => {
 });
 
 // End Impersonation
-router.post('/impersonate/end/:audit_log_id', async (req, res, next) => {
+router.post('/impersonate/end/:audit_log_id', requireAdminOrSupport, async (req, res, next) => {
   try {
     const auditLogId = Number(req.params.audit_log_id);
 
@@ -144,7 +356,7 @@ router.post('/impersonate/end/:audit_log_id', async (req, res, next) => {
 });
 
 // Get Audit Logs
-router.get('/audit-logs', async (req, res, next) => {
+router.get('/audit-logs', requireAdminOrSupport, async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(req.query.page_size || '50', 10)));
@@ -167,7 +379,7 @@ router.get('/audit-logs', async (req, res, next) => {
 });
 
 // View any user's orders (Support)
-router.get('/user/:user_id/orders', async (req, res, next) => {
+router.get('/user/:user_id/orders', requireAdminOrSupport, async (req, res, next) => {
   try {
     const userId = Number(req.params.user_id);
     const orders = await Order.find({ customer_id: userId })
@@ -204,7 +416,7 @@ router.get('/user/:user_id/orders', async (req, res, next) => {
 });
 
 // Force Reset Password (Support Reset User Password)
-router.patch('/user/:user_id/reset-password', async (req, res, next) => {
+router.patch('/user/:user_id/reset-password', requireAdminOrSupport, async (req, res, next) => {
   try {
     const userId = Number(req.params.user_id);
     const { new_password } = req.body;

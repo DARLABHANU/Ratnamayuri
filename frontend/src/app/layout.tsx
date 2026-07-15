@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import { Sparkles, Clock } from "lucide-react";
 import "./globals.css";
 import AuthInitializer from "@/components/AuthInitializer";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 
 const cormorant = Playfair_Display({
   subsets: ["latin"],
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${cormorant.variable} ${cinzel.variable} ${garamond.variable}`}>
       <body className="bg-cream font-garamond text-brown antialiased">
+        <ImpersonationBanner />
         {!MAINTENANCE_MODE && <AuthInitializer />}
         <Toaster
           position="top-right"

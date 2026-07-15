@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, Package, User, Heart, ChevronRight, Loader2, CreditCard, Award } from "lucide-react";
+import { ShoppingBag, Package, User, Heart, ChevronRight, Loader2, CreditCard, Award, MessageSquare } from "lucide-react";
 import { authApi, orderApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
@@ -119,6 +119,7 @@ export default function CustomerDashboard() {
               { href: "/customer/orders", label: "All Orders", icon: Package },
               { href: "/customer/cart", label: "View Cart", icon: ShoppingBag },
               { href: "/customer/payments", label: "Payment History", icon: CreditCard },
+              { href: "/customer/support", label: "Support Help & Tickets", icon: MessageSquare },
               ...(user?.is_promoter ? [{ href: "/promoter/dashboard", label: "Affiliate Portal", icon: Award }] : []),
             ].map(({ href, label, icon: Icon }) => (
               <Link key={href} href={href}

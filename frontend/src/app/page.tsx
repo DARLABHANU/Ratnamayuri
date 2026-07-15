@@ -459,6 +459,10 @@ export default function HomePage() {
                         className="block px-4 py-2 text-xs font-bold text-[#4A0F0F] hover:bg-[#FAF6EE] transition-colors">
                         Profile
                       </Link>
+                      <Link href="/customer/support" onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2 text-xs font-bold text-[#4A0F0F] hover:bg-[#FAF6EE] transition-colors">
+                        Support Help
+                      </Link>
                       {user?.is_promoter && (
                         <Link href="/promoter/dashboard" onClick={() => setUserMenuOpen(false)}
                           className="block px-4 py-2 text-xs font-bold text-[#C9973E] hover:bg-[#FAF6EE] transition-colors">

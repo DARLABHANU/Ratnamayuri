@@ -403,13 +403,13 @@ orderRouter.post('/verify-payment', async (req, res, next) => {
       }
 
       order.payment_status = 'paid';
-      order.status = 'confirmed';
+      order.status = 'pending';
       order.razorpay_payment_id = razorpay_payment_id || 'mock_payment';
       order.razorpay_signature = razorpay_signature || 'mock_signature';
 
       const history = order.status_history || [];
       history.push({
-        status: 'confirmed',
+        status: 'pending',
         timestamp: new Date().toISOString(),
         note: 'Payment mock-approved via Sandbox Mode',
         updated_by: req.user ? req.user.id : null
@@ -460,14 +460,14 @@ orderRouter.post('/verify-payment', async (req, res, next) => {
 
     // Update the Order status & payment status
     order.payment_status = 'paid';
-    order.status = 'confirmed';
+    order.status = 'pending';
     order.razorpay_payment_id = razorpay_payment_id;
     order.razorpay_signature = razorpay_signature;
 
     // Log this status change in status history log
     const history = order.status_history || [];
     history.push({
-      status: 'confirmed',
+      status: 'pending',
       timestamp: new Date().toISOString(),
       note: `Payment verified via Razorpay (Payment ID: ${razorpay_payment_id})`,
       updated_by: req.user ? req.user.id : null

@@ -50,7 +50,11 @@ router.post('/upload', async (req, res, next) => {
     const filePath = path.join(uploadDir, uniqueFilename);
     fs.writeFileSync(filePath, dataBuffer);
 
-    const publicUrl = `${config.backendUrl}/uploads/${uniqueFilename}`;
+    // Dynamically resolve public URL from request context to avoid env configuration mismatch
+    const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    const host = req.get('host');
+    const publicUrl = `${protocol}://${host}/uploads/${uniqueFilename}`;
+
     res.status(201).json({ url: publicUrl });
   } catch (error) {
     next(error);

@@ -19,9 +19,9 @@ router.post('/signup', async (req, res, next) => {
   try {
     const { email, password, full_name, phone, role } = req.body;
 
-    // Safety checks
-    if (role === 'admin' || role === 'support') {
-      return res.status(403).json({ detail: 'Cannot self-register as admin/support' });
+    // Enforce role restriction - only Customer self-registration is allowed
+    if (role && role !== 'customer') {
+      return res.status(403).json({ detail: 'Self-registration is restricted to Customer accounts only.' });
     }
 
     const existingEmail = await User.findOne({ email });
@@ -42,7 +42,7 @@ router.post('/signup', async (req, res, next) => {
       hashed_password: hashedPassword,
       full_name,
       phone: (phone && phone.trim()) ? phone.trim() : undefined,
-      role: role || 'customer',
+      role: 'customer', // Enforce customer role on registration
       account_number: accountNumber,
       is_first_login: true,
       is_verified: false

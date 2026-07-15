@@ -74,10 +74,10 @@ export default function SignupPage() {
         password,
         full_name: fullName.trim(),
         phone: phone.trim(),
-        role: "merchant", // Hardcoded to Merchant signup
+        role: "customer", // Hardcoded to Customer signup
       });
 
-      toast.success("Merchant account created! Verification code sent to email.");
+      toast.success("Account created! Verification code sent to email.");
       setStep("verify");
     } catch (err: any) {
       const apiErr = getApiError(err) || "Registration failed. Email might already be in use.";
@@ -115,7 +115,7 @@ export default function SignupPage() {
       });
 
       toast.success("Email verified and account activated!");
-      router.push("/merchant/dashboard");
+      router.push("/");
     } catch (err: any) {
       const apiErr = getApiError(err) || "Invalid OTP code. Please try again.";
       setErrorMsg(apiErr);
@@ -140,12 +140,12 @@ export default function SignupPage() {
           <div className="mb-6 text-center">
             <span className="section-tag flex items-center justify-center gap-1">
               <Sparkles size={10} className="text-gold-500 animate-pulse" />
-              MERCHANT PORTAL
+              CREATE ACCOUNT
               <Sparkles size={10} className="text-gold-500 animate-pulse" />
             </span>
-            <h2 className="font-cormorant text-3xl font-light text-brown mt-1">Partner With Us</h2>
+            <h2 className="font-cormorant text-3xl font-light text-brown mt-1">Join Ratnamayuri</h2>
             <p className="font-garamond text-sm text-muted mt-2">
-              Create your seller account and showcase your luxury products to our audience.
+              Sign up to discover luxury handlooms, fine sarees, and authentic bridal collections.
             </p>
           </div>
 
@@ -177,7 +177,7 @@ export default function SignupPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="merchant@example.com"
+                  placeholder="you@example.com"
                   className="input-field bg-white text-gray-800 pl-10 w-full"
                   required
                 />
@@ -228,12 +228,12 @@ export default function SignupPage() {
               className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-4"
             >
               {isLoading && <Loader2 size={14} className="animate-spin" />}
-              REGISTER AS MERCHANT
+              CREATE ACCOUNT
             </button>
           </form>
 
           <p className="text-center font-garamond text-sm text-muted mt-6">
-            Already have a partner account?{" "}
+            Already have an account?{" "}
             <Link href="/auth/login" className="text-gold-600 underline font-semibold hover:text-gold-500 transition-colors">
               Sign In
             </Link>
@@ -294,7 +294,7 @@ export default function SignupPage() {
       <div className="bg-emerald-50 border border-emerald-100 p-3 rounded mt-8 flex items-start gap-2.5 shadow-sm">
         <ShieldCheck className="text-emerald-600 flex-shrink-0 mt-0.5" size={16} />
         <p className="text-[10px] text-emerald-800 leading-normal font-sans">
-          Ratnamayuri partner registration uses automated email verification checks to validate genuine merchant submissions.
+          Ratnamayuri uses automated secure verification checks to validate and activate your login session.
         </p>
       </div>
     </div>

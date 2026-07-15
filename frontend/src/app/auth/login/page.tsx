@@ -309,11 +309,11 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Merchant Signup Redirect */}
+          {/* Customer Signup Redirect */}
           <p className="text-center font-garamond text-sm text-muted mt-4">
-            Want to sell with us?{" "}
+            Don't have an account?{" "}
             <Link href="/auth/signup" className="text-gold-600 underline font-semibold hover:text-gold-500 transition-colors">
-              Register as Merchant
+              Sign Up
             </Link>
           </p>
         </>

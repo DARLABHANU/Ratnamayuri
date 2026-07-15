@@ -13,6 +13,16 @@ const config = require('../config');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const cloudinary = require('cloudinary').v2;
+
+// Configure Cloudinary if credentials are provided in env
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+}
 
 // Base64 file upload endpoint
 router.post('/upload', async (req, res, next) => {
@@ -40,6 +50,26 @@ router.post('/upload', async (req, res, next) => {
       dataBuffer = Buffer.from(base64, 'base64');
     }
 
+    // Attempt to upload to Cloudinary first if configured
+    if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+      try {
+        const dataUri = matches ? matches[0] : `data:image/jpeg;base64,${base64}`;
+        const uploadResult = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload(dataUri, {
+            folder: 'ratnamayuri_products',
+            resource_type: 'auto'
+          }, (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          });
+        });
+        return res.status(201).json({ url: uploadResult.secure_url });
+      } catch (cloudinaryError) {
+        console.error('[Cloudinary Upload Error] Falling back to local disk write:', cloudinaryError);
+      }
+    }
+
+    // Fallback: Save file to local directory
     const uniqueFilename = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}${extension}`;
     const uploadDir = path.join(__dirname, '../../uploads');
 

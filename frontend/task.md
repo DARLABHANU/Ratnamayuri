@@ -1,0 +1,9 @@
+- `[x]` Verify all merchant & admin payout/withdrawal panel pages exist and are linked in layouts
+- `[x]` Add interactive coupon promo code input, validation, and removal buttons to the checkout page
+- `[x]` Deactivate merchant public self-registration and enforce customer role on backend signup
+- `[x]` Redesign frontend signup to Customer Signup and update redirects
+- `[x]` Make image upload routes dynamic based on request headers to prevent broken previews in prod
+- `[x]` Retain 'pending' order status on payment success, allowing merchants to confirm to 'confirmed'
+- `[x]` Integrate Cloudinary storage uploader with graceful local fallback if credentials are absent
+- `[x]` Redesign merchant order tracking page into a professional step-by-step logistics workflow panel
+- `[x]` Verify compilation via `npx tsc --noEmit`

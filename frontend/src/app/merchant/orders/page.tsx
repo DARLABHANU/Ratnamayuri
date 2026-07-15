@@ -42,10 +42,15 @@ export default function MerchantOrdersPage() {
     }
   };
 
-  const handleStatusUpdate = async (orderId: number, newStatus: OrderStatus, trackingNumber?: string) => {
+  const handleStatusUpdate = async (orderId: number, newStatus: OrderStatus, trackingNumber?: string, notes?: string, currentLocation?: string) => {
     setUpdatingId(orderId);
     try {
-      await orderApi.updateStatus(orderId, { status: newStatus, tracking_number: trackingNumber });
+      await orderApi.updateStatus(orderId, { 
+        status: newStatus, 
+        tracking_number: trackingNumber, 
+        notes: notes, 
+        current_location: currentLocation 
+      });
       toast.success("Order status updated!");
       loadOrders();
     } catch (err) {
@@ -130,18 +135,97 @@ export default function MerchantOrdersPage() {
                       </div>
                     ))}
                   </div>
-                  {order.status === "processing" && (
-                    <div className="pt-3 border-t border-gold-100">
-                      <form onSubmit={(e) => {
-                        e.preventDefault();
-                        const val = (e.currentTarget.elements.namedItem("tracking") as HTMLInputElement).value;
-                        handleStatusUpdate(order.id, "shipped", val);
-                      }} className="flex gap-2">
-                        <input name="tracking" placeholder="Enter tracking number" className="input-field flex-1 py-2 text-sm" required />
-                        <button type="submit" className="btn-primary px-4 py-2 text-xs">MARK SHIPPED</button>
-                      </form>
+                  {/* Step-by-Step Logistics Workflow */}
+                  <div className="pt-4 mt-4 border-t border-gold-100/60 bg-gold-50/10 p-3 rounded border border-gold-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <p className="font-cinzel text-[10px] tracking-widest text-muted">LOGISTICS WORKFLOW</p>
+                      <h4 className="font-garamond text-sm text-brown font-semibold mt-0.5">
+                        {order.status === "pending" && "Next Step: Confirm Order Payment"}
+                        {order.status === "confirmed" && "Next Step: Pack & Process Items"}
+                        {order.status === "processing" && "Next Step: Dispatch & Ship Package"}
+                        {order.status === "shipped" && "Next Step: Out for Delivery Dispatch"}
+                        {order.status === "out_for_delivery" && "Next Step: Complete Order Delivery"}
+                        {["delivered", "cancelled", "refunded"].includes(order.status) && "Order processing is complete."}
+                      </h4>
                     </div>
-                  )}
+
+                    <div className="flex flex-wrap gap-2">
+                      {order.status === "pending" && (
+                        <button
+                          type="button"
+                          onClick={() => handleStatusUpdate(order.id, "confirmed", order.tracking_number, "Payment and order confirmed by merchant.")}
+                          className="btn-primary text-xs py-1.5 px-4 font-cinzel tracking-wider bg-emerald-700 hover:bg-emerald-800"
+                        >
+                          CONFIRM PAYMENT & ORDER
+                        </button>
+                      )}
+                      
+                      {order.status === "confirmed" && (
+                        <button
+                          type="button"
+                          onClick={() => handleStatusUpdate(order.id, "processing", order.tracking_number, "Order packed and prepared for shipment.")}
+                          className="btn-primary text-xs py-1.5 px-4 font-cinzel tracking-wider"
+                        >
+                          START PACKING / PROCESS
+                        </button>
+                      )}
+
+                      {order.status === "processing" && (
+                        <form onSubmit={(e) => {
+                          e.preventDefault();
+                          const courier = (e.currentTarget.elements.namedItem("courier") as HTMLSelectElement).value;
+                          const tracking = (e.currentTarget.elements.namedItem("tracking") as HTMLInputElement).value;
+                          const trackingVal = `${courier} — ${tracking}`;
+                          handleStatusUpdate(order.id, "shipped", trackingVal, `Package dispatched via ${courier} (AWB: ${tracking})`, `${courier} Logistics Center`);
+                        }} className="flex flex-col sm:flex-row gap-2 items-stretch w-full max-w-md">
+                          <select name="courier" className="input-field text-xs py-1.5" required>
+                            <option value="Delhivery">Delhivery</option>
+                            <option value="Blue Dart">Blue Dart</option>
+                            <option value="DHL">DHL Express</option>
+                            <option value="FedEx">FedEx</option>
+                          </select>
+                          <input name="tracking" placeholder="Enter AWB Tracking ID" className="input-field text-xs py-1.5 flex-1" required />
+                          <button type="submit" className="btn-primary text-xs py-1.5 px-4 font-cinzel tracking-wider">
+                            SHIP & DISPATCH
+                          </button>
+                        </form>
+                      )}
+
+                      {order.status === "shipped" && (
+                        <button
+                          type="button"
+                          onClick={() => handleStatusUpdate(order.id, "out_for_delivery", order.tracking_number, "Order is out for delivery with local agent.", "Out for delivery - Local distribution point")}
+                          className="btn-primary text-xs py-1.5 px-4 font-cinzel tracking-wider"
+                        >
+                          DISPATCH OUT FOR DELIVERY
+                        </button>
+                      )}
+
+                      {order.status === "out_for_delivery" && (
+                        <button
+                          type="button"
+                          onClick={() => handleStatusUpdate(order.id, "delivered", order.tracking_number, "Order successfully delivered to customer.", "Delivered to customer's residence")}
+                          className="btn-primary text-xs py-1.5 px-4 font-cinzel tracking-wider bg-emerald-700 hover:bg-emerald-800"
+                        >
+                          CONFIRM DELIVERY SUCCESS
+                        </button>
+                      )}
+
+                      {["pending", "confirmed", "processing"].includes(order.status) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm("Cancel this order? This will release stock and cannot be undone.")) {
+                              handleStatusUpdate(order.id, "cancelled", order.tracking_number, "Order cancelled by merchant.");
+                            }
+                          }}
+                          className="btn-ghost text-xs text-red-600 hover:text-red-500 font-cinzel tracking-wider border border-red-200/50 hover:bg-red-50"
+                        >
+                          CANCEL ORDER
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
                   {["shipped", "out_for_delivery", "delivered"].includes(order.status) && (
                     <div className="mt-4 pt-4 border-t border-gold-100 animate-fade-in space-y-4">

@@ -9,8 +9,6 @@ import { Order, OrderStatus } from "@/types";
 import { formatPrice, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, getApiError } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
-import LiveTrackingMap from "@/components/customer/LiveTrackingMap";
-
 const STATUS_OPTIONS: OrderStatus[] = [
   "pending","confirmed","processing","shipped","out_for_delivery","delivered","cancelled",
 ];
@@ -227,59 +225,52 @@ export default function MerchantOrdersPage() {
                     </div>
                   </div>
 
-                  {["shipped", "out_for_delivery", "delivered"].includes(order.status) && (
+                  {["shipped", "out_for_delivery"].includes(order.status) && (
                     <div className="mt-4 pt-4 border-t border-gold-100 animate-fade-in space-y-4">
-                      <div>
-                        <p className="font-cinzel text-[10px] tracking-widest text-muted mb-3">LIVE GPS COURIER MONITORING</p>
-                        <LiveTrackingMap order={order} />
+                      <div className="pt-3 border-t border-gold-100/50 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <form onSubmit={(e) => {
+                          e.preventDefault();
+                          const val = (e.currentTarget.elements.namedItem("trackingUpdate") as HTMLInputElement).value;
+                          handleStatusUpdate(order.id, order.status, val);
+                        }} className="flex gap-2">
+                          <input
+                            name="trackingUpdate"
+                            defaultValue={order.tracking_number || ""}
+                            placeholder="Enter updated tracking number"
+                            className="input-field flex-1 py-1.5 text-xs"
+                            required
+                          />
+                          <button type="submit" className="btn-outline px-4 py-1.5 text-[10px] tracking-widest flex-shrink-0">
+                            UPDATE TRACKING
+                          </button>
+                        </form>
+
+                        <form onSubmit={async (e) => {
+                          e.preventDefault();
+                          const val = (e.currentTarget.elements.namedItem("currentLocationUpdate") as HTMLInputElement).value;
+                          setUpdatingId(order.id);
+                          try {
+                            await orderApi.updateStatus(order.id, { status: order.status, current_location: val });
+                            toast.success("GPS location updated!");
+                            loadOrders();
+                          } catch (err) {
+                            toast.error(getApiError(err));
+                          } finally {
+                            setUpdatingId(null);
+                          }
+                        }} className="flex gap-2">
+                          <input
+                            name="currentLocationUpdate"
+                            defaultValue={order.current_location || ""}
+                            placeholder="Enter current GPS city/location"
+                            className="input-field flex-1 py-1.5 text-xs"
+                            required
+                          />
+                          <button type="submit" className="btn-outline px-4 py-1.5 text-[10px] tracking-widest flex-shrink-0">
+                            UPDATE GPS LOCATION
+                          </button>
+                        </form>
                       </div>
-
-                      {["shipped", "out_for_delivery"].includes(order.status) && (
-                        <div className="pt-3 border-t border-gold-100/50 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <form onSubmit={(e) => {
-                            e.preventDefault();
-                            const val = (e.currentTarget.elements.namedItem("trackingUpdate") as HTMLInputElement).value;
-                            handleStatusUpdate(order.id, order.status, val);
-                          }} className="flex gap-2">
-                            <input
-                              name="trackingUpdate"
-                              defaultValue={order.tracking_number || ""}
-                              placeholder="Enter updated tracking number"
-                              className="input-field flex-1 py-1.5 text-xs"
-                              required
-                            />
-                            <button type="submit" className="btn-outline px-4 py-1.5 text-[10px] tracking-widest flex-shrink-0">
-                              UPDATE TRACKING
-                            </button>
-                          </form>
-
-                          <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            const val = (e.currentTarget.elements.namedItem("currentLocationUpdate") as HTMLInputElement).value;
-                            setUpdatingId(order.id);
-                            try {
-                              await orderApi.updateStatus(order.id, { status: order.status, current_location: val });
-                              toast.success("GPS location updated!");
-                              loadOrders();
-                            } catch (err) {
-                              toast.error(getApiError(err));
-                            } finally {
-                              setUpdatingId(null);
-                            }
-                          }} className="flex gap-2">
-                            <input
-                              name="currentLocationUpdate"
-                              defaultValue={order.current_location || ""}
-                              placeholder="Enter current GPS city/location"
-                              className="input-field flex-1 py-1.5 text-xs"
-                              required
-                            />
-                            <button type="submit" className="btn-outline px-4 py-1.5 text-[10px] tracking-widest flex-shrink-0">
-                              UPDATE GPS LOCATION
-                            </button>
-                          </form>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

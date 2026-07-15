@@ -9,8 +9,6 @@ import { useAuthStore } from "@/store/authStore";
 import { Order, OrderStatus } from "@/types";
 import { formatPrice, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, getApiError } from "@/lib/utils";
 import { orderApi } from "@/lib/api";
-import LiveTrackingMap from "@/components/customer/LiveTrackingMap";
-
 const ALL_STATUSES: OrderStatus[] = ["pending","confirmed","processing","shipped","out_for_delivery","delivered","cancelled","refunded"];
 
 function AdminOrdersContent() {
@@ -132,15 +130,9 @@ function AdminOrdersContent() {
                       )}
                     </div>
                   </div>
-                  {["shipped", "out_for_delivery", "delivered"].includes(order.status) && (
+                  {["shipped", "out_for_delivery"].includes(order.status) && (
                     <div className="mt-4 pt-4 border-t border-gold-100 animate-fade-in space-y-4">
-                      <div>
-                        <p className="font-cinzel text-[10px] tracking-widest text-muted mb-3">LIVE GPS COURIER MONITORING</p>
-                        <LiveTrackingMap order={order} />
-                      </div>
-
-                      {["shipped", "out_for_delivery"].includes(order.status) && (
-                        <div className="pt-3 border-t border-gold-100/50 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="pt-3 border-t border-gold-100/50 grid grid-cols-1 md:grid-cols-2 gap-4">
                           <form onSubmit={(e) => {
                             e.preventDefault();
                             const val = (e.currentTarget.elements.namedItem("trackingUpdate") as HTMLInputElement).value;
@@ -184,11 +176,10 @@ function AdminOrdersContent() {
                             </button>
                           </form>
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                      </div>
+                    )}
+                  </div>
+                )}
             </div>
           ))}
 

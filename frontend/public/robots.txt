@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /merchant/
+Disallow: /customer/profile
+Disallow: /customer/cart
+Disallow: /customer/wishlist
+Disallow: /customer/orders
+
+Sitemap: https://ratnamayuri.me/sitemap.xml

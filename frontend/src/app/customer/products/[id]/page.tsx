@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { 
   ShoppingBag, Star, Package, ChevronLeft, Plus, Minus, 
   Loader2, Heart, BadgePercent, ShieldCheck, 
-  ThumbsUp, RefreshCw, MessageSquare, Camera, Trash2, Image as ImageIcon
+  ThumbsUp, RefreshCw, MessageSquare, Camera, Trash2, Image as ImageIcon, MapPin
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { productApi } from "@/lib/api";
@@ -50,6 +50,42 @@ export default function ProductDetailPage() {
   const [commentText, setCommentText] = useState("");
   const [selectedReviewFiles, setSelectedReviewFiles] = useState<{ file: File; preview: string }[]>([]);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  // Pincode Delivery Estimation States
+  const [pincode, setPincode] = useState("");
+  const [pincodeStatus, setPincodeStatus] = useState<"idle" | "success" | "error">("idle");
+  const [deliveryDate, setDeliveryDate] = useState("");
+
+  const handlePincodeCheck = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pincode.length !== 6) {
+      setPincodeStatus("error");
+      return;
+    }
+    
+    const firstDigit = pincode[0];
+    const startsWith52 = pincode.startsWith("52");
+    
+    let days = 7;
+    if (startsWith52) {
+      days = 7; // Local warehouse state (Andhra Pradesh - Guntur)
+    } else if (firstDigit === "5") {
+      days = 7; // Southern Region (AP/TS/KA)
+    } else if (firstDigit === "6") {
+      days = 8; // Tamil Nadu / Kerala
+    } else {
+      days = 10; // North/West/East India
+    }
+
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+
+    const options: Intl.DateTimeFormatOptions = { weekday: "long", month: "short", day: "numeric" };
+    const dateString = date.toLocaleDateString("en-IN", options);
+    
+    setDeliveryDate(`${dateString} (${days} days)`);
+    setPincodeStatus("success");
+  };
 
   useEffect(() => {
     setIsLoading(true);
@@ -412,13 +448,40 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* expected Delivery Date Widget */}
-            <div className="border-t border-b border-gray-100 py-3 space-y-1 text-sm">
-              <div className="flex items-center gap-1.5 text-gray-800">
-                <Package size={16} className="text-gold-600" />
-                <span>Shipping: <strong className="text-green-700">Free Express Delivery</strong></span>
+            {/* expected Delivery Date Pincode Verification Widget */}
+            <div className="border-t border-b border-gray-100 py-3.5 space-y-2 text-sm">
+              <div className="flex items-center gap-1.5 text-gray-800 font-medium">
+                <MapPin size={15} className="text-gold-600" />
+                <span>Delivery Availability</span>
               </div>
-              <p className="text-xs text-gray-500 pl-5">Fully insured 3-5 business days dispatch</p>
+              <form onSubmit={handlePincodeCheck} className="flex gap-1.5 mt-1.5">
+                <input
+                  type="text"
+                  maxLength={6}
+                  placeholder="Enter 6-digit Pincode"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))}
+                  className="font-garamond text-xs px-2.5 py-1.5 border border-gold-200 bg-white focus:outline-none focus:ring-1 focus:ring-gold-500 rounded flex-1"
+                  required
+                />
+                <button type="submit" className="bg-deep hover:bg-brown text-gold-300 px-3 py-1.5 text-[10px] font-cinzel font-semibold tracking-wider rounded">
+                  CHECK
+                </button>
+              </form>
+              
+              {pincodeStatus === "success" && deliveryDate && (
+                <div className="text-[11px] text-green-700 bg-green-50 border border-green-150 p-2 mt-1 rounded space-y-0.5 animate-fade-in">
+                  <p className="font-semibold">✓ Deliverable to {pincode}</p>
+                  <p>Estimated Delivery: {deliveryDate}</p>
+                  <p className="text-[9px] text-muted normal-case font-normal">(Dispatched from Guntur warehouse center)</p>
+                </div>
+              )}
+
+              {pincodeStatus === "error" && (
+                <div className="text-[11px] text-red-700 bg-red-50 border border-red-150 p-2 mt-1 rounded animate-fade-in">
+                  ⚠ Please enter a valid 6-digit numeric Pincode.
+                </div>
+              )}
             </div>
 
             {/* Stock status */}

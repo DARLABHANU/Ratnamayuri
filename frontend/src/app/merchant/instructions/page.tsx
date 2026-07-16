@@ -110,7 +110,7 @@ export default function MerchantInstructionsPage() {
               <div className="space-y-3 font-garamond text-sm text-deep">
                 <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold">Step-by-Step Log In:</h3>
                 <ol className="list-decimal list-inside space-y-2 pl-1 leading-relaxed">
-                  <li>Visit the portal login URL: <span className="font-mono text-xs bg-gold-50/80 px-1.5 py-0.5 border border-gold-100/50 text-gold-800 rounded">http://localhost:3000/auth/login</span></li>
+                  <li>Visit the portal login URL: <span className="font-mono text-xs bg-gold-50/80 px-1.5 py-0.5 border border-gold-100/50 text-gold-800 rounded">https://ratnamayuri.me/auth/login</span></li>
                   <li>Enter your registered seller email address (e.g., <span className="font-medium text-brown">appzonix@gmail.com</span>).</li>
                   <li>Type your secure merchant password credentials.</li>
                   <li>Click on the <span className="font-semibold text-brown">"SIGN IN"</span> button.</li>

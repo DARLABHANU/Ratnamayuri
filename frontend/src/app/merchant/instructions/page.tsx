@@ -119,7 +119,7 @@ export default function MerchantInstructionsPage() {
               </div>
 
               <ScreenshotBox 
-                src="/images/screenshots/login_page.png"
+                src="/images/login_page.png"
                 alt="Figure 1.1: Portal Access Sign-In Interface"
                 placeholderText="[login_page_screenshot]"
               />
@@ -152,7 +152,7 @@ export default function MerchantInstructionsPage() {
               </div>
 
               <ScreenshotBox 
-                src="/images/screenshots/dashboard.png"
+                src="/images/dashboard.png"
                 alt="Figure 2.1: Merchant Performance Dashboard"
                 placeholderText="[merchant_dashboard_screenshot]"
               />
@@ -188,7 +188,7 @@ export default function MerchantInstructionsPage() {
               </div>
 
               <ScreenshotBox 
-                src="/images/screenshots/profile.png"
+                src="/images/profile.png"
                 alt="Figure 3.1: Store Profile Settings panel"
                 placeholderText="[merchant_profile_screenshot]"
               />
@@ -222,13 +222,13 @@ export default function MerchantInstructionsPage() {
               </div>
 
               <ScreenshotBox 
-                src="/images/screenshots/products_list.png"
+                src="/images/products_list.png"
                 alt="Figure 4.1: Product Catalogue List View"
                 placeholderText="[merchant_products_list_screenshot]"
               />
 
               <ScreenshotBox 
-                src="/images/screenshots/add_product_form.png"
+                src="/images/add_product_form.png"
                 alt="Figure 4.2: Add Product Specification Form"
                 placeholderText="[merchant_add_product_form_screenshot]"
               />
@@ -265,7 +265,7 @@ export default function MerchantInstructionsPage() {
               </div>
 
               <ScreenshotBox 
-                src="/images/screenshots/orders_list.png"
+                src="/images/orders_list.png"
                 alt="Figure 5.1: Incoming Orders Fulfillment Panel"
                 placeholderText="[merchant_orders_list_screenshot]"
               />
@@ -301,7 +301,7 @@ export default function MerchantInstructionsPage() {
               </div>
 
               <ScreenshotBox 
-                src="/images/screenshots/wallet.png"
+                src="/images/wallet.png"
                 alt="Figure 6.1: Wallet Balance & Payout Settings"
                 placeholderText="[merchant_wallet_screenshot]"
               />

@@ -151,6 +151,15 @@ export default function MerchantInstructionsPage() {
                 ))}
               </div>
 
+              <div className="space-y-3 font-garamond text-sm text-deep">
+                <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold uppercase">Operational Steps:</h3>
+                <ol className="list-decimal list-inside space-y-2 pl-1 leading-relaxed">
+                  <li><strong>Review Performance Indicators:</strong> Check your gross sales metrics and overall incoming orders count at the top dashboard cards.</li>
+                  <li><strong>Monitor Wallet Balances:</strong> Track your current pending escrow balances against available withdrawable limits.</li>
+                  <li><strong>Act on Low Stock Alerts:</strong> Check the low-stock alert warnings to identify which products need active inventory replenishments.</li>
+                </ol>
+              </div>
+
               <ScreenshotBox 
                 src="/images/dashboard.png"
                 alt="Figure 2.1: Merchant Performance Dashboard"
@@ -177,14 +186,14 @@ export default function MerchantInstructionsPage() {
                 </p>
               </div>
 
-              <div className="space-y-2 font-garamond text-sm text-deep">
-                <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold">Store Fields Required:</h3>
-                <ul className="list-disc list-inside space-y-1.5 pl-1 leading-relaxed">
-                  <li><strong className="text-brown">Store / Business Name:</strong> The public shop name displayed on your items.</li>
-                  <li><strong className="text-brown">Description:</strong> A summary of your designer collections.</li>
-                  <li><strong className="text-brown">GSTIN:</strong> Your tax registration identification number.</li>
-                  <li><strong className="text-brown">Bank details:</strong> Settlement account name, bank name, account number, and IFSC code.</li>
-                </ul>
+              <div className="space-y-3 font-garamond text-sm text-deep">
+                <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold uppercase">Operational Steps:</h3>
+                <ol className="list-decimal list-inside space-y-2 pl-1 leading-relaxed">
+                  <li><strong>Access Profile Panel:</strong> Click on the "Store Profile" tab on the sidebar.</li>
+                  <li><strong>Enter Store Details:</strong> Fill out your Store Name (which will display on products), a brief brand description, and your GSTIN number.</li>
+                  <li><strong>Provide Settlement Bank Details:</strong> Input bank name, beneficiary name, account number, and your IFSC transit code.</li>
+                  <li><strong>Save &amp; Unlock:</strong> Click the "Save Profile" button. This registers your merchant info in the database and unlocks the Product Catalog.</li>
+                </ol>
               </div>
 
               <ScreenshotBox 
@@ -207,18 +216,15 @@ export default function MerchantInstructionsPage() {
               </div>
 
               <div className="space-y-3 font-garamond text-sm text-deep">
-                <h3 className="font-cinzel text-xs tracking-wider text-gold-700 font-semibold uppercase">Multi-Angle Image Slide Requirements:</h3>
-                <p className="leading-relaxed text-xs text-muted">
-                  To match the platform's luxury experience, the catalog supports up to <strong>5 detailed images per item</strong>. 
-                  Adding exactly 5 images activates a clean swipeable carousel detail viewer for customer browsers.
-                </p>
-                <ul className="list-disc list-inside space-y-1 pl-1 text-xs text-muted leading-relaxed">
-                  <li>Image 1: Hero Front View / Showcase</li>
-                  <li>Image 2: Reverse side details</li>
-                  <li>Image 3: Texture/weaving magnification zoom</li>
-                  <li>Image 4: Alternate mannequin styling perspective</li>
-                  <li>Image 5: Model close-up or jewelry accessory lockup details</li>
-                </ul>
+                <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold uppercase">Operational Steps:</h3>
+                <ol className="list-decimal list-inside space-y-2.5 pl-1 leading-relaxed">
+                  <li><strong>Access Products Catalog:</strong> Click on the "Products" tab on the dashboard sidebar menu.</li>
+                  <li><strong>Click Add Product:</strong> Click the "Add Product" action button in the upper right. This opens the product creation forms.</li>
+                  <li><strong>Enter Product Details:</strong> Fill in the title, detailed description, weight, category, price, and compare-price (strike-through discount) fields.</li>
+                  <li><strong>Define Stock Balances:</strong> Input current stock levels and set low-stock alert thresholds.</li>
+                  <li><strong>Upload Visual Images:</strong> Drag and drop or browse to upload up to 5 multi-angle items photos (Image 1: Hero Showcase, Image 2: Reverse side, Image 3: Weaving/fabric zoom, Image 4: Mannequin styling, Image 5: Model closeups). Use the "X" button on image previews to delete/reorder them.</li>
+                  <li><strong>Save &amp; Publish:</strong> Click the "Save Product" button to launch the product catalog live in the store.</li>
+                </ol>
               </div>
 
               <ScreenshotBox 
@@ -304,12 +310,12 @@ export default function MerchantInstructionsPage() {
               </div>
 
               <div className="space-y-3 font-garamond text-sm text-deep">
-                <h3 className="font-cinzel text-xs tracking-wider text-gold-700 font-semibold uppercase">Requesting Payout Transfers:</h3>
-                <ol className="list-decimal list-inside space-y-1.5 text-xs text-muted pl-1 leading-relaxed">
-                  <li>Verify you have funds in your <strong className="text-brown">Available Balance</strong>.</li>
-                  <li>Under <strong className="text-brown">Payout Settings</strong>, select Bank Transfer or UPI ID and save.</li>
-                  <li>Go to the <strong className="text-brown">Request Withdrawal</strong> widget, enter the payout value, and submit.</li>
-                  <li>Withdrawal requests are processed by platform administrators to bank accounts within 24 to 48 hours.</li>
+                <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold uppercase">Operational Steps:</h3>
+                <ol className="list-decimal list-inside space-y-2 pl-1 leading-relaxed">
+                  <li><strong>Check Available Balance:</strong> Ensure you have funds available for withdrawal in your wallet summary.</li>
+                  <li><strong>Select Payout Destination:</strong> Input your target Bank Account Details or UPI ID under the Payout Settings card.</li>
+                  <li><strong>Request Withdrawal Amount:</strong> Navigate to the Payout Request widget, input the withdrawal amount, and submit.</li>
+                  <li><strong>Wait for Admin Processing:</strong> Platform admins will verify and release the funds to your account within 24 to 48 hours.</li>
                 </ol>
               </div>
 

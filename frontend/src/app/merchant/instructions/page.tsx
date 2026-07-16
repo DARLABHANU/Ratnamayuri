@@ -250,9 +250,10 @@ export default function MerchantInstructionsPage() {
                 {[
                   { title: "1. Confirm Order", desc: "Click 'CONFIRM PAYMENT & ORDER' to accept payment and confirm stock availability." },
                   { title: "2. Pack & Prepare", desc: "Wrap the items and click 'START PACKING / PROCESS' to set the order in processing stage." },
-                  { title: "3. Handover & Ship", desc: "Specify Courier (Delhivery, Blue Dart, etc.) and add the AWB Tracking Number to lock in the shipment." },
-                  { title: "4. Out For Delivery", desc: "Mark the package 'DISPATCH OUT FOR DELIVERY' when the delivery driver starts final route dispatch." },
-                  { title: "5. Mark Delivered", desc: "Select 'CONFIRM DELIVERY SUCCESS' to close logistics. This triggers the 7-day payment escrow hold window." }
+                  { title: "3. Handover & Ship", desc: "Specify Courier (Delhivery, Blue Dart, etc.) and enter the AWB Tracking ID to generate shipment logistics." },
+                  { title: "4. Active Location GPS Updates", desc: "Once shipped, use the 'UPDATE TRACKING' and 'UPDATE GPS LOCATION' utilities to post current hubs/cities (e.g. 'Guntur Central Hub', 'Out for Delivery'). This updates the customer's tracking timeline in real-time." },
+                  { title: "5. Out For Delivery", desc: "Mark the package 'DISPATCH OUT FOR DELIVERY' when the courier agent starts final mile routing." },
+                  { title: "6. Mark Delivered", desc: "Select 'CONFIRM DELIVERY SUCCESS' to close logistics. This triggers the 7-day payment escrow hold window." }
                 ].map((step, idx) => (
                   <div key={idx} className="relative">
                     <div className="absolute -left-9 top-1 w-5 h-5 bg-deep border border-gold-400 rounded-full flex items-center justify-center text-[10px] text-gold-400 font-cinzel font-bold">
@@ -268,6 +269,18 @@ export default function MerchantInstructionsPage() {
                 src="/images/orders_list.png"
                 alt="Figure 5.1: Incoming Orders Fulfillment Panel"
                 placeholderText="[merchant_orders_list_screenshot]"
+              />
+
+              <ScreenshotBox 
+                src="/images/order_shipment_details.png"
+                alt="Figure 5.2: Shipping & Carrier Handover"
+                placeholderText="[merchant_order_shipment_details_screenshot]"
+              />
+
+              <ScreenshotBox 
+                src="/images/order_gps_update.png"
+                alt="Figure 5.3: GPS Location & Logistics Updates"
+                placeholderText="[merchant_order_gps_update_screenshot]"
               />
             </div>
           )}

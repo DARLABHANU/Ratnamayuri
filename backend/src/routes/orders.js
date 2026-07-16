@@ -682,11 +682,23 @@ orderRouter.patch('/:order_id/status', requireMerchantOrAdmin, async (req, res, 
 
     // Append to status history log
     const history = order.status_history || [];
+    let historyNote = notes || '';
+    if (!historyNote) {
+      if (current_location && tracking_number) {
+        historyNote = `Tracking updated: ${tracking_number} | Location: ${current_location}`;
+      } else if (current_location) {
+        historyNote = `Package location updated: ${current_location}`;
+      } else if (tracking_number) {
+        historyNote = `Tracking details updated: ${tracking_number}`;
+      }
+    }
     history.push({
       status,
       timestamp: new Date().toISOString(),
-      note: notes || '',
-      updated_by: req.user.id
+      note: historyNote || `Order status updated to ${status}`,
+      updated_by: req.user.id,
+      current_location: current_location || null,
+      tracking_number: tracking_number || null
     });
     order.status_history = history;
 

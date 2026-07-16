@@ -177,6 +177,11 @@ export default function OrderDetailPage() {
               Tracking: <span className="text-brown font-medium">{order.tracking_number}</span>
             </p>
           )}
+          {order.current_location && (
+            <p className="font-garamond text-xs text-muted">
+              Location: <span className="text-gold-700 font-semibold">{order.current_location}</span>
+            </p>
+          )}
         </div>
       </div>
 

@@ -1,32 +1,24 @@
 --- DATABASE SEEDING STATUS REPORT ---
-Timestamp: 2026-07-01T09:30:57.292Z
+Timestamp: 2026-07-16T05:01:01.442Z
 
 COUNTS:
-- users: 15
+- users: 7
 - categories: 3
-- products: 22
-- merchantProfiles: 5
-- orders: 21
-- orderItems: 26
-- coupons: 7
-- addresses: 6
+- products: 1
+- merchantProfiles: 2
+- orders: 3
+- orderItems: 3
+- coupons: 0
+- addresses: 1
 
 USERS:
 - ID: 1 | Email: admin@ratnamayuri.live | Role: admin | Name: Super Admin
-- ID: 9 | Email: daarlabhanumurthy@gmail.com | Role: customer | Name: usr
-- ID: 10 | Email: appzonix@gmail.com | Role: customer | Name: appzonix
-- ID: 11 | Email: darlabhanumurthy@gmail.com | Role: merchant | Name: usr
-- ID: 12 | Email: renuka@peralstore.com | Role: merchant | Name: Lagudu Renuka
-- ID: 13 | Email: bhoomika@peralstore.com | Role: merchant | Name: M. Rani Bhoomika
-- ID: 14 | Email: priya.sharma@gmail.com | Role: customer | Name: Priya Sharma
-- ID: 15 | Email: amit.verma@yahoo.com | Role: customer | Name: Amit Verma
-- ID: 16 | Email: neha.reddy@gmail.com | Role: customer | Name: Neha Reddy
-- ID: 17 | Email: soyav50421@matkind.com | Role: customer | Name: affilate test
-- ID: 18 | Email: darlaappalaraju31@gmail.com | Role: customer | Name: Darla Bhanu Murthy
-- ID: 19 | Email: emmanuelheaney@guerrillamailblock.com | Role: customer | Name: Emmanuel Heaney
-- ID: 20 | Email: micem53350@matkind.com | Role: customer | Name: Mice M
-- ID: 21 | Email: magic_test_1780328365453@example.com | Role: customer | Name: Valued Customer
-- ID: 23 | Email: ratnamayuri@gmail.com | Role: merchant | Name: Bhanu Usr
+- ID: 2 | Email: daarlabhanumurthy@gmail.com | Role: customer | Name: Darla Bhanu Murthy
+- ID: 3 | Email: darlabhanumurthy@gmail.com | Role: merchant | Name: Bhanu Darla
+- ID: 4 | Email: rahulvardhineni@gmail.com | Role: customer | Name: Rahul Vardhineni
+- ID: 5 | Email: sirigiriniranjankumar@gmail.com | Role: customer | Name: Niranjan Kumar 143
+- ID: 6 | Email: renucollections9@gmail.com | Role: merchant | Name: Renu Collections
+- ID: 7 | Email: ranibhoomikanunnaguppala@gmail.com | Role: merchant | Name: RaniBhoomika Marada
 
 CATEGORIES:
 - ID: 1 | Slug: jewellery | Name: Luxury Jewellery
@@ -34,8 +26,4 @@ CATEGORIES:
 - ID: 3 | Slug: bridal | Name: Bridal
 
 PRODUCTS (First 5):
-- SKU: RMJ-001 | Price: 174000 | CatID: 1 | Name: Royal Temple Gold Choker Set
-- SKU: RMJ-002 | Price: 40800 | CatID: 1 | Name: Kundan Polki Pearl Jhumkas
-- SKU: RMJ-003 | Price: 102000 | CatID: 1 | Name: Nakshi Antique Gold Kada
-- SKU: RMJ-004 | Price: 120000 | CatID: 1 | Name: Traditional Nakshi Kasu Mala
-- SKU: RMJ-005 | Price: 95000 | CatID: 1 | Name: Diamond Emerald Floral Ring
+- SKU: 678 | Price: 954.8 | CatID: 1 | Name: saree

@@ -13,8 +13,8 @@ const router = express.Router();
 const getMerchantProfile = async (userId) => {
   const profile = await MerchantProfile.findOne({ user_id: userId });
   if (!profile) {
-    const error = new Error('Merchant profile not found');
-    error.status = 404;
+    const error = new Error('You must create your merchant profile before performing this action.');
+    error.status = 400;
     throw error;
   }
   return profile;

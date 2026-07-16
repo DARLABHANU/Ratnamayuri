@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Loader2, X, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Loader2, X, Package, Store } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -42,6 +42,7 @@ export default function MerchantProductsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [hasProfile, setHasProfile] = useState<boolean>(true);
 
   const { register, handleSubmit, reset, setValue, getValues, watch, formState: { errors } } = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
@@ -66,6 +67,14 @@ export default function MerchantProductsPage() {
       const { data } = await productApi.myProducts({ page, page_size: 15 });
       setProducts(data.items);
       setTotal(data.total);
+      setHasProfile(true);
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || "";
+      if (msg.toLowerCase().includes("profile")) {
+        setHasProfile(false);
+      } else {
+        toast.error(getApiError(err));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -189,6 +198,29 @@ export default function MerchantProductsPage() {
       e.target.value = "";
     }
   };
+
+  if (!hasProfile) {
+    return (
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <span className="section-tag">INVENTORY</span>
+            <h1 className="section-title">My <em className="italic">Products</em></h1>
+          </div>
+        </div>
+        <div className="card p-16 text-center max-w-xl mx-auto border-gold-200 mt-12 bg-ivory/50">
+          <Store size={48} className="text-gold-600 mx-auto mb-4" />
+          <h2 className="font-cinzel text-base tracking-widest text-brown mb-2">MERCHANT PROFILE REQUIRED</h2>
+          <p className="font-garamond text-sm text-muted mb-6 leading-relaxed">
+            You must create your store profile details (such as store name, description, GSTIN, and bank account settings) before you can manage or add products to the catalog.
+          </p>
+          <button onClick={() => router.push("/merchant/profile")} className="btn-primary inline-flex items-center gap-2 mx-auto">
+            CREATE MERCHANT PROFILE NOW →
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

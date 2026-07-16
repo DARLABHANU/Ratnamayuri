@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, ShoppingBag, BarChart2, User, LogOut, Store, Wallet, Menu, X } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, BarChart2, User, LogOut, Store, Wallet, Menu, X, BookOpen } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/merchant/orders", label: "Orders", icon: ShoppingBag },
   { href: "/merchant/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/merchant/wallet", label: "Wallet", icon: Wallet },
+  { href: "/merchant/instructions", label: "User Manual", icon: BookOpen },
 ];
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {

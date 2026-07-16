@@ -69,9 +69,11 @@ router.get('/', async (req, res, next) => {
     }
 
     if (search) {
+      // Escape regex special characters to prevent ReDoS attacks
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { name: new RegExp(search, 'i') },
-        { description: new RegExp(search, 'i') }
+        { name: new RegExp(escapedSearch, 'i') },
+        { description: new RegExp(escapedSearch, 'i') }
       ];
     }
 
@@ -84,11 +86,6 @@ router.get('/', async (req, res, next) => {
     if (is_featured !== null) {
       filter.is_featured = is_featured;
     }
-
-    // Debug logging
-    const fs = require('fs');
-    const logMsg = `[${new Date().toISOString()}] req.query: ${JSON.stringify(req.query)} | filter: ${JSON.stringify(filter)}\n`;
-    fs.appendFileSync(require('path').join(__dirname, '../../query_debug.log'), logMsg);
 
     const total = await Product.countDocuments(filter);
 
@@ -249,7 +246,18 @@ router.put('/:product_id', getCurrentUser, requireMerchantOrAdmin, async (req, r
       }
     }
 
-    Object.assign(product, payload);
+    // Whitelist allowed fields to prevent mass assignment attacks
+    // (prevents merchants from self-approving, inflating ratings, or changing ownership)
+    const allowedProductFields = [
+      'name', 'description', 'short_description', 'price', 'base_price', 'compare_price',
+      'cost_price', 'sku', 'stock_quantity', 'low_stock_threshold', 'weight_grams',
+      'images', 'tags', 'attributes', 'is_active', 'is_featured', 'category_id'
+    ];
+    allowedProductFields.forEach(field => {
+      if (payload[field] !== undefined) {
+        product[field] = payload[field];
+      }
+    });
     await product.save();
     const enriched = await attachCategories(product);
 

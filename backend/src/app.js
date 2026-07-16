@@ -40,8 +40,8 @@ app.use(cors({
 app.options('*', cors());
 
 // Body Parsing Middleware
-app.use(express.json({ limit: 52428800 }));
-app.use(express.urlencoded({ limit: 52428800, extended: true }));
+app.use(express.json({ limit: 5242880 }));
+app.use(express.urlencoded({ limit: 5242880, extended: true }));
 
 // Static Files serving for uploads
 const path = require('path');

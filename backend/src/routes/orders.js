@@ -648,7 +648,7 @@ orderRouter.patch('/:order_id/status', requireMerchantOrAdmin, async (req, res, 
         });
 
         const releaseDate = new Date();
-        releaseDate.setSeconds(releaseDate.getSeconds() + 30); // 30-second observation hold for demo purposes
+        releaseDate.setDate(releaseDate.getDate() + 7); // 7-day buyer protection escrow hold
 
         for (const [merchantId, items] of merchantGroups.entries()) {
           const merchant_share = Number(items.reduce((sum, item) => sum + item.merchant_payout, 0).toFixed(2));
@@ -700,6 +700,63 @@ orderRouter.patch('/:order_id/status', requireMerchantOrAdmin, async (req, res, 
     next(error);
   }
 });
+
+// Cancel Order (Customer self-service)
+orderRouter.post('/:order_id/cancel', async (req, res, next) => {
+  try {
+    const orderId = Number(req.params.order_id);
+    const order = await Order.findOne({ id: orderId });
+    if (!order) {
+      return res.status(404).json({ detail: 'Order not found' });
+    }
+
+    // Verify ownership
+    if (order.customer_id !== req.user.id) {
+      return res.status(403).json({ detail: 'Access denied' });
+    }
+
+    // Check status eligibility (can only cancel before shipping / processing)
+    if (!['pending', 'confirmed'].includes(order.status)) {
+      return res.status(400).json({ 
+        detail: `This order is already in "${order.status}" status and cannot be self-cancelled. Please contact support.` 
+      });
+    }
+
+    // Update status to cancelled
+    order.status = 'cancelled';
+    
+    const history = order.status_history || [];
+    history.push({
+      status: 'cancelled',
+      timestamp: new Date().toISOString(),
+      note: 'Cancelled by customer',
+      updated_by: req.user.id
+    });
+    order.status_history = history;
+    order.markModified('status_history');
+    await order.save();
+
+    // Restore inventory stock levels
+    const orderItems = await OrderItem.find({ order_id: order.id });
+    for (const item of orderItems) {
+      await Product.updateOne(
+        { id: item.product_id },
+        {
+          $inc: {
+            stock_quantity: item.quantity,
+            total_sold: -item.quantity
+          }
+        }
+      );
+    }
+
+    const enriched = await enrichOrders(order);
+    res.json(enriched);
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 module.exports = {
   cartRouter,

@@ -56,7 +56,13 @@ router.put('/profile', getCurrentUser, requireMerchantOrAdmin, async (req, res, 
       return res.status(404).json({ detail: 'Merchant profile not found' });
     }
 
-    Object.assign(profile, req.body);
+    // Whitelist allowed fields to prevent mass assignment attacks
+    const allowedFields = ['business_name', 'business_description', 'gstin', 'bank_account', 'ifsc_code', 'logo_url'];
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        profile[field] = req.body[field];
+      }
+    });
     await profile.save();
 
     res.json(profile);

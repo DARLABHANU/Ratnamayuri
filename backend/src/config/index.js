@@ -7,7 +7,7 @@ module.exports = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   backendUrl: process.env.BACKEND_URL || 'http://localhost:8000',
   mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/ratnamayuri',
-  secretKey: process.env.JWT_SECRET || process.env.SECRET_KEY || 'replace_this_with_a_secure_random_string',
+  secretKey: process.env.JWT_SECRET || process.env.SECRET_KEY || 'd13697e685f096230f8c2e91264c8d5c',
   accessTokenExpireMinutes: parseInt(process.env.ACCESS_TOKEN_EXPIRE_MINUTES || '60', 10),
   refreshTokenExpireDays: parseInt(process.env.REFRESH_TOKEN_EXPIRE_DAYS || '30', 10),
   smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',

@@ -10,7 +10,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 export const api = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },
-  timeout: 15000,
+  timeout: 45000,
 });
 
 // ── Request interceptor: attach token ─────────────────────────────────────────
@@ -141,6 +141,7 @@ export const orderApi = {
     razorpay_payment_id: string;
     razorpay_signature: string;
   }) => api.post("/orders/verify-payment", data),
+  cancel: (id: number) => api.post(`/orders/${id}/cancel`),
 };
 
 export const merchantApi = {

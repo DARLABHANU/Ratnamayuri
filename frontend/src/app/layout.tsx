@@ -27,7 +27,7 @@ const garamond = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Ratnamayuri | Undergoing Maintenance",
+  title: "Ratnamayuri | Handcrafted Jewellery & Silk Sarees",
   description:
     "Handcrafted jewellery and hand-woven silk sarees — celebrating the timeless beauty of Indian craftsmanship. We will be back online shortly.",
   keywords: ["jewellery", "silk sarees", "kanjivaram", "banarasi", "kundan", "gold"],

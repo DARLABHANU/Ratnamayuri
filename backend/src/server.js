@@ -224,7 +224,7 @@ const keepServerAwake = () => {
   const backendUrl = config.backendUrl || 'https://ratnamayuri.onrender.com';
 
   // Only run this when APP_ENV is production and we have an external onrender domain
-  if (config.appEnv !== 'production' && !backendUrl.includes('onrender.com')) {
+  if (config.appEnv !== 'production' || !backendUrl.includes('onrender.com')) {
     console.log('[Self-Ping] Skipping self-ping in non-production or local environment.');
     return;
   }

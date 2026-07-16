@@ -43,14 +43,28 @@ router.get('/dashboard', requireAdmin, async (req, res, next) => {
     const total_merchants = await User.countDocuments({ role: 'merchant' });
     const total_orders = await Order.countDocuments({});
 
-    // Sum revenue from delivered orders
-    const deliveredOrders = await Order.find({ status: 'delivered' });
-    const total_revenue = deliveredOrders.reduce((sum, o) => sum + o.total_amount, 0);
+    // Sum revenue from delivered orders via DB-level aggregation
+    const revenueAggregation = await Order.aggregate([
+      { $match: { status: 'delivered' } },
+      { $group: { _id: null, total: { $sum: '$total_amount' } } }
+    ]);
+    const total_revenue = revenueAggregation[0]?.total || 0;
 
-    // Sum platform profit from delivered orders
-    const deliveredOrderIds = deliveredOrders.map(o => o.id);
-    const orderItems = await OrderItem.find({ order_id: { $in: deliveredOrderIds } });
-    const total_profit = Number(orderItems.reduce((sum, item) => sum + (item.platform_fee || 0), 0).toFixed(2));
+    // Sum platform profit from delivered orders via DB-level aggregation lookup
+    const profitAggregation = await OrderItem.aggregate([
+      {
+        $lookup: {
+          from: 'orders',
+          localField: 'order_id',
+          foreignField: 'id',
+          as: 'order'
+        }
+      },
+      { $unwind: '$order' },
+      { $match: { 'order.status': 'delivered' } },
+      { $group: { _id: null, total: { $sum: '$platform_fee' } } }
+    ]);
+    const total_profit = Number((profitAggregation[0]?.total || 0).toFixed(2));
 
     const pending_orders = await Order.countDocuments({ status: 'pending' });
     const active_coupons = await Coupon.countDocuments({ is_active: true });
@@ -148,7 +162,13 @@ router.patch('/users/:user_id', requireAdminOrSupport, async (req, res, next) =>
       return res.status(404).json({ detail: 'User not found' });
     }
 
-    Object.assign(user, req.body);
+    // Whitelist allowed fields to prevent mass assignment (e.g., setting hashed_password directly)
+    const allowedFields = ['full_name', 'email', 'phone', 'role', 'is_active', 'is_verified', 'avatar_url'];
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        user[field] = req.body[field];
+      }
+    });
     await user.save();
 
     // Sync: If the user's role is merchant, automatically align their profile approval status

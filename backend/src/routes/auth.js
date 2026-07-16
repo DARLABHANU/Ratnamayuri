@@ -12,12 +12,35 @@ const {
 const { createAndSendOTP, verifyOTP } = require('../services/otp');
 const { generateAccountNumber } = require('../utils/helpers');
 
+const rateLimiter = require('../middleware/rateLimiter');
+
+const authLimiter = rateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 20,
+  message: 'Too many login or registration attempts. Please wait 15 minutes and try again.'
+});
+
+const strictLimiter = rateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 5,
+  message: 'Too many verification code or link requests. Please wait 15 minutes and try again.'
+});
+
 const router = express.Router();
 
 // Public Signup
-router.post('/signup', async (req, res, next) => {
+router.post('/signup', authLimiter, async (req, res, next) => {
   try {
     const { email, password, full_name, phone, role } = req.body;
+
+    if (!password || password.length < 8) {
+      return res.status(400).json({ detail: 'Password must be at least 8 characters long.' });
+    }
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (!hasLetter || !hasNumber) {
+      return res.status(400).json({ detail: 'Password must contain both letters and numbers.' });
+    }
 
     // Enforce role restriction - only Customer self-registration is allowed
     if (role && role !== 'customer') {
@@ -65,7 +88,7 @@ router.post('/signup', async (req, res, next) => {
 });
 
 // Verify Email Verification OTP
-router.post('/verify-email-otp', async (req, res, next) => {
+router.post('/verify-email-otp', authLimiter, async (req, res, next) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) {
@@ -105,7 +128,7 @@ router.post('/verify-email-otp', async (req, res, next) => {
 
 
 // Login
-router.post('/login', async (req, res, next) => {
+router.post('/login', authLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -149,7 +172,7 @@ router.post('/login', async (req, res, next) => {
 });
 
 // Verify OTP using Twilio Verify API
-router.post('/verify-otp', async (req, res, next) => {
+router.post('/verify-otp', authLimiter, async (req, res, next) => {
   try {
     const { identifier, channel, otpCode, role } = req.body;
     if (!identifier || !channel || !otpCode) {
@@ -240,7 +263,7 @@ router.post('/verify-otp', async (req, res, next) => {
 });
 
 // Google Sign-In Verification
-router.post('/google', async (req, res, next) => {
+router.post('/google', authLimiter, async (req, res, next) => {
   try {
     const { idToken } = req.body;
     if (!idToken) {
@@ -325,7 +348,7 @@ router.post('/google', async (req, res, next) => {
 
 
 // Resend OTP
-router.post('/resend-otp', async (req, res, next) => {
+router.post('/resend-otp', strictLimiter, async (req, res, next) => {
   try {
     const { email, purpose } = req.body;
 
@@ -371,7 +394,7 @@ router.post('/refresh', async (req, res, next) => {
 });
 
 // Forgot Password
-router.post('/forgot-password', async (req, res, next) => {
+router.post('/forgot-password', strictLimiter, async (req, res, next) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
@@ -389,7 +412,7 @@ router.post('/forgot-password', async (req, res, next) => {
 });
 
 // Reset Password
-router.post('/reset-password', async (req, res, next) => {
+router.post('/reset-password', strictLimiter, async (req, res, next) => {
   try {
     const { email, otp, new_password } = req.body;
 
@@ -454,7 +477,7 @@ router.get('/me', getCurrentUser, async (req, res) => {
 });
 
 // Send OTP using Twilio Verify API
-router.post('/send-otp', async (req, res, next) => {
+router.post('/send-otp', strictLimiter, async (req, res, next) => {
   try {
     const { identifier, channel } = req.body;
     if (!identifier || !channel) {
@@ -525,7 +548,7 @@ router.put('/payout-settings', getCurrentUser, async (req, res, next) => {
 });
 
 // Request Passwordless Magic Link (Option 2)
-router.post('/magic-link-request', async (req, res, next) => {
+router.post('/magic-link-request', strictLimiter, async (req, res, next) => {
   try {
     const { email, role } = req.body;
     if (!email || !email.trim() || !email.includes('@')) {
@@ -561,7 +584,7 @@ router.post('/magic-link-request', async (req, res, next) => {
 });
 
 // Verify Custom Passwordless Token (Option 2)
-router.post('/verify-magic-token', async (req, res, next) => {
+router.post('/verify-magic-token', authLimiter, async (req, res, next) => {
   try {
     const { token } = req.body;
     if (!token) {

@@ -32,6 +32,21 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancelOrder = async () => {
+    if (!window.confirm("Are you sure you want to cancel this order? This action is irreversible.")) return;
+    setIsCancelling(true);
+    try {
+      const { data: updatedOrder } = await orderApi.cancel(Number(id));
+      setOrder(updatedOrder);
+      toast.success("Order cancelled successfully.");
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to cancel order.");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const handlePayNow = async () => {
     if (!order) return;
@@ -228,6 +243,17 @@ export default function OrderDetailPage() {
                 >
                   {isProcessingPayment && <Loader2 size={12} className="animate-spin" />}
                   PAY NOW WITH RAZORPAY
+                </button>
+              )}
+
+              {["pending", "confirmed"].includes(order.status) && (
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={isCancelling}
+                  className="w-full mt-2.5 py-2 border border-red-200 text-red-700 hover:bg-red-50 text-xs tracking-wider font-cinzel rounded flex items-center justify-center gap-1.5 transition-all"
+                >
+                  {isCancelling && <Loader2 size={12} className="animate-spin text-red-500" />}
+                  CANCEL ORDER
                 </button>
               )}
             </div>

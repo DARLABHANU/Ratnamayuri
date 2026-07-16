@@ -16,6 +16,47 @@ const SECTIONS = [
   { id: "wallet", label: "6. Wallet & Withdrawals", icon: Wallet },
 ];
 
+function ScreenshotBox({ src, alt, placeholderText }: { src: string; alt: string; placeholderText: string }) {
+  const [hasError, setHasError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  if (hasError) {
+    return (
+      <div className="border border-dashed border-gold-300 bg-gold-50/10 p-12 text-center rounded">
+        <p className="font-cinzel text-xs tracking-wider text-gold-700 uppercase font-semibold">{placeholderText}</p>
+        <p className="font-garamond text-xs text-muted mt-1.5 italic">
+          (To show your screenshot here automatically, save your image file as <span className="font-mono bg-gold-100/50 px-1 py-0.5 border border-gold-200/50 text-gold-800 text-[10px] rounded">public{src}</span>)
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-gold-200 overflow-hidden rounded shadow-sm bg-ivory relative min-h-[100px]">
+      <img
+        src={src}
+        alt={alt}
+        onLoad={() => setLoaded(true)}
+        onError={() => setHasError(true)}
+        className={`w-full h-auto object-cover border-b border-gold-100 transition-opacity duration-300 ${
+          loaded ? "opacity-100" : "opacity-0 absolute"
+        }`}
+      />
+      {!loaded && (
+        <div className="p-12 text-center">
+          <div className="w-5 h-5 border-2 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p className="font-garamond text-xs text-muted">Loading screenshot...</p>
+        </div>
+      )}
+      {loaded && (
+        <div className="p-3 bg-white">
+          <p className="font-garamond text-xs text-muted italic text-center">{alt}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MerchantInstructionsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("login");
@@ -77,11 +118,11 @@ export default function MerchantInstructionsPage() {
                 </ol>
               </div>
 
-              {/* Placeholder Box */}
-              <div className="border border-dashed border-gold-300 bg-gold-50/10 p-12 text-center rounded">
-                <p className="font-cinzel text-xs tracking-wider text-gold-700 uppercase font-semibold">[login_page_screenshot]</p>
-                <p className="font-garamond text-xs text-muted mt-1 italic">Displays the clean login layout showing email and password fields.</p>
-              </div>
+              <ScreenshotBox 
+                src="/images/screenshots/login_page.png"
+                alt="Figure 1.1: Portal Access Sign-In Interface"
+                placeholderText="[login_page_screenshot]"
+              />
             </div>
           )}
 
@@ -110,11 +151,11 @@ export default function MerchantInstructionsPage() {
                 ))}
               </div>
 
-              {/* Placeholder Box */}
-              <div className="border border-dashed border-gold-300 bg-gold-50/10 p-12 text-center rounded">
-                <p className="font-cinzel text-xs tracking-wider text-gold-700 uppercase font-semibold">[merchant_dashboard_screenshot]</p>
-                <p className="font-garamond text-xs text-muted mt-1 italic">Displays the analytics metrics grids, commission details, and sales summary.</p>
-              </div>
+              <ScreenshotBox 
+                src="/images/screenshots/dashboard.png"
+                alt="Figure 2.1: Merchant Performance Dashboard"
+                placeholderText="[merchant_dashboard_screenshot]"
+              />
             </div>
           )}
 
@@ -146,11 +187,11 @@ export default function MerchantInstructionsPage() {
                 </ul>
               </div>
 
-              {/* Placeholder Box */}
-              <div className="border border-dashed border-gold-300 bg-gold-50/10 p-12 text-center rounded">
-                <p className="font-cinzel text-xs tracking-wider text-gold-700 uppercase font-semibold">[merchant_profile_screenshot]</p>
-                <p className="font-garamond text-xs text-muted mt-1 italic">Displays store identity inputs, GST registrations, and active validation approvals.</p>
-              </div>
+              <ScreenshotBox 
+                src="/images/screenshots/profile.png"
+                alt="Figure 3.1: Store Profile Settings panel"
+                placeholderText="[merchant_profile_screenshot]"
+              />
             </div>
           )}
 
@@ -180,17 +221,17 @@ export default function MerchantInstructionsPage() {
                 </ul>
               </div>
 
-              {/* Placeholder Box 1 */}
-              <div className="border border-dashed border-gold-300 bg-gold-50/10 p-10 text-center rounded">
-                <p className="font-cinzel text-xs tracking-wider text-gold-700 uppercase font-semibold">[merchant_products_list_screenshot]</p>
-                <p className="font-garamond text-xs text-muted mt-1 italic">Displays products catalog list, price, active stock level indicators, and edit controls.</p>
-              </div>
+              <ScreenshotBox 
+                src="/images/screenshots/products_list.png"
+                alt="Figure 4.1: Product Catalogue List View"
+                placeholderText="[merchant_products_list_screenshot]"
+              />
 
-              {/* Placeholder Box 2 */}
-              <div className="border border-dashed border-gold-300 bg-gold-50/10 p-10 text-center rounded">
-                <p className="font-cinzel text-xs tracking-wider text-gold-700 uppercase font-semibold">[merchant_add_product_form_screenshot]</p>
-                <p className="font-garamond text-xs text-muted mt-1 italic">Displays the modal overlay form showing stock limits, multi-slide CDN image uploader zone, and tags.</p>
-              </div>
+              <ScreenshotBox 
+                src="/images/screenshots/add_product_form.png"
+                alt="Figure 4.2: Add Product Specification Form"
+                placeholderText="[merchant_add_product_form_screenshot]"
+              />
             </div>
           )}
 
@@ -223,11 +264,11 @@ export default function MerchantInstructionsPage() {
                 ))}
               </div>
 
-              {/* Placeholder Box */}
-              <div className="border border-dashed border-gold-300 bg-gold-50/10 p-12 text-center rounded">
-                <p className="font-cinzel text-xs tracking-wider text-gold-700 uppercase font-semibold">[merchant_orders_list_screenshot]</p>
-                <p className="font-garamond text-xs text-muted mt-1 italic">Displays the incoming orders rows, status pills, and logistics execution triggers.</p>
-              </div>
+              <ScreenshotBox 
+                src="/images/screenshots/orders_list.png"
+                alt="Figure 5.1: Incoming Orders Fulfillment Panel"
+                placeholderText="[merchant_orders_list_screenshot]"
+              />
             </div>
           )}
 
@@ -259,11 +300,11 @@ export default function MerchantInstructionsPage() {
                 </ol>
               </div>
 
-              {/* Placeholder Box */}
-              <div className="border border-dashed border-gold-300 bg-gold-50/10 p-12 text-center rounded">
-                <p className="font-cinzel text-xs tracking-wider text-gold-700 uppercase font-semibold">[merchant_wallet_screenshot]</p>
-                <p className="font-garamond text-xs text-muted mt-1 italic">Displays available vs escrow balances, payout settings profile form, and withdrawal history.</p>
-              </div>
+              <ScreenshotBox 
+                src="/images/screenshots/wallet.png"
+                alt="Figure 6.1: Wallet Balance & Payout Settings"
+                placeholderText="[merchant_wallet_screenshot]"
+              />
             </div>
           )}
         </div>

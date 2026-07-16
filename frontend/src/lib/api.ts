@@ -142,6 +142,7 @@ export const orderApi = {
     razorpay_signature: string;
   }) => api.post("/orders/verify-payment", data),
   cancel: (id: number) => api.post(`/orders/${id}/cancel`),
+  refund: (id: number, data?: object) => api.post(`/orders/${id}/refund`, data),
 };
 
 export const merchantApi = {
@@ -176,6 +177,8 @@ export const adminApi = {
   withdrawals: (params?: object) => api.get("/admin/withdrawals", { params }),
   approveWithdrawal: (id: number, data: { status: "approved" | "rejected" }) =>
     api.patch(`/admin/withdrawals/${id}/approval`, data),
+  settlements: (params?: object) => api.get("/admin/settlements", { params }),
+  wallets: () => api.get("/admin/wallets"),
 };
 
 export const supportApi = {

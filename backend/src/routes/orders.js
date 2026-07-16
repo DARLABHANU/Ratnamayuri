@@ -757,6 +757,94 @@ orderRouter.post('/:order_id/cancel', async (req, res, next) => {
   }
 });
 
+// Request Refund (Customer self-service for delivered orders)
+orderRouter.post('/:order_id/refund', async (req, res, next) => {
+  try {
+    const orderId = Number(req.params.order_id);
+    const { reason } = req.body;
+    
+    const order = await Order.findOne({ id: orderId });
+    if (!order) {
+      return res.status(404).json({ detail: 'Order not found' });
+    }
+
+    // Verify ownership
+    if (order.customer_id !== req.user.id) {
+      return res.status(403).json({ detail: 'Access denied' });
+    }
+
+    // Check status eligibility (can only refund if status is 'delivered' and payment is 'paid')
+    if (order.status !== 'delivered' || order.payment_status !== 'paid') {
+      return res.status(400).json({ 
+        detail: 'Only delivered and paid orders can be refunded.' 
+      });
+    }
+
+    // Update status to refunded
+    order.status = 'refunded';
+    order.payment_status = 'refunded';
+    
+    const history = order.status_history || [];
+    history.push({
+      status: 'refunded',
+      timestamp: new Date().toISOString(),
+      note: reason ? `Refund requested: ${reason}` : 'Refunded by customer',
+      updated_by: req.user.id
+    });
+    order.status_history = history;
+    order.markModified('status_history');
+    await order.save();
+
+    // 1. Restore catalog stock levels
+    const orderItems = await OrderItem.find({ order_id: order.id });
+    for (const item of orderItems) {
+      await Product.updateOne(
+        { id: item.product_id },
+        {
+          $inc: {
+            stock_quantity: item.quantity,
+            total_sold: -item.quantity
+          }
+        }
+      );
+    }
+
+    // 2. Adjust Merchant Settlement and Wallet balances
+    try {
+      const Settlement = require('../models/Settlement');
+      const Wallet = require('../models/Wallet');
+
+      const settlements = await Settlement.find({ order_id: order.id });
+      for (const settlement of settlements) {
+        if (settlement.status === 'refunded') continue;
+
+        const originalStatus = settlement.status;
+        settlement.status = 'refunded';
+        await settlement.save();
+
+        let wallet = await Wallet.findOne({ merchant_id: settlement.merchant_id });
+        if (wallet) {
+          if (originalStatus === 'escrow_hold') {
+            wallet.pending_balance = Number(Math.max(0, (wallet.pending_balance || 0) - settlement.amount).toFixed(2));
+          } else if (originalStatus === 'released') {
+            wallet.available_balance = Number(Math.max(0, (wallet.available_balance || 0) - settlement.amount).toFixed(2));
+          }
+          await wallet.save();
+        }
+        console.log(`[Refund] Reverted ₹${settlement.amount} from Merchant Profile #${settlement.merchant_id} due to customer refund.`);
+      }
+    } catch (escrowErr) {
+      console.error('Failed to adjust settlements/wallets on refund:', escrowErr);
+    }
+
+    const enriched = await enrichOrders(order);
+    res.json(enriched);
+  } catch (error) {
+    next(error);
+  }
+});
+
+
 
 module.exports = {
   cartRouter,

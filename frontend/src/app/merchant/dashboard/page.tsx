@@ -152,6 +152,26 @@ export default function MerchantDashboard() {
             )}
           </div>
 
+          {/* Low Stock Alerts */}
+          {analytics?.low_stock_products && analytics.low_stock_products.length > 0 && (
+            <div className="card p-4 mt-4 bg-red-50 border-red-200">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle size={14} className="text-red-600" />
+                <p className="font-cinzel text-xs tracking-wide text-red-800 font-bold uppercase">LOW STOCK ALERTS</p>
+              </div>
+              <div className="space-y-2 max-h-[160px] overflow-y-auto">
+                {analytics.low_stock_products.map((p: any) => (
+                  <div key={p.id} className="flex justify-between items-center text-xs border-b border-red-100 pb-1.5 last:border-0 last:pb-0">
+                    <span className="font-garamond text-red-950 font-medium truncate max-w-[150px]">{p.name}</span>
+                    <span className="font-cinzel text-[10px] text-red-700 bg-red-100/60 px-2 py-0.5 rounded">
+                      Only {p.stock_quantity} left
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="card p-4 mt-4 bg-gold-50 border-gold-200">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle size={14} className="text-gold-600" />

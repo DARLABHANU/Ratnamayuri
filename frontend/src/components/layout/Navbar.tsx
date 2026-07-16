@@ -20,6 +20,14 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    router.push(`/customer/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    setMobileOpen(false);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -118,6 +126,20 @@ export default function Navbar() {
 
             {/* Right icons */}
             <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
+              {/* Desktop Search Bar */}
+              <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center relative mr-2">
+                <input
+                  type="text"
+                  placeholder="Search collections..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="font-garamond text-xs px-3.5 py-1.5 pl-8 border border-gold-200 bg-cream/40 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 rounded-full w-44 lg:w-56 transition-all"
+                />
+                <button type="submit" className="absolute left-2.5 text-gold-600 hover:text-gold-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+              </form>
+
               <Link href="/customer/wishlist" className="relative text-brown hover:text-gold-600 transition-colors">
                 <Heart size={20} />
                 {wishlistIds.length > 0 && (
@@ -194,6 +216,20 @@ export default function Navbar() {
         {/* Mobile menu */}
         {mobileOpen && (
           <div className="lg:hidden bg-white border-t border-gold-100 px-4 py-4 space-y-3">
+            {/* Mobile Search Bar */}
+            <form onSubmit={handleSearchSubmit} className="flex items-center relative mb-4">
+              <input
+                type="text"
+                placeholder="Search collections..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full font-garamond text-xs px-3 py-2 pl-8 border border-gold-200 bg-cream/40 focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 rounded-full"
+              />
+              <button type="submit" className="absolute left-2.5 text-gold-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </button>
+            </form>
+
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}
                 onClick={() => setMobileOpen(false)}

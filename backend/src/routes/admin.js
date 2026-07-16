@@ -721,4 +721,81 @@ router.patch('/withdrawals/:id/approval', requireAdmin, async (req, res, next) =
   }
 });
 
+// List settlements (Admin)
+router.get('/settlements', requireAdmin, async (req, res, next) => {
+  try {
+    const Settlement = require('../models/Settlement');
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.page_size || '20', 10)));
+    const status = req.query.status || null;
+
+    const filter = {};
+    if (status) {
+      filter.status = status;
+    }
+
+    const total = await Settlement.countDocuments(filter);
+    const settlements = await Settlement.find(filter)
+      .sort({ created_at: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize);
+
+    // Enrich with order number & business name
+    const orderIds = settlements.map(s => s.order_id);
+    const merchantIds = settlements.map(s => s.merchant_id);
+
+    const Order = require('../models/Order');
+    const MerchantProfile = require('../models/MerchantProfile');
+
+    const [orders, profiles] = await Promise.all([
+      Order.find({ id: { $in: orderIds } }, 'id order_number'),
+      MerchantProfile.find({ id: { $in: merchantIds } }, 'id business_name')
+    ]);
+
+    const orderMap = new Map(orders.map(o => [o.id, o]));
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+    const enriched = settlements.map(s => {
+      const sObj = s.toObject();
+      sObj.order_number = orderMap.get(s.order_id)?.order_number || `Order #${s.order_id}`;
+      sObj.business_name = profileMap.get(s.merchant_id)?.business_name || `Merchant #${s.merchant_id}`;
+      return sObj;
+    });
+
+    res.json({
+      items: enriched,
+      total,
+      page,
+      page_size: pageSize,
+      pages: Math.ceil(total / pageSize)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// List merchant wallets (Admin)
+router.get('/wallets', requireAdmin, async (req, res, next) => {
+  try {
+    const Wallet = require('../models/Wallet');
+    const MerchantProfile = require('../models/MerchantProfile');
+
+    const wallets = await Wallet.find({});
+    const merchantIds = wallets.map(w => w.merchant_id);
+
+    const profiles = await MerchantProfile.find({ id: { $in: merchantIds } }, 'id business_name');
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+    const enriched = wallets.map(w => {
+      const wObj = w.toObject();
+      wObj.business_name = profileMap.get(w.merchant_id)?.business_name || `Merchant #${w.merchant_id}`;
+      return wObj;
+    });
+
+    res.json(enriched);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

@@ -135,6 +135,16 @@ router.get('/analytics', getCurrentUser, requireMerchantOrAdmin, async (req, res
     const available_payout = wallet.available_balance || 0; // Released, ready to withdraw
     const withdrawn_payout = wallet.withdrawn_balance || 0; // Already requested/paid out
 
+    const productsList = await Product.find({ merchant_id: profile.id, is_active: true });
+    const low_stock_products = productsList
+      .filter(p => p.stock_quantity <= (p.low_stock_threshold || 5))
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        stock_quantity: p.stock_quantity,
+        low_stock_threshold: p.low_stock_threshold || 5
+      }));
+
     res.json({
       total_revenue,
       total_orders,
@@ -143,6 +153,7 @@ router.get('/analytics', getCurrentUser, requireMerchantOrAdmin, async (req, res
       pending_payout,
       available_payout,
       withdrawn_payout,
+      low_stock_products,
       period_days: days
     });
   } catch (error) {

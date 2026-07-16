@@ -29,7 +29,8 @@ function ProductsContent() {
 
   const categoryParam = params.get("category");
   const featuredParam = params.get("is_featured");
-  const lastFiltersRef = useRef({ category: categoryParam, featured: featuredParam });
+  const searchParam = params.get("search");
+  const lastFiltersRef = useRef({ category: categoryParam, featured: featuredParam, search: searchParam });
 
   const fetchProducts = async (currentPage = page) => {
     setIsLoading(true);
@@ -55,10 +56,12 @@ function ProductsContent() {
   useEffect(() => {
     const filtersChanged =
       lastFiltersRef.current.category !== categoryParam ||
-      lastFiltersRef.current.featured !== featuredParam;
+      lastFiltersRef.current.featured !== featuredParam ||
+      lastFiltersRef.current.search !== searchParam;
 
     if (filtersChanged) {
-      lastFiltersRef.current = { category: categoryParam, featured: featuredParam };
+      lastFiltersRef.current = { category: categoryParam, featured: featuredParam, search: searchParam };
+      setSearch(searchParam || "");
       if (page !== 1) {
         setPage(1);
         return;
@@ -66,7 +69,7 @@ function ProductsContent() {
     }
 
     fetchProducts();
-  }, [page, sort, categoryParam, featuredParam]);
+  }, [page, sort, categoryParam, featuredParam, searchParam]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

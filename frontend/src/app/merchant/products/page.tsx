@@ -47,11 +47,50 @@ export default function MerchantProductsPage() {
   // Bulk Product Upload states & helpers
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
+  const [uploadProgressText, setUploadProgressText] = useState("");
   const [isBulkUploading, setIsBulkUploading] = useState(false);
+
+  // Bulk Image Upload utility states & handlers
+  const [utilityFiles, setUtilityFiles] = useState<{ name: string; url: string }[]>([]);
+  const [isGeneratingLinks, setIsGeneratingLinks] = useState(false);
+
+  const handleUtilityUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsGeneratingLinks(true);
+    const newLinks = [...utilityFiles];
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = (err) => reject(err);
+        });
+        reader.readAsDataURL(file);
+        const base64 = await base64Promise;
+
+        const { data } = await productApi.upload({
+          filename: file.name,
+          base64: base64
+        });
+        newLinks.push({ name: file.name, url: data.url });
+      }
+      setUtilityFiles(newLinks);
+      toast.success("Image links generated successfully! You can copy them to your CSV file.");
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsGeneratingLinks(false);
+      e.target.value = "";
+    }
+  };
 
   const downloadTemplate = () => {
     const headers = "name,description,base_price,compare_price,sku,stock_quantity,low_stock_threshold,weight_grams,images,tags\n";
-    const sample = "Elegant Kanjeevaram Saree,Classic handloom silk saree,5400,8500,KV-901,15,3,900,https://res.cloudinary.com/demo/image/upload/sample.jpg,Kanjeevaram,Silk,Saree\n";
+    const sample = "Elegant Kanjeevaram Saree,Classic handloom silk saree,5400,8500,KV-901,15,3,900,https://res.cloudinary.com/demo/image/upload/sample1.jpg;https://res.cloudinary.com/demo/image/upload/sample2.jpg,Kanjeevaram,Silk,Saree\n";
     const blob = new Blob([headers + sample], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -70,6 +109,30 @@ export default function MerchantProductsPage() {
 
     setIsBulkUploading(true);
     try {
+      const imageMap: Record<string, string> = {};
+      if (selectedImageFiles.length > 0) {
+        setUploadProgressText("Uploading image assets...");
+        for (let i = 0; i < selectedImageFiles.length; i++) {
+          const file = selectedImageFiles[i];
+          setUploadProgressText(`Uploading ${file.name} (${i + 1}/${selectedImageFiles.length})...`);
+          
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = (err) => reject(err);
+          });
+          reader.readAsDataURL(file);
+          const base64 = await base64Promise;
+
+          const { data } = await productApi.upload({
+            filename: file.name,
+            base64: base64
+          });
+          imageMap[file.name] = data.url;
+        }
+      }
+
+      setUploadProgressText("Processing catalog spreadsheet...");
       const reader = new FileReader();
       const readPromise = new Promise<string>((resolve) => {
         reader.onload = () => resolve(reader.result as string);
@@ -77,7 +140,7 @@ export default function MerchantProductsPage() {
       });
       const csvData = await readPromise;
 
-      const { data } = await merchantApi.bulkUploadProducts({ csvData });
+      const { data } = await merchantApi.bulkUploadProducts({ csvData, imageMap });
       if (data.error_count > 0) {
         toast.error(`Imported ${data.success_count} products. ${data.error_count} rows failed.`);
         console.error("Bulk upload errors list:", data.errors);
@@ -86,11 +149,13 @@ export default function MerchantProductsPage() {
       }
       setShowBulkModal(false);
       setCsvFile(null);
+      setSelectedImageFiles([]);
       loadProducts();
     } catch (err) {
       toast.error(getApiError(err));
     } finally {
       setIsBulkUploading(false);
+      setUploadProgressText("");
     }
   };
 
@@ -605,7 +670,7 @@ export default function MerchantProductsPage() {
 
             <form onSubmit={handleBulkUpload} className="p-6 space-y-5">
               <p className="font-garamond text-xs text-muted leading-relaxed">
-                Upload your products in bulk using a standard `.csv` spreadsheet. The spreadsheet columns must include <strong className="text-brown">name</strong> and <strong className="text-brown">base_price</strong>. All prices automatically trigger our platform commission calculations.
+                Upload your products in bulk using a standard `.csv` spreadsheet. The spreadsheet columns must include <strong className="text-brown">name</strong> and <strong className="text-brown">base_price</strong>. To upload <strong>multiple images</strong> for an individual product, simply separate the image URLs with a <strong>semicolon (;)</strong> in the <code>images</code> column.
               </p>
 
               <div>
@@ -635,6 +700,91 @@ export default function MerchantProductsPage() {
                     Click to browse local files (max size: 5MB)
                   </p>
                 </label>
+              </div>
+
+              {/* Automated matching selector box */}
+              <div className="border border-dashed border-gold-200 p-6 rounded text-center bg-gold-50/5 hover:bg-gold-50/15 transition-colors">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  id="bulk-images-matching-input"
+                  onChange={(e) => setSelectedImageFiles(Array.from(e.target.files || []))}
+                  className="hidden"
+                />
+                <label htmlFor="bulk-images-matching-input" className="cursor-pointer block space-y-2">
+                  <Store size={24} className="text-gold-500 mx-auto" />
+                  <p className="font-cinzel text-[10px] tracking-wider text-brown font-semibold">
+                    {selectedImageFiles.length > 0 
+                      ? `📸 ${selectedImageFiles.length} IMAGE FILES SELECTED` 
+                      : "📁 SELECT LOCAL IMAGES (OPTIONAL)"}
+                  </p>
+                  <p className="font-garamond text-xs text-muted">
+                    Choose local files matching filenames in your CSV spreadsheet.
+                  </p>
+                </label>
+              </div>
+
+              {uploadProgressText && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded text-center font-cinzel text-[10px] tracking-widest text-amber-800 font-semibold animate-pulse">
+                  {uploadProgressText}
+                </div>
+              )}
+
+              {/* Image Link Generator Section */}
+              <div className="border border-gold-100 p-4 rounded bg-gold-50/10 space-y-3">
+                <p className="font-cinzel text-[10px] tracking-widest text-brown font-bold flex items-center gap-1.5">
+                  📸 IMAGE LINK GENERATOR (OPTIONAL)
+                </p>
+                <p className="font-garamond text-xs text-muted leading-relaxed">
+                  Need web links for your local image files? Upload your files here to generate copyable URLs for your spreadsheet.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    id="utility-image-upload"
+                    onChange={handleUtilityUpload}
+                    className="hidden"
+                    disabled={isGeneratingLinks}
+                  />
+                  <label
+                    htmlFor="utility-image-upload"
+                    className="font-cinzel text-[10px] tracking-widest text-center cursor-pointer border border-gold-300 text-gold-700 bg-white hover:bg-gold-50 px-3 py-2 flex-1 rounded font-semibold transition-all"
+                  >
+                    {isGeneratingLinks ? "UPLOADING..." : "📂 CHOOSE IMAGE FILES"}
+                  </label>
+                  {utilityFiles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setUtilityFiles([])}
+                      className="font-cinzel text-[10px] tracking-widest text-red-600 border border-red-200 bg-white px-3 py-2 rounded hover:bg-red-50 transition-all"
+                    >
+                      CLEAR LIST
+                    </button>
+                  )}
+                </div>
+
+                {utilityFiles.length > 0 && (
+                  <div className="max-h-36 overflow-y-auto space-y-2 border border-gold-100 p-2 bg-white rounded">
+                    {utilityFiles.map((file, idx) => (
+                      <div key={idx} className="flex justify-between items-center gap-2 text-xs border-b border-gold-50/50 pb-1">
+                        <span className="truncate text-muted max-w-[150px] font-mono text-[10px]">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(file.url);
+                            toast.success(`Copied link for ${file.name}!`);
+                          }}
+                          className="font-cinzel text-[9px] tracking-widest text-gold-700 font-bold hover:text-gold-900 border border-gold-100 bg-gold-50/30 px-2 py-0.5 rounded"
+                        >
+                          COPY LINK
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <button

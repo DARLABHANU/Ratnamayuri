@@ -278,7 +278,7 @@ router.post('/products/bulk-upload', getCurrentUser, requireMerchantOrAdmin, asy
       return res.status(404).json({ detail: 'Merchant profile not found' });
     }
 
-    const { csvData } = req.body;
+    const { csvData, imageMap } = req.body;
     if (!csvData) {
       return res.status(400).json({ detail: 'Missing csvData in request body' });
     }
@@ -329,7 +329,13 @@ router.post('/products/bulk-upload', getCurrentUser, requireMerchantOrAdmin, asy
         const imagesRaw = imagesIdx !== -1 ? row[imagesIdx]?.trim() : '';
         const tagsRaw = tagsIdx !== -1 ? row[tagsIdx]?.trim() : '';
 
-        const images = imagesRaw ? imagesRaw.split(';').map(url => url.trim()) : [];
+        const images = imagesRaw ? imagesRaw.split(';').map(val => {
+          const key = val.trim();
+          if (imageMap && imageMap[key]) {
+            return imageMap[key];
+          }
+          return key;
+        }) : [];
         const tags = tagsRaw ? tagsRaw.split(',').map(tag => tag.trim()) : [];
 
         if (sku) {

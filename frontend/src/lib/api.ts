@@ -155,7 +155,7 @@ export const merchantApi = {
   requestWithdrawal: (data: object) => api.post("/merchant/withdraw", data),
   withdrawals: (params?: object) => api.get("/merchant/withdrawals", { params }),
   settlements: (params?: object) => api.get("/merchant/settlements", { params }),
-  bulkUploadProducts: (data: { csvData: string }) => api.post("/merchant/products/bulk-upload", data),
+  bulkUploadProducts: (data: { csvData: string; imageMap?: Record<string, string> }) => api.post("/merchant/products/bulk-upload", data),
 };
 
 export const adminApi = {

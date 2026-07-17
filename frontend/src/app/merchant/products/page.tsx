@@ -345,9 +345,11 @@ export default function MerchantProductsPage() {
           <h1 className="section-title">My <em className="italic">Products</em></h1>
         </div>
         <div className="flex gap-2">
+          {/* BULK CSV UPLOAD button hidden temporarily by user request
           <button onClick={() => setShowBulkModal(true)} className="border border-gold-400 text-gold-700 bg-gold-50/20 font-cinzel text-xs tracking-widest px-4 py-2 hover:bg-gold-50 transition-all flex items-center gap-2">
             BULK CSV UPLOAD
           </button>
+          */}
           <button onClick={openCreate} className="btn-primary flex items-center gap-2">
             <Plus size={14} /> ADD PRODUCT
           </button>

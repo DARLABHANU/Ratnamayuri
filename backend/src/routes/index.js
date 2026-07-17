@@ -27,7 +27,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
 // Base64 file upload endpoint
 router.post('/upload', async (req, res, next) => {
   try {
-    const { filename, base64 } = req.body;
+    const { filename, base64, folder } = req.body;
     if (!base64 || !filename) {
       return res.status(400).json({ detail: 'Missing base64 data or filename' });
     }
@@ -56,7 +56,7 @@ router.post('/upload', async (req, res, next) => {
         const dataUri = matches ? matches[0] : `data:image/jpeg;base64,${base64}`;
         const uploadResult = await new Promise((resolve, reject) => {
           cloudinary.uploader.upload(dataUri, {
-            folder: 'ratnamayuri_products',
+            folder: folder || 'ratnamayuri_products',
             resource_type: 'auto'
           }, (error, result) => {
             if (error) reject(error);

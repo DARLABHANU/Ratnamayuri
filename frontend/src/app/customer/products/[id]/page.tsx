@@ -174,6 +174,7 @@ export default function ProductDetailPage() {
         const uploadRes = await productApi.upload({
           filename: item.file.name,
           base64: base64Str,
+          folder: "ratnamayuri_reviews",
         });
         if (uploadRes.data?.url) {
           uploadedUrls.push(uploadRes.data.url);

@@ -237,4 +237,82 @@ router.post('/withdraw', getCurrentUser, requireMerchantOrAdmin, async (req, res
   }
 });
 
+// Get Merchant's Withdrawal Requests
+router.get('/withdrawals', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
+  try {
+    const WithdrawalRequest = require('../models/WithdrawalRequest');
+    const profile = await MerchantProfile.findOne({ user_id: req.user.id });
+    if (!profile) {
+      return res.status(404).json({ detail: 'Merchant profile not found' });
+    }
+
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.page_size) || 10;
+    const skip = (page - 1) * pageSize;
+
+    const filter = { merchant_id: profile.id };
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+
+    const total = await WithdrawalRequest.countDocuments(filter);
+    const items = await WithdrawalRequest.find(filter)
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(pageSize);
+
+    res.json({
+      items,
+      total,
+      page,
+      pages: Math.ceil(total / pageSize)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get Merchant's Escrow Settlements
+router.get('/settlements', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
+  try {
+    const Settlement = require('../models/Settlement');
+    const profile = await MerchantProfile.findOne({ user_id: req.user.id });
+    if (!profile) {
+      return res.status(404).json({ detail: 'Merchant profile not found' });
+    }
+
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.page_size) || 10;
+    const skip = (page - 1) * pageSize;
+
+    const filter = { merchant_id: profile.id };
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+
+    const total = await Settlement.countDocuments(filter);
+    const items = await Settlement.find(filter)
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(pageSize);
+
+    const Order = require('../models/Order');
+    const enriched = await Promise.all(items.map(async (item) => {
+      const plain = item.toObject();
+      const order = await Order.findOne({ id: item.order_id });
+      plain.order_number = order ? order.order_number : `Order #${item.order_id}`;
+      return plain;
+    }));
+
+    res.json({
+      items: enriched,
+      total,
+      page,
+      pages: Math.ceil(total / pageSize)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

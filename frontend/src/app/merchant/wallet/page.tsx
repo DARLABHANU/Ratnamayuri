@@ -44,6 +44,14 @@ export default function MerchantWalletPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Financial History State Variables
+  const [withdrawalHistory, setWithdrawalHistory] = useState<WithdrawalRequest[]>([]);
+  const [settlementHistory, setSettlementHistory] = useState<any[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [activeLedgerTab, setActiveLedgerTab] = useState<"withdrawals" | "settlements">("withdrawals");
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+
   // Withdrawal form state
   const [amount, setAmount] = useState("");
   const [bankName, setBankName] = useState("");
@@ -97,10 +105,35 @@ export default function MerchantWalletPage() {
     }
   };
 
+  const loadHistory = async () => {
+    setIsHistoryLoading(true);
+    try {
+      if (activeLedgerTab === "withdrawals") {
+        const { data } = await merchantApi.withdrawals({ page: historyPage, page_size: 10 });
+        setWithdrawalHistory(data.items);
+        setHistoryTotal(data.total);
+      } else {
+        const { data } = await merchantApi.settlements({ page: historyPage, page_size: 10 });
+        setSettlementHistory(data.items);
+        setHistoryTotal(data.total);
+      }
+    } catch (err) {
+      console.error("Failed to load history data:", err);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated || role !== "merchant") { router.push("/auth/login"); return; }
     loadWallet();
   }, [isAuthenticated, role]);
+
+  useEffect(() => {
+    if (isAuthenticated && role === "merchant") {
+      loadHistory();
+    }
+  }, [isAuthenticated, role, activeLedgerTab, historyPage]);
 
   const loadWallet = async () => {
     setIsLoading(true);
@@ -164,6 +197,7 @@ export default function MerchantWalletPage() {
       setAccountNumber("");
       setRoutingDetails("");
       loadWallet();
+      loadHistory();
     } catch (err) {
       toast.error(getApiError(err));
     } finally {
@@ -436,6 +470,139 @@ export default function MerchantWalletPage() {
         </div>
 
       </div>
+
+      {/* Transaction & Withdrawal History Ledger Section */}
+      <div className="card p-6 mt-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h2 className="font-cinzel text-xs tracking-widest text-brown flex items-center gap-2">
+            ✦ FINANCIAL HISTORY &amp; LEDGERS
+          </h2>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => { setActiveLedgerTab("withdrawals"); setHistoryPage(1); }}
+              className={`font-cinzel text-[10px] tracking-widest px-3 py-1.5 rounded flex-1 sm:flex-none transition-all
+                ${activeLedgerTab === "withdrawals" ? "bg-deep text-gold-400 font-semibold" : "border border-gold-200 text-muted"}`}
+            >
+              WITHDRAWAL REQUESTS
+            </button>
+            <button
+              onClick={() => { setActiveLedgerTab("settlements"); setHistoryPage(1); }}
+              className={`font-cinzel text-[10px] tracking-widest px-3 py-1.5 rounded flex-1 sm:flex-none transition-all
+                ${activeLedgerTab === "settlements" ? "bg-deep text-gold-400 font-semibold" : "border border-gold-200 text-muted"}`}
+            >
+              ESCROW SETTLEMENTS
+            </button>
+          </div>
+        </div>
+
+        {isHistoryLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="animate-spin text-gold-500" size={24} />
+          </div>
+        ) : activeLedgerTab === "withdrawals" ? (
+          withdrawalHistory.length === 0 ? (
+            <div className="text-center py-12 text-muted font-garamond text-sm">
+              No withdrawal request logs found.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm font-garamond border-collapse">
+                <thead>
+                  <tr className="bg-ivory border-b border-gold-100 font-cinzel text-[10px] tracking-wider text-brown">
+                    <th className="p-3">REQUEST ID</th>
+                    <th className="p-3">AMOUNT</th>
+                    <th className="p-3">DESTINATION</th>
+                    <th className="p-3">SUBMITTED ON</th>
+                    <th className="p-3">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {withdrawalHistory.map((item) => (
+                    <tr key={item.id} className="border-b border-gold-100/50 hover:bg-ivory/20 transition-colors">
+                      <td className="p-3 font-cinzel text-xs font-semibold text-gold-700">#{item.id}</td>
+                      <td className="p-3 text-brown font-semibold">{formatPrice(item.amount)}</td>
+                      <td className="p-3">
+                        <p className="font-semibold text-xs text-deep">{item.bank_name}</p>
+                        <p className="text-[10px] text-muted font-mono">{item.account_number}</p>
+                      </td>
+                      <td className="p-3 text-muted text-xs">{formatDate(item.created_at)}</td>
+                      <td className="p-3">
+                        <span className={`badge py-0.5 px-2 text-[10px] capitalize ${STATUS_COLORS[item.status]}`}>
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        ) : (
+          settlementHistory.length === 0 ? (
+            <div className="text-center py-12 text-muted font-garamond text-sm">
+              No settlement transactions found.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm font-garamond border-collapse">
+                <thead>
+                  <tr className="bg-ivory border-b border-gold-100 font-cinzel text-[10px] tracking-wider text-brown">
+                    <th className="p-3">SETTLEMENT ID</th>
+                    <th className="p-3">ORDER REFERENCE</th>
+                    <th className="p-3 text-right">MERCHANT SHARE</th>
+                    <th className="p-3 text-right">PLATFORM COMMISSION</th>
+                    <th className="p-3">RELEASE DATE</th>
+                    <th className="p-3">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {settlementHistory.map((item) => (
+                    <tr key={item.id} className="border-b border-gold-100/50 hover:bg-ivory/20 transition-colors">
+                      <td className="p-3 font-cinzel text-xs font-semibold text-gold-700">#{item.id}</td>
+                      <td className="p-3 font-cinzel text-xs font-semibold text-deep">{item.order_number}</td>
+                      <td className="p-3 text-right text-green-700 font-semibold">{formatPrice(item.amount)}</td>
+                      <td className="p-3 text-right text-gold-700">{formatPrice(item.platform_commission)}</td>
+                      <td className="p-3 text-muted text-xs">{formatDate(item.release_date)}</td>
+                      <td className="p-3">
+                        <span className={`badge py-0.5 px-2 text-[10px]
+                          ${item.status === 'released' ? 'bg-green-100 text-green-700' :
+                            item.status === 'escrow_hold' ? 'bg-yellow-100 text-yellow-700' :
+                            item.status === 'disputed' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
+                          {item.status.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
+
+        {/* Ledger Pagination */}
+        {historyTotal > 10 && (
+          <div className="flex justify-between items-center pt-4 border-t border-gold-100 mt-4">
+            <p className="font-garamond text-xs text-muted">Showing {Math.min(10, historyTotal)} of {historyTotal} records</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                disabled={historyPage === 1}
+                className="btn-ghost text-xs px-3 py-1 disabled:opacity-40"
+              >
+                ← Prev
+              </button>
+              <button
+                onClick={() => setHistoryPage(p => p + 1)}
+                disabled={historyPage * 10 >= historyTotal}
+                className="btn-ghost text-xs px-3 py-1 disabled:opacity-40"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }

@@ -153,6 +153,8 @@ export const merchantApi = {
   commissions: () => api.get("/merchant/commissions"),
   wallet: () => api.get("/merchant/wallet"),
   requestWithdrawal: (data: object) => api.post("/merchant/withdraw", data),
+  withdrawals: (params?: object) => api.get("/merchant/withdrawals", { params }),
+  settlements: (params?: object) => api.get("/merchant/settlements", { params }),
 };
 
 export const adminApi = {

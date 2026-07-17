@@ -769,12 +769,16 @@ orderRouter.post('/:order_id/cancel', async (req, res, next) => {
   }
 });
 
-// Request Refund (Customer self-service for delivered orders)
+// Request RMA Return (Customer self-service for delivered orders)
 orderRouter.post('/:order_id/refund', async (req, res, next) => {
   try {
     const orderId = Number(req.params.order_id);
-    const { reason } = req.body;
+    const { reason, proof_image_url } = req.body;
     
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ detail: 'Reason for return is required' });
+    }
+
     const order = await Order.findOne({ id: orderId });
     if (!order) {
       return res.status(404).json({ detail: 'Order not found' });
@@ -785,72 +789,52 @@ orderRouter.post('/:order_id/refund', async (req, res, next) => {
       return res.status(403).json({ detail: 'Access denied' });
     }
 
-    // Check status eligibility (can only refund if status is 'delivered' and payment is 'paid')
+    // Check status eligibility (can only request return if status is 'delivered' and payment is 'paid')
     if (order.status !== 'delivered' || order.payment_status !== 'paid') {
       return res.status(400).json({ 
-        detail: 'Only delivered and paid orders can be refunded.' 
+        detail: 'Only delivered and paid orders can be returned.' 
       });
     }
 
-    // Update status to refunded
-    order.status = 'refunded';
-    order.payment_status = 'refunded';
+    const ReturnRequest = require('../models/ReturnRequest');
+    const existingRequest = await ReturnRequest.findOne({ order_id: order.id });
+    if (existingRequest) {
+      return res.status(400).json({ detail: 'A return request already exists for this order' });
+    }
+
+    const orderItem = await OrderItem.findOne({ order_id: order.id });
+    const merchantId = orderItem ? orderItem.merchant_id : 1;
+
+    // Create Return Request
+    const returnRequest = new ReturnRequest({
+      order_id: order.id,
+      customer_id: req.user.id,
+      merchant_id: merchantId,
+      reason: reason.trim(),
+      proof_image_url: proof_image_url || null,
+      status: 'pending'
+    });
+    await returnRequest.save();
+
+    // Update order status to 'return_requested'
+    order.status = 'return_requested';
     
     const history = order.status_history || [];
     history.push({
-      status: 'refunded',
+      status: 'return_requested',
       timestamp: new Date().toISOString(),
-      note: reason ? `Refund requested: ${reason}` : 'Refunded by customer',
+      note: `Customer requested RMA return. Reason: ${reason.trim()}`,
       updated_by: req.user.id
     });
     order.status_history = history;
     order.markModified('status_history');
     await order.save();
 
-    // 1. Restore catalog stock levels
-    const orderItems = await OrderItem.find({ order_id: order.id });
-    for (const item of orderItems) {
-      await Product.updateOne(
-        { id: item.product_id },
-        {
-          $inc: {
-            stock_quantity: item.quantity,
-            total_sold: -item.quantity
-          }
-        }
-      );
-    }
-
-    // 2. Adjust Merchant Settlement and Wallet balances
-    try {
-      const Settlement = require('../models/Settlement');
-      const Wallet = require('../models/Wallet');
-
-      const settlements = await Settlement.find({ order_id: order.id });
-      for (const settlement of settlements) {
-        if (settlement.status === 'refunded') continue;
-
-        const originalStatus = settlement.status;
-        settlement.status = 'refunded';
-        await settlement.save();
-
-        let wallet = await Wallet.findOne({ merchant_id: settlement.merchant_id });
-        if (wallet) {
-          if (originalStatus === 'escrow_hold') {
-            wallet.pending_balance = Number(Math.max(0, (wallet.pending_balance || 0) - settlement.amount).toFixed(2));
-          } else if (originalStatus === 'released') {
-            wallet.available_balance = Number(Math.max(0, (wallet.available_balance || 0) - settlement.amount).toFixed(2));
-          }
-          await wallet.save();
-        }
-        console.log(`[Refund] Reverted ₹${settlement.amount} from Merchant Profile #${settlement.merchant_id} due to customer refund.`);
-      }
-    } catch (escrowErr) {
-      console.error('Failed to adjust settlements/wallets on refund:', escrowErr);
-    }
-
     const enriched = await enrichOrders(order);
-    res.json(enriched);
+    res.json({
+      order: enriched,
+      return_request: returnRequest
+    });
   } catch (error) {
     next(error);
   }

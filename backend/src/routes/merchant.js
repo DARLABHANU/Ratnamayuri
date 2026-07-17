@@ -237,6 +237,146 @@ router.post('/withdraw', getCurrentUser, requireMerchantOrAdmin, async (req, res
   }
 });
 
+// RFC 4180 compliant CSV Parser
+function parseCSV(text) {
+  const lines = [];
+  let row = [""];
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const next = text[i + 1];
+
+    if (c === '"') {
+      if (inQuotes && next === '"') {
+        row[row.length - 1] += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      row.push('');
+    } else if ((c === '\r' || c === '\n') && !inQuotes) {
+      if (c === '\r' && next === '\n') i++;
+      lines.push(row);
+      row = [''];
+    } else {
+      row[row.length - 1] += c;
+    }
+  }
+  if (row.length > 1 || row[0] !== '') {
+    lines.push(row);
+  }
+  return lines;
+}
+
+// Bulk CSV Product Upload
+router.post('/products/bulk-upload', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
+  try {
+    const profile = await MerchantProfile.findOne({ user_id: req.user.id });
+    if (!profile) {
+      return res.status(404).json({ detail: 'Merchant profile not found' });
+    }
+
+    const { csvData } = req.body;
+    if (!csvData) {
+      return res.status(400).json({ detail: 'Missing csvData in request body' });
+    }
+
+    const rows = parseCSV(csvData);
+    if (rows.length < 2) {
+      return res.status(400).json({ detail: 'CSV must contain at least a header row and one data row' });
+    }
+
+    const headers = rows[0].map(h => h.trim().toLowerCase());
+    const colIndex = (name) => headers.indexOf(name);
+    
+    const nameIdx = colIndex('name');
+    const descIdx = colIndex('description');
+    const basePriceIdx = colIndex('base_price');
+    const comparePriceIdx = colIndex('compare_price');
+    const skuIdx = colIndex('sku');
+    const stockIdx = colIndex('stock_quantity');
+    const lowStockIdx = colIndex('low_stock_threshold');
+    const weightIdx = colIndex('weight_grams');
+    const imagesIdx = colIndex('images');
+    const tagsIdx = colIndex('tags');
+
+    if (nameIdx === -1 || basePriceIdx === -1) {
+      return res.status(400).json({ detail: 'CSV must contain at least "name" and "base_price" columns' });
+    }
+
+    const successes = [];
+    const errors = [];
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (row.length <= 1 && row[0] === '') continue;
+
+      try {
+        const name = row[nameIdx]?.trim();
+        const base_price = parseFloat(row[basePriceIdx]);
+
+        if (!name) throw new Error('Product name is required');
+        if (isNaN(base_price) || base_price <= 0) throw new Error('Invalid base_price (must be greater than 0)');
+
+        const description = descIdx !== -1 ? row[descIdx]?.trim() : '';
+        const compare_price = comparePriceIdx !== -1 ? parseFloat(row[comparePriceIdx]) : null;
+        const sku = skuIdx !== -1 ? row[skuIdx]?.trim() || null : null;
+        const stock_quantity = stockIdx !== -1 ? parseInt(row[stockIdx]) || 0 : 0;
+        const low_stock_threshold = lowStockIdx !== -1 ? parseInt(row[lowStockIdx]) || 5 : 5;
+        const weight_grams = weightIdx !== -1 ? parseFloat(row[weightIdx]) || null : null;
+        const imagesRaw = imagesIdx !== -1 ? row[imagesIdx]?.trim() : '';
+        const tagsRaw = tagsIdx !== -1 ? row[tagsIdx]?.trim() : '';
+
+        const images = imagesRaw ? imagesRaw.split(';').map(url => url.trim()) : [];
+        const tags = tagsRaw ? tagsRaw.split(',').map(tag => tag.trim()) : [];
+
+        if (sku) {
+          const existingSku = await Product.findOne({ sku });
+          if (existingSku) {
+            throw new Error(`SKU "${sku}" is already in use`);
+          }
+        }
+
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).substring(2, 7);
+
+        const product = new Product({
+          merchant_id: profile.id,
+          name,
+          slug,
+          description,
+          price: base_price,
+          base_price,
+          compare_price: isNaN(compare_price) ? null : compare_price,
+          sku,
+          stock_quantity,
+          low_stock_threshold,
+          weight_grams,
+          images,
+          tags,
+          is_approved: false,
+          is_active: true
+        });
+
+        await product.save();
+        successes.push({ name, sku });
+      } catch (err) {
+        errors.push({ rowNumber: i + 1, detail: err.message });
+      }
+    }
+
+    res.json({
+      success_count: successes.length,
+      error_count: errors.length,
+      successes,
+      errors
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get Merchant's Withdrawal Requests
 router.get('/withdrawals', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
   try {

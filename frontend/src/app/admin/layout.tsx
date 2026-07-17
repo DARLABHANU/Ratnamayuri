@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, Package, ShoppingBag,
-  Tag, DollarSign, Headphones, LogOut, Shield, ArrowDownToLine, Menu, X, Wallet
+  Tag, DollarSign, Headphones, LogOut, Shield, ArrowDownToLine, Menu, X, Wallet, ArrowLeftRight
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ const NAV = [
   { href: "/admin/commissions",  label: "Commissions",  icon: DollarSign },
   { href: "/admin/withdrawals",  label: "Withdrawals",  icon: ArrowDownToLine },
   { href: "/admin/settlements",  label: "Settlements",  icon: Wallet },
+  { href: "/admin/return-requests", label: "Return Requests", icon: ArrowLeftRight },
   { href: "/support/dashboard",  label: "Support View", icon: Headphones },
 ];
 

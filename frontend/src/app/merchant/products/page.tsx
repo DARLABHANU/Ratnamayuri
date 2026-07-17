@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
-import { productApi } from "@/lib/api";
+import { productApi, merchantApi } from "@/lib/api";
 import { Product } from "@/types";
 import { formatPrice, getApiError } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -43,6 +43,56 @@ export default function MerchantProductsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [hasProfile, setHasProfile] = useState<boolean>(true);
+
+  // Bulk Product Upload states & helpers
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+
+  const downloadTemplate = () => {
+    const headers = "name,description,base_price,compare_price,sku,stock_quantity,low_stock_threshold,weight_grams,images,tags\n";
+    const sample = "Elegant Kanjeevaram Saree,Classic handloom silk saree,5400,8500,KV-901,15,3,900,https://res.cloudinary.com/demo/image/upload/sample.jpg,Kanjeevaram,Silk,Saree\n";
+    const blob = new Blob([headers + sample], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ratnamayuri_bulk_upload_template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleBulkUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!csvFile) {
+      toast.error("Please select a CSV file to upload.");
+      return;
+    }
+
+    setIsBulkUploading(true);
+    try {
+      const reader = new FileReader();
+      const readPromise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsText(csvFile);
+      });
+      const csvData = await readPromise;
+
+      const { data } = await merchantApi.bulkUploadProducts({ csvData });
+      if (data.error_count > 0) {
+        toast.error(`Imported ${data.success_count} products. ${data.error_count} rows failed.`);
+        console.error("Bulk upload errors list:", data.errors);
+      } else {
+        toast.success(`Successfully imported all ${data.success_count} products!`);
+      }
+      setShowBulkModal(false);
+      setCsvFile(null);
+      loadProducts();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsBulkUploading(false);
+    }
+  };
 
   const { register, handleSubmit, reset, setValue, getValues, watch, formState: { errors } } = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
@@ -229,9 +279,14 @@ export default function MerchantProductsPage() {
           <span className="section-tag">INVENTORY</span>
           <h1 className="section-title">My <em className="italic">Products</em></h1>
         </div>
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2">
-          <Plus size={14} /> ADD PRODUCT
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowBulkModal(true)} className="border border-gold-400 text-gold-700 bg-gold-50/20 font-cinzel text-xs tracking-widest px-4 py-2 hover:bg-gold-50 transition-all flex items-center gap-2">
+            BULK CSV UPLOAD
+          </button>
+          <button onClick={openCreate} className="btn-primary flex items-center gap-2">
+            <Plus size={14} /> ADD PRODUCT
+          </button>
+        </div>
       </div>
 
       {/* Product form modal */}
@@ -532,6 +587,68 @@ export default function MerchantProductsPage() {
               <button onClick={() => setPage(p => p + 1)} disabled={products.length < 15}
                 className="btn-ghost text-xs px-3 py-1 disabled:opacity-40">Next →</button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Bulk CSV Upload Modal */}
+      {showBulkModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-md my-8 animate-fade-up shadow-lg">
+            <div className="flex items-center justify-between p-6 border-b border-gold-100 bg-ivory">
+              <h2 className="font-cinzel text-sm tracking-widest text-brown font-semibold">
+                ✦ BULK CSV CATALOG UPLOAD
+              </h2>
+              <button onClick={() => { setShowBulkModal(false); setCsvFile(null); }} className="text-muted hover:text-brown">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleBulkUpload} className="p-6 space-y-5">
+              <p className="font-garamond text-xs text-muted leading-relaxed">
+                Upload your products in bulk using a standard `.csv` spreadsheet. The spreadsheet columns must include <strong className="text-brown">name</strong> and <strong className="text-brown">base_price</strong>. All prices automatically trigger our platform commission calculations.
+              </p>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={downloadTemplate}
+                  className="font-cinzel text-[10px] tracking-widest text-gold-700 bg-gold-50 border border-gold-200 px-3 py-2 w-full text-center hover:bg-gold-100/50 transition-all font-semibold"
+                >
+                  📥 DOWNLOAD SAMPLE TEMPLATE (.CSV)
+                </button>
+              </div>
+
+              <div className="border border-dashed border-gold-200 p-6 rounded text-center bg-ivory/20 hover:bg-ivory/40 transition-colors">
+                <input
+                  type="file"
+                  accept=".csv"
+                  id="csv-file-input"
+                  onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <label htmlFor="csv-file-input" className="cursor-pointer block space-y-2">
+                  <Package size={24} className="text-gold-500 mx-auto" />
+                  <p className="font-cinzel text-[10px] tracking-wider text-brown font-semibold">
+                    {csvFile ? csvFile.name.toUpperCase() : "SELECT PRODUCT CSV FILE"}
+                  </p>
+                  <p className="font-garamond text-xs text-muted">
+                    Click to browse local files (max size: 5MB)
+                  </p>
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isBulkUploading || !csvFile}
+                className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-xs disabled:opacity-50"
+              >
+                {isBulkUploading ? (
+                  <><Loader2 size={12} className="animate-spin" /> IMPORTING CATALOG...</>
+                ) : (
+                  "CONFIRM & UPLOAD CATALOG"
+                )}
+              </button>
+            </form>
           </div>
         </div>
       )}

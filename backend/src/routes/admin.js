@@ -798,4 +798,207 @@ router.get('/wallets', requireAdmin, async (req, res, next) => {
   }
 });
 
+// List Return Requests (Admin RMA Console)
+router.get('/return-requests', requireAdminOrSupport, async (req, res, next) => {
+  try {
+    const ReturnRequest = require('../models/ReturnRequest');
+    const User = require('../models/User');
+    const Order = require('../models/Order');
+    const MerchantProfile = require('../models/MerchantProfile');
+
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.page_size) || 10;
+    const skip = (page - 1) * pageSize;
+
+    const filter = {};
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+
+    const total = await ReturnRequest.countDocuments(filter);
+    const requests = await ReturnRequest.find(filter)
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(pageSize);
+
+    const enriched = await Promise.all(requests.map(async (r) => {
+      const rObj = r.toObject();
+      const [customer, order, merchant] = await Promise.all([
+        User.findOne({ id: r.customer_id }, 'id full_name email'),
+        Order.findOne({ id: r.order_id }, 'id order_number status total_amount'),
+        MerchantProfile.findOne({ id: r.merchant_id }, 'id business_name')
+      ]);
+
+      rObj.customer = customer;
+      rObj.order = order;
+      rObj.merchant = merchant;
+      return rObj;
+    }));
+
+    res.json({
+      items: enriched,
+      total,
+      page,
+      pages: Math.ceil(total / pageSize)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Approve or Reject RMA Return Request
+router.patch('/return-requests/:id/approval', requireAdminOrSupport, async (req, res, next) => {
+  try {
+    const ReturnRequest = require('../models/ReturnRequest');
+    const Order = require('../models/Order');
+    const AuditLog = require('../models/AuditLog');
+
+    const requestId = Number(req.params.id);
+    const { status, admin_notes } = req.body;
+
+    if (status !== 'approved' && status !== 'rejected') {
+      return res.status(400).json({ detail: 'Status must be approved or rejected' });
+    }
+
+    const request = await ReturnRequest.findOne({ id: requestId });
+    if (!request) {
+      return res.status(404).json({ detail: 'Return request not found' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ detail: 'Request has already been processed' });
+    }
+
+    request.status = status;
+    if (admin_notes !== undefined) {
+      request.admin_notes = admin_notes;
+    }
+    await request.save();
+
+    const order = await Order.findOne({ id: request.order_id });
+    if (order) {
+      order.status = status === 'approved' ? 'return_approved' : 'delivered';
+      
+      const history = order.status_history || [];
+      history.push({
+        status: order.status,
+        timestamp: new Date().toISOString(),
+        note: `RMA return request ${status} by admin. Notes: ${admin_notes || 'None'}`,
+        updated_by: req.user.id
+      });
+      order.status_history = history;
+      order.markModified('status_history');
+      await order.save();
+    }
+
+    const audit = new AuditLog({
+      action_type: `rma_return_${status}`,
+      actor_id: req.user.id,
+      actor_email: req.user.email,
+      target_id: request.id,
+      target_type: 'ReturnRequest',
+      details: `RMA Return Request #${request.id} for Order #${order?.order_number || request.order_id} was ${status} by admin.`,
+      timestamp: new Date()
+    });
+    await audit.save();
+
+    res.json(request);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Complete Return & Issue Refund (Finalize RMA)
+router.post('/return-requests/:id/complete', requireAdminOrSupport, async (req, res, next) => {
+  try {
+    const ReturnRequest = require('../models/ReturnRequest');
+    const Order = require('../models/Order');
+    const OrderItem = require('../models/OrderItem');
+    const Product = require('../models/Product');
+    const Settlement = require('../models/Settlement');
+    const Wallet = require('../models/Wallet');
+    const AuditLog = require('../models/AuditLog');
+
+    const requestId = Number(req.params.id);
+    const request = await ReturnRequest.findOne({ id: requestId });
+    if (!request) {
+      return res.status(404).json({ detail: 'Return request not found' });
+    }
+
+    if (request.status !== 'approved') {
+      return res.status(400).json({ detail: 'Only approved returns can be completed' });
+    }
+
+    request.status = 'completed';
+    await request.save();
+
+    const order = await Order.findOne({ id: request.order_id });
+    if (!order) {
+      return res.status(404).json({ detail: 'Order not found' });
+    }
+
+    order.status = 'refunded';
+    order.payment_status = 'refunded';
+    
+    const history = order.status_history || [];
+    history.push({
+      status: 'refunded',
+      timestamp: new Date().toISOString(),
+      note: 'RMA Return Completed. Payout refunded to buyer.',
+      updated_by: req.user.id
+    });
+    order.status_history = history;
+    order.markModified('status_history');
+    await order.save();
+
+    const orderItems = await OrderItem.find({ order_id: order.id });
+    for (const item of orderItems) {
+      await Product.updateOne(
+        { id: item.product_id },
+        {
+          $inc: {
+            stock_quantity: item.quantity,
+            total_sold: -item.quantity
+          }
+        }
+      );
+    }
+
+    const settlements = await Settlement.find({ order_id: order.id });
+    for (const settlement of settlements) {
+      if (settlement.status === 'refunded') continue;
+
+      const originalStatus = settlement.status;
+      settlement.status = 'refunded';
+      await settlement.save();
+
+      let wallet = await Wallet.findOne({ merchant_id: settlement.merchant_id });
+      if (wallet) {
+        if (originalStatus === 'escrow_hold') {
+          wallet.pending_balance = Number(Math.max(0, (wallet.pending_balance || 0) - settlement.amount).toFixed(2));
+        } else if (originalStatus === 'released') {
+          wallet.available_balance = Number(((wallet.available_balance || 0) - settlement.amount).toFixed(2));
+        }
+        await wallet.save();
+      }
+      console.log(`[RMA Refund] Reverted ₹${settlement.amount} from Merchant Profile #${settlement.merchant_id} due to customer return.`);
+    }
+
+    const audit = new AuditLog({
+      action_type: 'rma_return_completed',
+      actor_id: req.user.id,
+      actor_email: req.user.email,
+      target_id: request.id,
+      target_type: 'ReturnRequest',
+      details: `RMA Return request #${request.id} finalized. Order #${order.order_number} refunded. Inventory stock replenished.`,
+      timestamp: new Date()
+    });
+    await audit.save();
+
+    res.json({ detail: 'Return completed and refund processed successfully', request });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

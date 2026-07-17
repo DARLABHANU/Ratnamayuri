@@ -36,16 +36,17 @@ export default function OrderDetailPage() {
   const [isRefunding, setIsRefunding] = useState(false);
 
   const handleRefundOrder = async () => {
-    const reason = window.prompt("Please enter a reason for the refund request:");
+    const reason = window.prompt("Please enter a reason for the return request:");
     if (reason === null) return;
+    if (!reason.trim()) { toast.error("Reason is required"); return; }
     
     setIsRefunding(true);
     try {
-      const { data: updatedOrder } = await orderApi.refund(Number(id), { reason });
-      setOrder(updatedOrder);
-      toast.success("Refund processed successfully.");
+      const { data } = await orderApi.refund(Number(id), { reason });
+      setOrder(data.order);
+      toast.success("RMA return request submitted successfully! Admin will review your return claim.");
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to request refund.");
+      toast.error(err.response?.data?.detail || "Failed to request return.");
     } finally {
       setIsRefunding(false);
     }
@@ -286,7 +287,7 @@ export default function OrderDetailPage() {
                   className="w-full mt-2.5 py-2 border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs tracking-wider font-cinzel rounded flex items-center justify-center gap-1.5 transition-all"
                 >
                   {isRefunding && <Loader2 size={12} className="animate-spin text-amber-500" />}
-                  REQUEST REFUND
+                  REQUEST RMA RETURN
                 </button>
               )}
             </div>

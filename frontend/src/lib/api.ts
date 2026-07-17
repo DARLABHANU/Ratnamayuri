@@ -155,6 +155,7 @@ export const merchantApi = {
   requestWithdrawal: (data: object) => api.post("/merchant/withdraw", data),
   withdrawals: (params?: object) => api.get("/merchant/withdrawals", { params }),
   settlements: (params?: object) => api.get("/merchant/settlements", { params }),
+  bulkUploadProducts: (data: { csvData: string }) => api.post("/merchant/products/bulk-upload", data),
 };
 
 export const adminApi = {
@@ -181,6 +182,10 @@ export const adminApi = {
     api.patch(`/admin/withdrawals/${id}/approval`, data),
   settlements: (params?: object) => api.get("/admin/settlements", { params }),
   wallets: () => api.get("/admin/wallets"),
+  returnRequests: (params?: object) => api.get("/admin/return-requests", { params }),
+  approveReturnRequest: (id: number, data: { status: "approved" | "rejected", admin_notes?: string }) =>
+    api.patch(`/admin/return-requests/${id}/approval`, data),
+  completeReturnRequest: (id: number) => api.post(`/admin/return-requests/${id}/complete`),
 };
 
 export const supportApi = {

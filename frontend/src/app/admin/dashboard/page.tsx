@@ -98,12 +98,13 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { href: "/admin/users",       label: "Manage Users",     desc: "View, edit, deactivate" },
           { href: "/admin/coupons",     label: "Create Coupon",    desc: "Add new discount codes"  },
           { href: "/admin/orders",      label: "All Orders",       desc: "Full order management"   },
           { href: "/admin/commissions", label: "Pay Commissions",  desc: "Settle promoter payouts" },
+          { href: "/admin/return-requests", label: "RMA Returns",  desc: "Review return claims" },
         ].map(({ href, label, desc }) => (
           <Link key={href} href={href} className="card p-5 hover:border-gold-400 transition-all group">
             <p className="font-cinzel text-xs tracking-wide text-brown group-hover:text-gold-700 transition-colors mb-1">{label}</p>

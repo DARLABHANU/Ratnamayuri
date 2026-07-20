@@ -149,7 +149,7 @@ export default function Footer() {
                 { label: "My Shopping Bag", href: "/customer/cart" },
                 { label: "Saved Wishlist", href: "/customer/wishlist" },
                 { label: "Customer Profile", href: "/customer/profile" },
-                { label: "Help & Support Desk", href: "/customer/dashboard" },
+                { label: "Contact Concierge / Support", href: "/contact" },
               ].map((link) => (
                 <li key={link.label}>
                   <Link href={link.href}
@@ -236,6 +236,8 @@ export default function Footer() {
               <Link href="/shipping-policy" className="hover:text-[#E8D5B0] transition-colors">Shipping &amp; Delivery</Link>
               <span className="text-[#5A1212]">|</span>
               <Link href="/refund-policy" className="hover:text-[#E8D5B0] transition-colors">Cancellation &amp; Refund Policy</Link>
+              <span className="text-[#5A1212]">|</span>
+              <Link href="/contact" className="hover:text-[#E8D5B0] transition-colors">Contact Us</Link>
             </div>
           </div>
           

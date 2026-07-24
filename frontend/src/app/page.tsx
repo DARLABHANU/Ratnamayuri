@@ -50,14 +50,14 @@ const HERO_SLIDES = [
 ];
 
 const CATEGORIES = [
-  { label: "Sarees", img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200&auto=format&fit=crop", href: "/customer/products?category=sarees" },
-  { label: "Bangles", img: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=200&auto=format&fit=crop", href: "/customer/products?search=bangles" },
-  { label: "Chains", img: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=200&auto=format&fit=crop", href: "/customer/products?search=chain" },
-  { label: "Jewellery", img: "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?q=80&w=200&auto=format&fit=crop", href: "/customer/products?category=jewellery" },
-  { label: "Rings", img: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=200&auto=format&fit=crop", href: "/customer/products?search=rings" },
-  { label: "Earrings", img: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=200&auto=format&fit=crop", href: "/customer/products?search=earrings" },
-  { label: "New Arrivals", img: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=200&auto=format&fit=crop", href: "/customer/products" },
-  { label: "Gifts", img: "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=200&auto=format&fit=crop", href: "/customer/products" },
+  { label: "Silk Sarees", img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200&auto=format&fit=crop", href: "/customer/products?category=sarees" },
+  { label: "Kanchipuram", img: "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?q=80&w=200&auto=format&fit=crop", href: "/customer/products?category=sarees&fabric=kanchipuram" },
+  { label: "Temple Gold", img: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=200&auto=format&fit=crop", href: "/customer/products?category=jewellery&fabric=temple" },
+  { label: "Kundan & Polki", img: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=200&auto=format&fit=crop", href: "/customer/products?category=jewellery&fabric=kundan" },
+  { label: "Banarasi", img: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=200&auto=format&fit=crop", href: "/customer/products?category=sarees&fabric=banarasi" },
+  { label: "Bridal Wear", img: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=200&auto=format&fit=crop", href: "/customer/products?category=bridal" },
+  { label: "Cotton Weaves", img: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=200&auto=format&fit=crop", href: "/customer/products?fabric=cotton" },
+  { label: "All Collections", img: "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=200&auto=format&fit=crop", href: "/customer/products" },
 ];
 
 const TRUST_BADGES = [

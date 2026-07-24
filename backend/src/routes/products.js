@@ -55,6 +55,10 @@ router.get('/', async (req, res, next) => {
     const sortBy = req.query.sort_by || 'created_at';
     const sortOrder = req.query.sort_order || 'desc';
 
+    const fabric = req.query.fabric || null;
+    const tag = req.query.tag || null;
+    const min_rating = req.query.min_rating !== undefined ? Number(req.query.min_rating) : null;
+
     const filter = { is_active: true, is_approved: true };
 
     if (category_id !== null) {
@@ -73,14 +77,37 @@ router.get('/', async (req, res, next) => {
       const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
         { name: new RegExp(escapedSearch, 'i') },
-        { description: new RegExp(escapedSearch, 'i') }
+        { description: new RegExp(escapedSearch, 'i') },
+        { tags: new RegExp(escapedSearch, 'i') }
       ];
+    }
+
+    if (fabric) {
+      const escapedFabric = fabric.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const fabricRegex = new RegExp(escapedFabric, 'i');
+      if (filter.$or) {
+        filter.$and = [
+          { $or: filter.$or },
+          { $or: [{ name: fabricRegex }, { description: fabricRegex }, { tags: fabricRegex }] }
+        ];
+        delete filter.$or;
+      } else {
+        filter.$or = [{ name: fabricRegex }, { description: fabricRegex }, { tags: fabricRegex }];
+      }
+    }
+
+    if (tag) {
+      filter.tags = new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    }
+
+    if (min_rating !== null && !isNaN(min_rating)) {
+      filter.rating_avg = { $gte: min_rating };
     }
 
     if (min_price !== null || max_price !== null) {
       filter.price = {};
-      if (min_price !== null) filter.price.$gte = min_price;
-      if (max_price !== null) filter.price.$lte = max_price;
+      if (min_price !== null && !isNaN(min_price)) filter.price.$gte = min_price;
+      if (max_price !== null && !isNaN(max_price)) filter.price.$lte = max_price;
     }
 
     if (is_featured !== null) {
@@ -119,6 +146,17 @@ router.get('/categories/all', async (req, res, next) => {
   try {
     const categories = await Category.find({ is_active: true }).sort({ sort_order: 1 });
     res.json(categories);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// List all unique product tags & materials dynamically across all products (public)
+router.get('/tags/all', async (req, res, next) => {
+  try {
+    const tags = await Product.distinct('tags', { is_active: true, is_approved: true });
+    const cleanTags = [...new Set(tags.filter(Boolean).map(t => t.trim()))].sort();
+    res.json(cleanTags);
   } catch (error) {
     next(error);
   }

@@ -123,11 +123,12 @@ export default function Footer() {
             <ul className="space-y-3.5 font-garamond text-xs lg:text-sm">
               {[
                 { label: "New Arrivals", href: "/customer/products" },
-                { label: "Luxury Jewellery", href: "/customer/products?category=jewellery" },
-                { label: "Silk Handlooms", href: "/customer/products?category=sarees" },
+                { label: "Kanchipuram Silk Sarees", href: "/customer/products?category=sarees&fabric=kanchipuram" },
+                { label: "Banarasi Handlooms", href: "/customer/products?category=sarees&fabric=banarasi" },
+                { label: "Temple Gold Jewellery", href: "/customer/products?category=jewellery&fabric=temple" },
+                { label: "Kundan & Polki Sets", href: "/customer/products?category=jewellery&fabric=kundan" },
                 { label: "Bridal Masterpieces", href: "/customer/products?category=bridal" },
-                { label: "Bespoke Custom Orders", href: "/customer/products?is_featured=true" },
-                { label: "Exclusive Offers", href: "/customer/products?discount_min=10" },
+                { label: "Cotton & Daily Weaves", href: "/customer/products?fabric=cotton" },
               ].map((link) => (
                 <li key={link.label}>
                   <Link href={link.href}

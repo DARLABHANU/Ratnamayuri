@@ -425,6 +425,11 @@ export default function MerchantProductsPage() {
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">FULL DESCRIPTION</label>
                   <textarea {...register("description")} rows={3} className="input-field resize-none" />
                 </div>
+                <div className="sm:col-span-2">
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">TAGS / FABRIC / MATERIAL / CRAFT (COMMA SEPARATED)</label>
+                  <input {...register("tags")} className="input-field" placeholder="e.g. Silk, Kanchipuram, Temple Gold, Kundan, Bridal, Cotton" />
+                  <p className="text-[11px] font-garamond text-muted mt-1">Tags automatically create dynamic search and filter chips across the storefront.</p>
+                </div>
 
                 <div className="sm:col-span-2">
                   <div className="flex items-center justify-between mb-1">
@@ -626,16 +631,19 @@ export default function MerchantProductsPage() {
                   </td>
                   <td className="table-td">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => openEdit(product)} title="Edit"
-                        className="text-muted hover:text-brown transition-colors">
-                        <Pencil size={14} />
+                      <button 
+                        onClick={() => openEdit(product)} 
+                        title="Edit Details"
+                        className="bg-gold-50 hover:bg-gold-100 text-gold-800 border border-gold-300 font-cinzel text-[10px] font-bold px-2.5 py-1 rounded flex items-center gap-1 transition-all shadow-xs"
+                      >
+                        <Pencil size={11} /> EDIT DETAILS
                       </button>
                       <button onClick={() => handleToggleActive(product)} title={product.is_active ? "Hide" : "Show"}
-                        className="text-muted hover:text-brown transition-colors">
+                        className="p-1.5 text-muted hover:text-brown transition-colors">
                         {product.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                       <button onClick={() => handleDelete(product)} title="Delete"
-                        className="text-muted hover:text-red-500 transition-colors">
+                        className="p-1.5 text-muted hover:text-red-500 transition-colors">
                         <Trash2 size={14} />
                       </button>
                     </div>

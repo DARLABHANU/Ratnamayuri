@@ -1,24 +1,29 @@
 --- DATABASE SEEDING STATUS REPORT ---
-Timestamp: 2026-07-16T05:01:01.442Z
+Timestamp: 2026-07-24T16:47:56.657Z
 
 COUNTS:
-- users: 7
+- users: 12
 - categories: 3
-- products: 1
-- merchantProfiles: 2
-- orders: 3
-- orderItems: 3
-- coupons: 0
-- addresses: 1
+- products: 6
+- merchantProfiles: 1
+- orders: 0
+- orderItems: 14
+- coupons: 3
+- addresses: 4
 
 USERS:
 - ID: 1 | Email: admin@ratnamayuri.live | Role: admin | Name: Super Admin
 - ID: 2 | Email: daarlabhanumurthy@gmail.com | Role: customer | Name: Darla Bhanu Murthy
-- ID: 3 | Email: darlabhanumurthy@gmail.com | Role: merchant | Name: Bhanu Darla
 - ID: 4 | Email: rahulvardhineni@gmail.com | Role: customer | Name: Rahul Vardhineni
 - ID: 5 | Email: sirigiriniranjankumar@gmail.com | Role: customer | Name: Niranjan Kumar 143
 - ID: 6 | Email: renucollections9@gmail.com | Role: merchant | Name: Renu Collections
 - ID: 7 | Email: ranibhoomikanunnaguppala@gmail.com | Role: merchant | Name: RaniBhoomika Marada
+- ID: 8 | Email: chanduvinnakota26@gmail.com | Role: customer | Name: Chandu Vinnnakota
+- ID: 9 | Email: bujji008@gmail.com | Role: customer | Name: PANDURI BUJJIBABU
+- ID: 10 | Email: niranjank12417@gmail.com | Role: customer | Name: Niranjan Kumar
+- ID: 11 | Email: kc966686@gmail.com | Role: customer | Name: K Charan Teja
+- ID: 12 | Email: yamakavitha81@gmail.com | Role: customer | Name: Yama Kavitha
+- ID: 13 | Email: softwarearchishman248@gmail.com | Role: customer | Name: Archishman Ray Official
 
 CATEGORIES:
 - ID: 1 | Slug: jewellery | Name: Luxury Jewellery
@@ -26,4 +31,8 @@ CATEGORIES:
 - ID: 3 | Slug: bridal | Name: Bridal
 
 PRODUCTS (First 5):
-- SKU: 678 | Price: 954.8 | CatID: 1 | Name: saree
+- SKU: RR-001 | Price: 1318.8 | CatID: 3 | Name: Srinivasa kalyanam haram
+- SKU: RR-002 | Price: 1098.9 | CatID: 3 | Name: Beautiful choker
+- SKU: RR-003 | Price: 4798.8 | CatID: 3 | Name: Bridal set
+- SKU: RR-004 | Price: 1318.8 | CatID: 3 | Name: Beautiful choker
+- SKU: RR-005 | Price: 713.9 | CatID: 1 | Name: Neckset

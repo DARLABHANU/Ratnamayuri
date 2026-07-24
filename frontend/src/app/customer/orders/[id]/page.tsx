@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, Package, CreditCard } from "lucide-react";
+import { ChevronLeft, Loader2, Package, CreditCard, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 import { orderApi } from "@/lib/api";
 
@@ -295,6 +295,13 @@ export default function OrderDetailPage() {
                   REQUEST RMA RETURN
                 </button>
               )}
+
+              <button
+                onClick={() => window.print()}
+                className="w-full mt-2.5 py-2 border border-gold-300 text-gold-800 hover:bg-gold-50 text-xs tracking-wider font-cinzel rounded flex items-center justify-center gap-1.5 transition-all font-semibold"
+              >
+                <Printer size={13} /> DOWNLOAD TAX INVOICE
+              </button>
             </div>
           </div>
 

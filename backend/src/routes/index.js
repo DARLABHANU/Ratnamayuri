@@ -104,4 +104,8 @@ router.use('/promoter', promoterRouter);
 router.use('/cart', ordersRouter.cartRouter);
 router.use('/orders', ordersRouter.orderRouter);
 
+// Direct Razorpay payment integration endpoints
+router.post('/create-order', ordersRouter.createOrderHandler);
+router.post('/verify-payment', ordersRouter.verifyPaymentHandler);
+
 module.exports = router;

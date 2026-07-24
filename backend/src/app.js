@@ -68,6 +68,10 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/v1', router);
 
+// Direct /api/create-order and /api/verify-payment endpoints
+app.post('/api/create-order', (req, res, next) => require('./routes/orders').createOrderHandler(req, res, next));
+app.post('/api/verify-payment', (req, res, next) => require('./routes/orders').verifyPaymentHandler(req, res, next));
+
 // Global Error Handler
 app.use(errorMiddleware);
 

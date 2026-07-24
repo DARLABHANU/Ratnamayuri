@@ -194,7 +194,7 @@ function CheckoutContent() {
       const activeAddr = addresses.find((a) => a.id === selectedAddressId);
 
       const options = {
-        key: (order as any).razorpay_key_id,
+        key: (order as any).razorpay_key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_THKTjazaeHHbRd",
         amount: Math.round(order.total_amount * 100), // in paise
         currency: "INR",
         name: "Ratnamayuri",
@@ -227,13 +227,18 @@ function CheckoutContent() {
         },
         modal: {
           ondismiss: function () {
-            toast.error("Payment modal closed before completion.");
+            toast.error("Payment cancelled or modal closed before completion.");
             setIsPlacing(false);
           },
         },
       };
 
       const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        console.error("Razorpay Payment Failed:", response.error);
+        toast.error(`Payment failed: ${response.error?.description || response.error?.reason || "Payment declined"}`);
+        setIsPlacing(false);
+      });
       rzp.open();
     } catch (err) {
       toast.error(getApiError(err));

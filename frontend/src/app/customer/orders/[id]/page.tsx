@@ -98,7 +98,7 @@ export default function OrderDetailPage() {
     }
 
     const options = {
-      key: (order as any).razorpay_key_id,
+      key: (order as any).razorpay_key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_THKTjazaeHHbRd",
       amount: Math.round(order.total_amount * 100), // in paise
       currency: "INR",
       name: "Ratnamayuri",
@@ -112,7 +112,7 @@ export default function OrderDetailPage() {
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_signature: response.razorpay_signature,
           });
-          setOrder(updatedOrder);
+          setOrder(updatedOrder.order || updatedOrder);
           toast.success("Payment verified successfully! Order confirmed.");
         } catch (verifyErr) {
           toast.error("Payment signature verification failed. Please contact support.");
@@ -129,13 +129,18 @@ export default function OrderDetailPage() {
       },
       modal: {
         ondismiss: function () {
-          toast.error("Payment modal closed.");
+          toast.error("Payment cancelled or modal closed before completion.");
           setIsProcessingPayment(false);
         },
       },
     };
 
     const rzp = new (window as any).Razorpay(options);
+    rzp.on("payment.failed", function (response: any) {
+      console.error("Razorpay Payment Failed:", response.error);
+      toast.error(`Payment failed: ${response.error?.description || response.error?.reason || "Payment declined"}`);
+      setIsProcessingPayment(false);
+    });
     rzp.open();
   };
 

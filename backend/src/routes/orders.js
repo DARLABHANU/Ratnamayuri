@@ -383,14 +383,63 @@ orderRouter.post('/', async (req, res, next) => {
   }
 });
 
-// Verify Razorpay Payment Signature
-orderRouter.post('/verify-payment', async (req, res, next) => {
+// Standalone Razorpay Create Order Endpoint (POST /create-order or POST /api/create-order)
+const createOrderHandler = async (req, res, next) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    let { amount, currency = 'INR', receipt } = req.body;
     
-    // Sandbox Mock Mode fallback (if keys are missing or mock requested, approve payment directly)
-    if (!config.razorpayKeyId || !config.razorpayKeySecret || razorpay_payment_id === "mock_payment") {
-      console.log('[Razorpay Sandbox] Keys missing or mock requested. Approving payment directly.');
+    if (amount === undefined || amount === null || amount === '') {
+      return res.status(400).json({ detail: 'Amount (in paise) is required' });
+    }
+
+    const amountPaise = Number(amount);
+    if (isNaN(amountPaise) || amountPaise < 100) {
+      return res.status(400).json({ detail: 'Amount must be at least 100 paise (₹1)' });
+    }
+
+    if (!config.razorpayKeyId || !config.razorpayKeySecret) {
+      return res.status(500).json({ detail: 'Razorpay API credentials are not configured on server' });
+    }
+
+    const Razorpay = require('razorpay');
+    const razorpay = new Razorpay({
+      key_id: config.razorpayKeyId,
+      key_secret: config.razorpayKeySecret
+    });
+
+    const options = {
+      amount: Math.round(amountPaise),
+      currency: currency || 'INR',
+      receipt: receipt || `rcpt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+    };
+
+    const rzpOrder = await razorpay.orders.create(options);
+
+    res.status(201).json({
+      order_id: rzpOrder.id,
+      id: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
+      key_id: config.razorpayKeyId
+    });
+  } catch (error) {
+    console.error('[Razorpay] create-order error:', error);
+    res.status(500).json({ detail: error.message || 'Razorpay order creation failed' });
+  }
+};
+
+orderRouter.post('/create-order', createOrderHandler);
+
+// Verify Razorpay Payment Signature Endpoint (POST /verify-payment or POST /api/verify-payment)
+const verifyPaymentHandler = async (req, res, next) => {
+  try {
+    const razorpay_order_id = req.body.razorpay_order_id || req.body.order_id;
+    const razorpay_payment_id = req.body.razorpay_payment_id || req.body.payment_id;
+    const razorpay_signature = req.body.razorpay_signature || req.body.signature;
+    
+    // Sandbox Mock Mode fallback (if keys missing or mock requested)
+    if ((!config.razorpayKeyId || !config.razorpayKeySecret) && razorpay_payment_id === "mock_payment") {
+      console.log('[Razorpay Sandbox] Approving mock payment directly.');
       
       const order = await Order.findOne({ 
         $or: [
@@ -424,7 +473,11 @@ orderRouter.post('/verify-payment', async (req, res, next) => {
     }
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res.status(400).json({ detail: 'Missing required Razorpay payment tracking parameters' });
+      return res.status(400).json({ detail: 'Missing required Razorpay payment tracking parameters (order_id, payment_id, signature)' });
+    }
+
+    if (!config.razorpayKeyId || !config.razorpayKeySecret) {
+      return res.status(500).json({ detail: 'Razorpay API credentials are not configured on server' });
     }
 
     // Verify crypto HMAC signature using official SDK or fallback manual generation
@@ -448,41 +501,56 @@ orderRouter.post('/verify-payment', async (req, res, next) => {
     }
 
     if (!isSignatureValid) {
-      console.error(`[Razorpay Signature Mismatch] Expected validation to pass. Razorpay Signature: ${razorpay_signature}${generated_signature ? `, Fallback Generated: ${generated_signature}` : ''}`);
+      console.error(`[Razorpay Signature Mismatch] Razorpay Signature: ${razorpay_signature}${generated_signature ? `, Fallback Generated: ${generated_signature}` : ''}`);
       return res.status(400).json({ detail: 'Payment verification failed: signature mismatch' });
     }
 
-    // Find the corresponding Order in our database
-    const order = await Order.findOne({ razorpay_order_id: razorpay_order_id });
-    if (!order) {
-      return res.status(404).json({ detail: 'Order matching Razorpay order ID not found' });
+    // Find the corresponding Order in our database if present
+    const order = await Order.findOne({ 
+      $or: [
+        { razorpay_order_id: razorpay_order_id },
+        { id: isNaN(Number(razorpay_order_id)) ? -1 : Number(razorpay_order_id) }
+      ]
+    });
+
+    if (order) {
+      order.payment_status = 'paid';
+      order.status = 'pending';
+      order.razorpay_payment_id = razorpay_payment_id;
+      order.razorpay_signature = razorpay_signature;
+
+      const history = order.status_history || [];
+      history.push({
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+        note: `Payment verified via Razorpay (Payment ID: ${razorpay_payment_id})`,
+        updated_by: req.user ? req.user.id : null
+      });
+      order.status_history = history;
+      order.markModified('status_history');
+
+      await order.save();
+
+      const enriched = await enrichOrders(order);
+      return res.json({
+        success: true,
+        message: 'Payment verified successfully',
+        order: enriched
+      });
     }
 
-    // Update the Order status & payment status
-    order.payment_status = 'paid';
-    order.status = 'pending';
-    order.razorpay_payment_id = razorpay_payment_id;
-    order.razorpay_signature = razorpay_signature;
-
-    // Log this status change in status history log
-    const history = order.status_history || [];
-    history.push({
-      status: 'pending',
-      timestamp: new Date().toISOString(),
-      note: `Payment verified via Razorpay (Payment ID: ${razorpay_payment_id})`,
-      updated_by: req.user ? req.user.id : null
+    res.json({
+      success: true,
+      message: 'Payment signature verified successfully',
+      razorpay_order_id,
+      razorpay_payment_id
     });
-    order.status_history = history;
-    order.markModified('status_history');
-
-    await order.save();
-
-    const enriched = await enrichOrders(order);
-    res.json(enriched);
   } catch (error) {
     next(error);
   }
-});
+};
+
+orderRouter.post('/verify-payment', verifyPaymentHandler);
 
 // List Customer Orders
 orderRouter.get('/', async (req, res, next) => {
@@ -844,5 +912,7 @@ orderRouter.post('/:order_id/refund', async (req, res, next) => {
 
 module.exports = {
   cartRouter,
-  orderRouter
+  orderRouter,
+  createOrderHandler,
+  verifyPaymentHandler
 };

@@ -136,10 +136,14 @@ export const orderApi = {
   validateCoupon: (data: object) => api.post("/orders/validate-coupon", data),
   updateStatus: (id: number, data: object) => api.patch(`/orders/${id}/status`, data),
   merchantOrders: (params?: object) => api.get("/orders/merchant/incoming", { params }),
+  createOrder: (data: { amount: number; currency?: string; receipt?: string }) => api.post("/create-order", data),
   razorpayVerify: (data: {
-    razorpay_order_id: string;
-    razorpay_payment_id: string;
-    razorpay_signature: string;
+    razorpay_order_id?: string;
+    razorpay_payment_id?: string;
+    razorpay_signature?: string;
+    order_id?: string;
+    payment_id?: string;
+    signature?: string;
   }) => api.post("/orders/verify-payment", data),
   cancel: (id: number) => api.post(`/orders/${id}/cancel`),
   refund: (id: number, data?: object) => api.post(`/orders/${id}/refund`, data),

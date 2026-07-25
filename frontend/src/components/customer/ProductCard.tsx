@@ -38,12 +38,10 @@ export default function ProductCard({ product }: Props) {
   const categorySlug = product.category?.slug?.toLowerCase() || "";
   const showColors = categorySlug === "sarees" || categorySlug === "bridal";
 
-  // Ratings (Fallback values to ensure consistent visual aesthetics)
-  const ratingAvg = product.rating_avg || 4.2;
-  const ratingCount = product.rating_count || Math.floor((product.id * 17) % 50) + 12;
-
-  // Social Proof count (e.g. 100+ bought in past month)
-  const monthlyBought = product.total_sold || Math.floor((product.id * 29) % 300) + 40;
+  // Real Ratings & Sales from Database
+  const ratingAvg = product.rating_avg || 0;
+  const ratingCount = product.rating_count || 0;
+  const monthlyBought = product.total_sold || 0;
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -140,30 +138,39 @@ export default function ProductCard({ product }: Props) {
           {product.name}
         </h3>
 
-        {/* Rating Row */}
-        <div className="flex items-center gap-1.5 mb-1">
-          <span className="font-garamond text-sm font-semibold text-gold-600">
-            {ratingAvg.toFixed(1)}
-          </span>
-          <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                size={11}
-                fill={i < Math.floor(ratingAvg) ? "#C9973E" : "none"}
-                className={i < Math.floor(ratingAvg) ? "text-gold-500" : "text-gold-200"}
-              />
-            ))}
+        {/* Rating Row & Authentic Sales Proof */}
+        {ratingCount > 0 ? (
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="font-garamond text-sm font-semibold text-gold-600">
+              {ratingAvg.toFixed(1)}
+            </span>
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  size={11}
+                  fill={i < Math.floor(ratingAvg) ? "#C9973E" : "none"}
+                  className={i < Math.floor(ratingAvg) ? "text-gold-500" : "text-gold-200"}
+                />
+              ))}
+            </div>
+            <span className="font-garamond text-xs text-muted">
+              ({ratingCount > 999 ? `${(ratingCount / 1000).toFixed(1)}K` : ratingCount})
+            </span>
           </div>
-          <span className="font-garamond text-xs text-muted">
-            ({ratingCount > 999 ? `${(ratingCount / 1000).toFixed(1)}K` : ratingCount})
-          </span>
-        </div>
+        ) : (
+          <div className="flex items-center gap-1 mb-1">
+            <span className="text-[10px] font-cinzel text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">
+              ✦ AUTHENTIC WEAVE
+            </span>
+          </div>
+        )}
 
-        {/* Social Proof */}
-        <p className="font-garamond text-xs text-muted mb-2">
-          {monthlyBought}+ bought in past month
-        </p>
+        {monthlyBought > 0 && (
+          <p className="font-garamond text-xs text-muted mb-2">
+            {monthlyBought}+ orders fulfilled
+          </p>
+        )}
 
         {/* Pricing block */}
         <div className="flex items-baseline flex-wrap gap-1.5 mb-1.5">

@@ -5,7 +5,10 @@ const CouponSchema = new mongoose.Schema({
   id: { type: Number, unique: true, index: true },
   code: { type: String, required: true, unique: true, index: true, uppercase: true, trim: true },
   description: { type: String, default: null },
-  discount_amount: { type: Number, required: true }, // e.g. 200
+  discount_type: { type: String, enum: ['fixed', 'percentage'], default: 'fixed' },
+  discount_value: { type: Number, default: 0 }, // percentage e.g. 15 or fixed amount e.g. 200
+  discount_amount: { type: Number, required: true }, // e.g. 200 (fallback or computed value)
+  max_discount_amount: { type: Number, default: null }, // Optional cap for percentage coupons e.g. 1000
   promoter_commission: { type: Number, required: true }, // e.g. 100
   platform_profit: { type: Number, required: true }, // e.g. 100
   promoter_id: { type: Number, ref: 'User', default: null, index: true },

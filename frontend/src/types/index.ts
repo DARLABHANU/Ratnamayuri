@@ -174,7 +174,10 @@ export interface Coupon {
   id: number;
   code: string;
   description?: string;
+  discount_type?: "fixed" | "percentage";
+  discount_value?: number;
   discount_amount: number;
+  max_discount_amount?: number | null;
   promoter_commission: number;
   platform_profit: number;
   min_order_amount: number;

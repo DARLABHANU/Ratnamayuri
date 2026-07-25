@@ -69,11 +69,14 @@ export default function Navbar() {
   const cartCount = cart?.item_count || 0;
 
   const navLinks = [
-    { href: "/customer/products?category=sarees", label: "Silk Sarees" },
-    { href: "/customer/products?search=bangles", label: "Bangles" },
-    { href: "/customer/products?search=chain", label: "Gold Chains" },
+    { href: "/customer/products?category=sarees", label: "Sarees" },
     { href: "/customer/products?category=jewellery", label: "Jewellery" },
-    { href: "/customer/products", label: "New Arrivals" },
+    { href: "/customer/products?category=bridal", label: "Bridal Collection" },
+    { href: "/customer/products?is_featured=true", label: "New Arrivals" },
+    { href: "/customer/products?sort_by=total_sold&sort_order=desc", label: "Best Sellers" },
+    { href: "/customer/products?subcategory=gift-sets", label: "Gift Collection" },
+    { href: "/customer/products?subcategory=festival", label: "Festival Collection" },
+    { href: "/customer/products?sort_by=price&sort_order=asc", label: "Offers" },
   ];
 
   return (

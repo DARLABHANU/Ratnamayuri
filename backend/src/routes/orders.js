@@ -170,10 +170,26 @@ orderRouter.post('/validate-coupon', async (req, res, next) => {
       });
     }
 
+    // Calculate discount amount based on discount_type (percentage vs fixed)
+    let calculatedDiscount = 0;
+    if (coupon.discount_type === 'percentage') {
+      calculatedDiscount = Math.round((order_amount * (coupon.discount_value || 0)) / 100);
+      if (coupon.max_discount_amount && coupon.max_discount_amount > 0) {
+        calculatedDiscount = Math.min(calculatedDiscount, coupon.max_discount_amount);
+      }
+    } else {
+      calculatedDiscount = coupon.discount_value || coupon.discount_amount || 0;
+    }
+    calculatedDiscount = Math.min(calculatedDiscount, order_amount);
+
     res.json({
       valid: true,
-      discount_amount: coupon.discount_amount,
-      message: `Coupon applied! You save ₹${coupon.discount_amount}`
+      discount_amount: calculatedDiscount,
+      discount_type: coupon.discount_type || 'fixed',
+      discount_value: coupon.discount_value || 0,
+      message: coupon.discount_type === 'percentage' 
+        ? `Coupon applied! You save ${coupon.discount_value}% (₹${calculatedDiscount})`
+        : `Coupon applied! You save ₹${calculatedDiscount}`
     });
   } catch (error) {
     next(error);
@@ -220,7 +236,15 @@ orderRouter.post('/', async (req, res, next) => {
         const minAmountValid = subtotal >= coupon.min_order_amount;
 
         if (datesValid && usesValid && minAmountValid) {
-          discount_amount = coupon.discount_amount;
+          if (coupon.discount_type === 'percentage') {
+            let calc = Math.round((subtotal * (coupon.discount_value || 0)) / 100);
+            if (coupon.max_discount_amount && coupon.max_discount_amount > 0) {
+              calc = Math.min(calc, coupon.max_discount_amount);
+            }
+            discount_amount = Math.min(calc, subtotal);
+          } else {
+            discount_amount = Math.min(coupon.discount_value || coupon.discount_amount || 0, subtotal);
+          }
           coupon_id = coupon.id;
           coupon.used_count += 1;
           await coupon.save();

@@ -15,7 +15,10 @@ import { formatPrice, formatDate, getApiError } from "@/lib/utils";
 const couponSchema = z.object({
   code:                 z.string().min(3).max(20).toUpperCase(),
   description:          z.string().optional(),
-  discount_amount:      z.coerce.number().positive().default(200),
+  discount_type:        z.enum(["fixed", "percentage"]).default("fixed"),
+  discount_value:       z.coerce.number().positive("Discount value must be greater than 0").default(200),
+  discount_amount:      z.coerce.number().optional(),
+  max_discount_amount:  z.coerce.number().optional(),
   promoter_commission:  z.coerce.number().min(0).default(100),
   platform_profit:      z.coerce.number().min(0).default(100),
   promoter_id:          z.string().optional().or(z.literal("")),
@@ -35,7 +38,13 @@ export default function AdminCouponsPage() {
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<CouponForm>({
     resolver: zodResolver(couponSchema),
-    defaultValues: { discount_amount: 200, promoter_commission: 100, platform_profit: 100, min_order_amount: 0 },
+    defaultValues: { 
+      discount_type: "fixed", 
+      discount_value: 200, 
+      promoter_commission: 100, 
+      platform_profit: 100, 
+      min_order_amount: 0 
+    },
   });
 
   useEffect(() => {
@@ -52,8 +61,17 @@ export default function AdminCouponsPage() {
   const onSubmit = async (data: CouponForm) => {
     setIsSaving(true);
     try {
-      await adminApi.createCoupon({ ...data, code: data.code.toUpperCase() });
-      toast.success("Coupon created!");
+      const discountVal = data.discount_value;
+      const maxDiscount = data.max_discount_amount || (data.discount_type === "fixed" ? discountVal : null);
+      
+      await adminApi.createCoupon({ 
+        ...data, 
+        code: data.code.toUpperCase(),
+        discount_amount: data.discount_type === "fixed" ? discountVal : (maxDiscount || discountVal),
+        discount_value: discountVal,
+        max_discount_amount: maxDiscount
+      });
+      toast.success("Coupon created successfully!");
       setShowForm(false);
       reset();
       loadCoupons();
@@ -75,7 +93,9 @@ export default function AdminCouponsPage() {
     toast.success("Code copied!");
   };
 
-  const discountAmount = watch("discount_amount") || 0;
+  const discountType = watch("discount_type") || "fixed";
+  const discountValue = watch("discount_value") || 0;
+  const maxDiscountAmount = watch("max_discount_amount") || 0;
   const promoterCommission = watch("promoter_commission") || 0;
   const platformProfit = watch("platform_profit") || 0;
 
@@ -94,7 +114,7 @@ export default function AdminCouponsPage() {
       {/* Coupon form modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-lg my-8 animate-fade-up">
+          <div className="bg-white w-full max-w-lg my-8 animate-fade-up rounded-md shadow-xl">
             <div className="flex items-center justify-between p-6 border-b border-gold-100">
               <h2 className="font-cinzel text-sm tracking-widest text-brown">CREATE COUPON</h2>
               <button onClick={() => setShowForm(false)}><X size={18} className="text-muted" /></button>
@@ -109,33 +129,63 @@ export default function AdminCouponsPage() {
 
               <div>
                 <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">DESCRIPTION</label>
-                <input {...register("description")} placeholder="Brief description" className="input-field" />
+                <input {...register("description")} placeholder="Brief description (e.g. Special Festival Discount)" className="input-field" />
               </div>
 
+              {/* Discount Type Selector */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">DISCOUNT TYPE *</label>
+                  <select {...register("discount_type")} className="input-field py-2 font-garamond">
+                    <option value="fixed">Fixed Amount (₹)</option>
+                    <option value="percentage">Percentage (%)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+                    {discountType === "percentage" ? "DISCOUNT PERCENTAGE (%) *" : "DISCOUNT AMOUNT (₹) *"}
+                  </label>
+                  <input 
+                    {...register("discount_value")} 
+                    type="number" 
+                    placeholder={discountType === "percentage" ? "e.g. 15 for 15%" : "e.g. 200 for ₹200"} 
+                    className="input-field py-2" 
+                  />
+                  {errors.discount_value && <p className="text-red-500 text-xs mt-1">{errors.discount_value.message}</p>}
+                </div>
+              </div>
+
+              {discountType === "percentage" && (
+                <div>
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">MAX DISCOUNT CAP (₹)</label>
+                  <input {...register("max_discount_amount")} type="number" placeholder="e.g. 1000 (Max limit for % discount)" className="input-field py-2" />
+                  <p className="text-[11px] font-garamond text-muted mt-0.5">Optional upper limit on discount amount for percentage coupons.</p>
+                </div>
+              )}
+
               {/* Financial breakdown */}
-              <div className="bg-gold-50 border border-gold-200 p-4 space-y-3">
-                <p className="font-cinzel text-xs tracking-widest text-muted">FINANCIAL BREAKDOWN</p>
-                <div className="grid grid-cols-3 gap-3">
+              <div className="bg-gold-50 border border-gold-200 p-4 space-y-3 rounded-md">
+                <p className="font-cinzel text-xs tracking-widest text-muted font-bold">COMMISSION & PROFIT SPLIT</p>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="font-cinzel text-xs text-muted block mb-1">DISCOUNT (₹)</label>
-                    <input {...register("discount_amount")} type="number" className="input-field py-2" />
-                    {errors.discount_amount && <p className="text-red-500 text-xs">{errors.discount_amount.message}</p>}
-                  </div>
-                  <div>
-                    <label className="font-cinzel text-xs text-muted block mb-1">PROMOTER (₹)</label>
+                    <label className="font-cinzel text-xs text-muted block mb-1">PROMOTER COMMISSION (₹)</label>
                     <input {...register("promoter_commission")} type="number" className="input-field py-2" />
                   </div>
                   <div>
-                    <label className="font-cinzel text-xs text-muted block mb-1">PLATFORM (₹)</label>
+                    <label className="font-cinzel text-xs text-muted block mb-1">PLATFORM PROFIT (₹)</label>
                     <input {...register("platform_profit")} type="number" className="input-field py-2" />
                   </div>
                 </div>
-                <div className="flex gap-4 pt-2 border-t border-gold-200">
+                <div className="flex flex-wrap gap-4 pt-2 border-t border-gold-200">
                   <p className="font-garamond text-xs text-muted">
-                    Customer saves: <span className="text-brown font-medium">{formatPrice(discountAmount)}</span>
+                    Customer saves: <span className="text-brown font-medium">
+                      {discountType === "percentage" 
+                        ? `${discountValue}% Off ${maxDiscountAmount ? `(Max ${formatPrice(maxDiscountAmount)})` : ""}`
+                        : formatPrice(discountValue)}
+                    </span>
                   </p>
                   <p className="font-garamond text-xs text-muted">
-                    Promoter earns: <span className="text-green-600 font-medium">{formatPrice(promoterCommission)}</span>
+                    Promoter: <span className="text-green-600 font-medium">{formatPrice(promoterCommission)}</span>
                   </p>
                   <p className="font-garamond text-xs text-muted">
                     Platform: <span className="text-blue-600 font-medium">{formatPrice(platformProfit)}</span>
@@ -184,7 +234,7 @@ export default function AdminCouponsPage() {
             <thead className="bg-ivory">
               <tr>
                 <th className="table-th">Code</th>
-                <th className="table-th">Discount</th>
+                <th className="table-th">Discount Type & Rule</th>
                 <th className="table-th">Promoter Cut</th>
                 <th className="table-th">Uses</th>
                 <th className="table-th">Valid Until</th>
@@ -205,7 +255,16 @@ export default function AdminCouponsPage() {
                     </div>
                     {coupon.description && <p className="font-garamond text-xs text-muted mt-0.5 ml-5">{coupon.description}</p>}
                   </td>
-                  <td className="table-td font-cinzel text-xs text-green-700">{formatPrice(coupon.discount_amount)}</td>
+                  <td className="table-td font-cinzel text-xs text-green-700 font-semibold">
+                    {coupon.discount_type === "percentage" ? (
+                      <span>
+                        {coupon.discount_value || coupon.discount_amount}% OFF
+                        {coupon.max_discount_amount ? ` (Max ${formatPrice(coupon.max_discount_amount)})` : ""}
+                      </span>
+                    ) : (
+                      <span>{formatPrice(coupon.discount_value || coupon.discount_amount)} FLAT OFF</span>
+                    )}
+                  </td>
                   <td className="table-td font-cinzel text-xs text-blue-700">{formatPrice(coupon.promoter_commission)}</td>
                   <td className="table-td font-garamond text-sm text-muted">
                     {coupon.used_count}{coupon.max_uses ? ` / ${coupon.max_uses}` : ""}

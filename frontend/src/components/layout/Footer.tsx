@@ -122,13 +122,13 @@ export default function Footer() {
             <h4 className="font-cinzel text-xs tracking-widest text-[#C9973E] font-bold mb-6">COLLECTIONS</h4>
             <ul className="space-y-3.5 font-garamond text-xs lg:text-sm">
               {[
-                { label: "New Arrivals", href: "/customer/products" },
-                { label: "Kanchipuram Silk Sarees", href: "/customer/products?category=sarees&fabric=kanchipuram" },
-                { label: "Banarasi Handlooms", href: "/customer/products?category=sarees&fabric=banarasi" },
-                { label: "Temple Gold Jewellery", href: "/customer/products?category=jewellery&fabric=temple" },
-                { label: "Kundan & Polki Sets", href: "/customer/products?category=jewellery&fabric=kundan" },
+                { label: "Silk Sarees Collection", href: "/customer/products?category=sarees" },
+                { label: "Temple & Heritage Jewellery", href: "/customer/products?category=jewellery" },
                 { label: "Bridal Masterpieces", href: "/customer/products?category=bridal" },
-                { label: "Cotton & Daily Weaves", href: "/customer/products?fabric=cotton" },
+                { label: "Bangles & Royal Kadas", href: "/customer/products?subcategory=bangles" },
+                { label: "Gold Chains & Chokers", href: "/customer/products?subcategory=chains" },
+                { label: "Kanchipuram Silks", href: "/customer/products?subcategory=kanchipuram-sarees" },
+                { label: "Banarasi Handlooms", href: "/customer/products?subcategory=banarasi-sarees" },
               ].map((link) => (
                 <li key={link.label}>
                   <Link href={link.href}

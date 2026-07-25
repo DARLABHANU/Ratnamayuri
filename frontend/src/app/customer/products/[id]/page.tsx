@@ -464,9 +464,9 @@ export default function ProductDetailPage() {
                   </h4>
                   <div className="flex items-center gap-2 mt-0.5 text-xs text-muted font-garamond">
                     <span className="bg-green-700 text-white text-[10px] font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5">
-                      4.8 <Star size={9} fill="white" />
+                      {product.rating_avg > 0 ? product.rating_avg.toFixed(1) : "5.0"} <Star size={9} fill="white" />
                     </span>
-                    <span>1,850+ Ratings</span>
+                    <span>{product.rating_count > 0 ? `${product.rating_count} Customer Ratings` : "Verified Merchant Collection"}</span>
                     <span>•</span>
                     <span className="text-green-700 font-semibold">Verified Authorised Merchant</span>
                   </div>

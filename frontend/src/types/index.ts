@@ -78,6 +78,8 @@ export interface Product {
   weight_grams?: number;
   category_id?: number | null;
   category?: Category;
+  subcategory?: string;
+  subcategory_slug?: string;
   created_at: string;
   updated_at: string;
 }
@@ -231,3 +233,62 @@ export interface AuditLog {
   metadata?: Record<string, unknown>;
   created_at: string;
 }
+
+// ─── Main Category & Subcategory Taxonomy ──────────────────────────────────────
+export const CATEGORY_TAXONOMY: Record<string, string[]> = {
+  "Sarees": [
+    "Silk Sarees",
+    "Kanchipuram Sarees",
+    "Banarasi Sarees",
+    "Cotton Sarees",
+    "Mysore Silk",
+    "Linen Sarees",
+    "Party Wear Sarees",
+    "Bridal Sarees"
+  ],
+  "Jewellery": [
+    "Temple Gold",
+    "Kundan Jewellery",
+    "Polki Jewellery",
+    "Necklaces",
+    "Chains",
+    "Earrings",
+    "Bangles",
+    "Bracelets",
+    "Rings",
+    "Anklets",
+    "Pendants"
+  ],
+  "Bridal Collection": [
+    "Bridal Jewellery",
+    "Bridal Sarees",
+    "Wedding Accessories"
+  ],
+  "New Arrivals": [
+    "Latest Jewellery",
+    "Latest Sarees"
+  ],
+  "Best Sellers": [
+    "Trending Products",
+    "Customer Favorites"
+  ],
+  "Gift Collection": [
+    "Gift Sets",
+    "Jewellery Gifts",
+    "Saree Gift Boxes"
+  ],
+  "Festival Collection": [
+    "Diwali",
+    "Ugadi",
+    "Sankranti",
+    "Wedding Special Collections"
+  ],
+  "Offers": [
+    "Combo Offers",
+    "Discount Deals",
+    "Clearance Sale"
+  ],
+  "All Collections": [
+    "View All Products"
+  ]
+};

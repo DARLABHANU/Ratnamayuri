@@ -6,7 +6,7 @@ module.exports = {
   port: parseInt(process.env.PORT || '8000', 10),
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   backendUrl: process.env.BACKEND_URL || 'http://localhost:8000',
-  mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/ratnamayuri',
+  mongodbUri: process.env.MONGODB_URI || "mongodb://bhanuusr:Q7TS2QiesqiD7na9@ac-b92bkrk-shard-00-00.nji8mab.mongodb.net:27017,ac-b92bkrk-shard-00-01.nji8mab.mongodb.net:27017,ac-b92bkrk-shard-00-02.nji8mab.mongodb.net:27017/ratnamayuri?replicaSet=atlas-9x0vh4-shard-0&ssl=true&authSource=admin",
   secretKey: process.env.JWT_SECRET || process.env.SECRET_KEY || 'd13697e685f096230f8c2e91264c8d5c',
   accessTokenExpireMinutes: parseInt(process.env.ACCESS_TOKEN_EXPIRE_MINUTES || '60', 10),
   refreshTokenExpireDays: parseInt(process.env.REFRESH_TOKEN_EXPIRE_DAYS || '30', 10),

@@ -67,6 +67,7 @@ function ProductsContent() {
   }, []);
 
   const categoryParam = params.get("category");
+  const subcategoryParam = params.get("subcategory");
   const featuredParam = params.get("is_featured");
   const searchParam = params.get("search");
   const fabricParam = params.get("fabric");
@@ -74,6 +75,7 @@ function ProductsContent() {
 
   const lastFiltersRef = useRef({ 
     category: categoryParam, 
+    subcategory: subcategoryParam,
     featured: featuredParam, 
     search: searchParam,
     fabric: fabricParam,
@@ -93,6 +95,7 @@ function ProductsContent() {
         min_price: minPrice || undefined,
         max_price: maxPrice || undefined,
         category: categoryParam || undefined,
+        subcategory: subcategoryParam || undefined,
         is_featured: featuredParam || undefined,
         fabric: selectedFabric || fabricParam || undefined,
         min_rating: minRating || undefined
@@ -106,6 +109,7 @@ function ProductsContent() {
   useEffect(() => {
     const filtersChanged =
       lastFiltersRef.current.category !== categoryParam ||
+      lastFiltersRef.current.subcategory !== subcategoryParam ||
       lastFiltersRef.current.featured !== featuredParam ||
       lastFiltersRef.current.search !== searchParam ||
       lastFiltersRef.current.fabric !== fabricParam ||
@@ -114,6 +118,7 @@ function ProductsContent() {
     if (filtersChanged) {
       lastFiltersRef.current = { 
         category: categoryParam, 
+        subcategory: subcategoryParam,
         featured: featuredParam, 
         search: searchParam,
         fabric: fabricParam,
@@ -129,7 +134,7 @@ function ProductsContent() {
     }
 
     fetchProducts();
-  }, [page, sort, categoryParam, featuredParam, searchParam, fabricParam, minRatingParam, selectedFabric, minRating]);
+  }, [page, sort, categoryParam, subcategoryParam, featuredParam, searchParam, fabricParam, minRatingParam, selectedFabric, minRating]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

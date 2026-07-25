@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
 import { productApi, merchantApi } from "@/lib/api";
-import { Product } from "@/types";
+import { Product, CATEGORY_TAXONOMY } from "@/types";
 import { formatPrice, getApiError } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
@@ -27,6 +27,8 @@ const productSchema = z.object({
   images: z.string().optional(), // comma-separated URLs
   tags: z.string().optional(),
   category_id: z.string().optional().nullable(),
+  main_category: z.string().optional(),
+  subcategory: z.string().optional(),
 });
 type ProductForm = z.infer<typeof productSchema>;
 
@@ -197,12 +199,21 @@ export default function MerchantProductsPage() {
 
   const openCreate = () => {
     setEditing(null);
-    reset({ is_active: true, is_featured: false, stock_quantity: 0, low_stock_threshold: 5, category_id: "" });
+    reset({
+      is_active: true,
+      is_featured: false,
+      stock_quantity: 0,
+      low_stock_threshold: 5,
+      category_id: "",
+      main_category: "Sarees",
+      subcategory: "Silk Sarees"
+    });
     setShowForm(true);
   };
 
   const openEdit = (product: Product) => {
     setEditing(product);
+    const mainCat = product.category?.name || "Jewellery";
     reset({
       name: product.name,
       description: product.description || "",
@@ -218,6 +229,8 @@ export default function MerchantProductsPage() {
       images: product.images?.join(", ") || "",
       tags: product.tags?.join(", ") || "",
       category_id: product.category_id ? String(product.category_id) : "",
+      main_category: mainCat,
+      subcategory: product.subcategory || "",
     });
     setShowForm(true);
   };
@@ -225,19 +238,31 @@ export default function MerchantProductsPage() {
   const onSubmit = async (data: ProductForm) => {
     setIsSaving(true);
     try {
+      const parsedTags = data.tags ? data.tags.split(",").map((s) => s.trim()).filter(Boolean) : [];
+      
+      // Auto-append subcategory & main_category to tags for high-precision filter matching
+      if (data.subcategory && !parsedTags.some(t => t.toLowerCase() === data.subcategory!.toLowerCase())) {
+        parsedTags.push(data.subcategory);
+      }
+      if (data.main_category && !parsedTags.some(t => t.toLowerCase() === data.main_category!.toLowerCase())) {
+        parsedTags.push(data.main_category);
+      }
+
       const payload = {
         ...data,
         category_id: data.category_id ? Number(data.category_id) : null,
+        subcategory: data.subcategory || null,
+        subcategory_slug: data.subcategory ? data.subcategory.toLowerCase().replace(/\s+/g, '-') : null,
         images: data.images ? data.images.split(",").map((s) => s.trim()).filter(Boolean) : [],
-        tags: data.tags ? data.tags.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        tags: parsedTags,
       };
 
       if (editing) {
         await productApi.update(editing.id, payload);
-        toast.success("Product updated!");
+        toast.success("Product updated successfully!");
       } else {
         await productApi.create(payload);
-        toast.success("Product created!");
+        toast.success("Product created successfully!");
       }
       setShowForm(false);
       loadProducts();
@@ -377,16 +402,44 @@ export default function MerchantProductsPage() {
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
                 </div>
 
-                <div className="sm:col-span-2">
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">CATEGORY</label>
-                  <select {...register("category_id")} className="input-field py-2.5 font-cinzel text-xs tracking-wide">
-                    <option value="">Select Category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name.toUpperCase()}
+                {/* Main Category Dropdown */}
+                <div>
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">MAIN CATEGORY *</label>
+                  <select 
+                    {...register("main_category")} 
+                    className="input-field py-2.5 font-cinzel text-xs tracking-wide bg-white"
+                  >
+                    {Object.keys(CATEGORY_TAXONOMY).map((mainCat) => (
+                      <option key={mainCat} value={mainCat}>
+                        {mainCat.toUpperCase()}
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Subcategory Dropdown (Dynamic options based on Main Category) */}
+                <div>
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">SUBCATEGORY *</label>
+                  {(() => {
+                    const currentMain = watch("main_category") || "Sarees";
+                    const suboptions = CATEGORY_TAXONOMY[currentMain] || [];
+                    return (
+                      <select {...register("subcategory")} className="input-field py-2.5 font-cinzel text-xs tracking-wide bg-white">
+                        <option value="">Select Subcategory</option>
+                        {suboptions.map((sub) => (
+                          <option key={sub} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
+                      </select>
+                    );
+                  })()}
+                </div>
+
+                <div className="sm:col-span-2">
+                  <p className="text-[11px] font-garamond text-amber-900 bg-amber-50 border border-amber-200 p-2.5 rounded">
+                    ✦ <strong>Taxonomy Matching:</strong> Selecting the exact Main Category & Subcategory ensures your product appears strictly under the customer's selected filter (e.g. Bangles will ONLY show when customer clicks Bangles).
+                  </p>
                 </div>
 
                 <div>

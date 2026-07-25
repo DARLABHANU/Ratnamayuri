@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Copy, DollarSign, Gift, Percent, Check } from "lucide-react";
+import { Loader2, Copy, DollarSign, Gift, Percent, Check, FileText, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import { promoterApi, authApi } from "@/lib/api";
 import { formatPrice, formatDate } from "@/lib/utils";
@@ -144,12 +144,23 @@ export default function PromoterDashboard() {
           <h1 className="section-title">Overview <em className="italic">Dashboard</em></h1>
           <div className="divider-gold mx-0 mt-3" />
         </div>
-        {user && (
-          <div className="bg-deep border border-gold-500/20 px-5 py-2.5 text-right shadow-sm select-all">
-            <p className="font-cinzel text-[9px] tracking-widest text-gold-300 leading-none">YOUR PROMOTER ID</p>
-            <p className="font-cinzel text-base font-bold mt-1 text-gold-400 tracking-widest leading-none">#{user.id}</p>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <a
+            href="/promoter_affiliate_guide.pdf"
+            download="Ratnamayuri_Promoter_Affiliate_Guide.pdf"
+            className="btn-outline border-gold-400 hover:bg-gold-50 text-brown font-cinzel text-xs font-bold px-4 py-2.5 rounded flex items-center gap-2 transition-all shadow-xs"
+          >
+            <FileText size={14} className="text-gold-600" />
+            <span>DOWNLOAD PDF MANUAL</span>
+            <Download size={12} className="text-gold-500" />
+          </a>
+          {user && (
+            <div className="bg-deep border border-gold-500/20 px-5 py-2.5 text-right shadow-sm select-all rounded">
+              <p className="font-cinzel text-[9px] tracking-widest text-gold-300 leading-none">YOUR PROMOTER ID</p>
+              <p className="font-cinzel text-base font-bold mt-1 text-gold-400 tracking-widest leading-none">#{user.id}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Analytics Grid */}

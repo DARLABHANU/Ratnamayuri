@@ -55,6 +55,8 @@ router.get('/', async (req, res, next) => {
     const sortBy = req.query.sort_by || 'created_at';
     const sortOrder = req.query.sort_order || 'desc';
 
+    const subcategory = req.query.subcategory || null;
+    const subcategorySlug = req.query.subcategory_slug || null;
     const fabric = req.query.fabric || null;
     const tag = req.query.tag || null;
     const min_rating = req.query.min_rating !== undefined ? Number(req.query.min_rating) : null;
@@ -64,7 +66,7 @@ router.get('/', async (req, res, next) => {
     if (category_id !== null) {
       filter.category_id = category_id;
     } else if (categorySlug) {
-      const categoryDoc = await Category.findOne({ slug: categorySlug });
+      const categoryDoc = await Category.findOne({ slug: categorySlug.toLowerCase() });
       if (categoryDoc) {
         filter.category_id = categoryDoc.id;
       } else {
@@ -72,32 +74,53 @@ router.get('/', async (req, res, next) => {
       }
     }
 
-    if (search) {
-      // Escape regex special characters to prevent ReDoS attacks
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Subcategory Filter (Exact or regex match on subcategory/tags)
+    const targetSub = subcategory || subcategorySlug;
+    if (targetSub) {
+      const escapedSub = targetSub.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const subRegex = new RegExp(`^${escapedSub}$|\\b${escapedSub}\\b`, 'i');
       filter.$or = [
-        { name: new RegExp(escapedSearch, 'i') },
-        { description: new RegExp(escapedSearch, 'i') },
-        { tags: new RegExp(escapedSearch, 'i') }
+        { subcategory: subRegex },
+        { subcategory_slug: targetSub.toLowerCase().replace(/\s+/g, '-') },
+        { tags: subRegex },
+        { name: subRegex }
       ];
+    }
+
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(`\\b${escapedSearch}\\b|${escapedSearch}`, 'i');
+      const searchCond = [
+        { name: searchRegex },
+        { subcategory: searchRegex },
+        { tags: searchRegex }
+      ];
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { $or: searchCond }];
+        delete filter.$or;
+      } else {
+        filter.$or = searchCond;
+      }
     }
 
     if (fabric) {
       const escapedFabric = fabric.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const fabricRegex = new RegExp(escapedFabric, 'i');
+      const fabricRegex = new RegExp(`^${escapedFabric}$|\\b${escapedFabric}\\b`, 'i');
+      const fabricCond = [{ tags: fabricRegex }, { subcategory: fabricRegex }, { name: fabricRegex }];
       if (filter.$or) {
-        filter.$and = [
-          { $or: filter.$or },
-          { $or: [{ name: fabricRegex }, { description: fabricRegex }, { tags: fabricRegex }] }
-        ];
+        filter.$and = [{ $or: filter.$or }, { $or: fabricCond }];
         delete filter.$or;
+      } else if (filter.$and) {
+        filter.$and.push({ $or: fabricCond });
       } else {
-        filter.$or = [{ name: fabricRegex }, { description: fabricRegex }, { tags: fabricRegex }];
+        filter.$or = fabricCond;
       }
     }
 
     if (tag) {
-      filter.tags = new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const tagRegex = new RegExp(`^${escapedTag}$|\\b${escapedTag}\\b`, 'i');
+      filter.tags = tagRegex;
     }
 
     if (min_rating !== null && !isNaN(min_rating)) {
@@ -146,6 +169,68 @@ router.get('/categories/all', async (req, res, next) => {
   try {
     const categories = await Category.find({ is_active: true }).sort({ sort_order: 1 });
     res.json(categories);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Migrate & classify all existing products into exact subcategories (admin / migration trigger)
+router.post('/admin/migrate-subcategories', async (req, res, next) => {
+  try {
+    const products = await Product.find({});
+    let updatedCount = 0;
+
+    for (const prod of products) {
+      const name = prod.name ? prod.name.toLowerCase() : '';
+      const desc = prod.description ? prod.description.toLowerCase() : '';
+      const tagsList = Array.isArray(prod.tags) ? prod.tags.map(t => t.toLowerCase()) : [];
+      const combined = `${name} ${desc} ${tagsList.join(' ')}`;
+
+      let assignedSubcategory = 'Jewellery';
+
+      if (combined.includes('bangle') || combined.includes('kada') || combined.includes('bracelet')) {
+        assignedSubcategory = 'Bangles';
+      } else if (combined.includes('earring') || combined.includes('jhumka') || combined.includes('stud')) {
+        assignedSubcategory = 'Earrings';
+      } else if (combined.includes('choker') || combined.includes('necklace') || combined.includes('haram') || combined.includes('neckset')) {
+        assignedSubcategory = 'Necklaces';
+      } else if (combined.includes('chain')) {
+        assignedSubcategory = 'Chains';
+      } else if (combined.includes('ring')) {
+        assignedSubcategory = 'Rings';
+      } else if (combined.includes('anklet')) {
+        assignedSubcategory = 'Anklets';
+      } else if (combined.includes('pendant')) {
+        assignedSubcategory = 'Pendants';
+      } else if (combined.includes('bridal set') || combined.includes('bridal jewellery')) {
+        assignedSubcategory = 'Bridal Jewellery';
+      } else if (combined.includes('kanchipuram') || combined.includes('kanjeevaram')) {
+        assignedSubcategory = 'Kanchipuram Sarees';
+      } else if (combined.includes('banarasi')) {
+        assignedSubcategory = 'Banarasi Sarees';
+      } else if (combined.includes('cotton saree')) {
+        assignedSubcategory = 'Cotton Sarees';
+      } else if (combined.includes('silk saree')) {
+        assignedSubcategory = 'Silk Sarees';
+      } else if (combined.includes('saree')) {
+        assignedSubcategory = 'Silk Sarees';
+      }
+
+      const subSlug = assignedSubcategory.toLowerCase().replace(/\s+/g, '-');
+
+      prod.subcategory = assignedSubcategory;
+      prod.subcategory_slug = subSlug;
+
+      const currentTags = new Set(Array.isArray(prod.tags) ? prod.tags : []);
+      currentTags.add(assignedSubcategory);
+      currentTags.add(assignedSubcategory.toLowerCase());
+      prod.tags = Array.from(currentTags);
+
+      await prod.save();
+      updatedCount++;
+    }
+
+    res.json({ message: `Successfully classified ${updatedCount} products into precise subcategories.`, count: updatedCount });
   } catch (error) {
     next(error);
   }
@@ -289,7 +374,8 @@ router.put('/:product_id', getCurrentUser, requireMerchantOrAdmin, async (req, r
     const allowedProductFields = [
       'name', 'description', 'short_description', 'price', 'base_price', 'compare_price',
       'cost_price', 'sku', 'stock_quantity', 'low_stock_threshold', 'weight_grams',
-      'images', 'tags', 'attributes', 'is_active', 'is_featured', 'category_id'
+      'images', 'tags', 'attributes', 'is_active', 'is_featured', 'category_id',
+      'subcategory', 'subcategory_slug'
     ];
     allowedProductFields.forEach(field => {
       if (payload[field] !== undefined) {

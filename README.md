@@ -1,6 +1,23 @@
 # Ratnamayuri — Full-Stack E-Commerce Platform
 
-> Luxury Jewellery & Silk Sarees · Next.js 14 + Node.js (Express) + MongoDB
+> Luxury Jewellery & Silk Sarees · Next.js 14 + Node.js (Express) + MongoDB Atlas + Razorpay Standard Checkout
+
+---
+
+## 📜 Official System Affiliate & Promoter Documentation (PDF)
+
+A 4-page luxury instruction manual is included in this repository documenting the exact affiliate features implemented across our frontend and backend:
+
+📄 **[Download Promoter & Affiliate Marketing Instruction Manual (PDF)](./promoter_affiliate_guide.pdf)**
+*(Also accessible on live site at [`/promoter_affiliate_guide.pdf`](./frontend/public/promoter_affiliate_guide.pdf) or directly inside the Affiliate Portal)*
+
+### PDF Manual System Highlights:
+- **Referral Coupon Links**: Sharing custom referral links (`/?coupon=CODE`) with 1-click clipboard copy.
+- **7-Day Cookie Auto-Attribution**: Browser cookie (`affiliate_coupon`) automatically stores referral code for 7 days.
+- **Instant Customer Checkout Discount**: Auto-applies discount for customer & credits promoter commission upon payment.
+- **Dual Attribution**: Link tracking + manual coupon entry dual attribution support.
+- **Live Analytics Dashboard**: Real-time tracking of *Total Sales Referred*, *Referred Orders*, *Pending Commissions*, and *Paid Commissions*.
+- **Flexible Payout Setup**: Configure **UPI ID** (GPay/PhonePe) or **Direct Bank Account Transfer** credentials directly in dashboard.
 
 ---
 

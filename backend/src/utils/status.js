@@ -64,11 +64,5 @@ async function checkStatus() {
     console.log(`[Status Checker] Report written to ${statusFilePath}`);
   } catch (err) {
     console.error('[Status Checker] Error generating report:', err);
-  } finally {
-    if (connectedHere) {
-      await mongoose.disconnect();
-    }
   }
 }
-
-checkStatus();

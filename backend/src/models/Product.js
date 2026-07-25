@@ -5,6 +5,8 @@ const ProductSchema = new mongoose.Schema({
   id: { type: Number, unique: true, index: true },
   merchant_id: { type: Number, required: true, ref: 'MerchantProfile', index: true },
   category_id: { type: Number, ref: 'Category', default: null, index: true },
+  subcategory: { type: String, default: null, index: true },
+  subcategory_slug: { type: String, default: null, index: true },
   name: { type: String, required: true, trim: true },
   slug: { type: String, required: true, unique: true },
   description: { type: String, default: null },

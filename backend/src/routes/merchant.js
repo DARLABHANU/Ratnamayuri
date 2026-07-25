@@ -48,6 +48,8 @@ router.get('/profile', getCurrentUser, requireMerchantOrAdmin, async (req, res, 
   }
 });
 
+const { validateGSTIN, validateBankAccount, validateIFSC } = require('../utils/validators');
+
 // Update Profile
 router.put('/profile', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
   try {
@@ -56,11 +58,23 @@ router.put('/profile', getCurrentUser, requireMerchantOrAdmin, async (req, res, 
       return res.status(404).json({ detail: 'Merchant profile not found' });
     }
 
+    if (req.body.gstin && req.body.gstin.trim() && !validateGSTIN(req.body.gstin.trim().toUpperCase())) {
+      return res.status(400).json({ detail: 'Invalid GSTIN format. Expected 15-character alphanumeric GSTIN (e.g. 37ABCDE1234F1Z5).' });
+    }
+
+    if (req.body.bank_account && req.body.bank_account.trim() && !validateBankAccount(req.body.bank_account.trim())) {
+      return res.status(400).json({ detail: 'Invalid Bank Account Number. Must be 9 to 18 numeric digits.' });
+    }
+
+    if (req.body.ifsc_code && req.body.ifsc_code.trim() && !validateIFSC(req.body.ifsc_code.trim().toUpperCase())) {
+      return res.status(400).json({ detail: 'Invalid IFSC Code. Must be 11 characters (e.g. SBIN0001234).' });
+    }
+
     // Whitelist allowed fields to prevent mass assignment attacks
     const allowedFields = ['business_name', 'business_description', 'gstin', 'bank_account', 'ifsc_code', 'logo_url'];
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        profile[field] = req.body[field];
+        profile[field] = typeof req.body[field] === 'string' ? req.body[field].trim() : req.body[field];
       }
     });
     await profile.save();

@@ -25,6 +25,14 @@ router.post('/tickets', getCurrentUser, async (req, res, next) => {
       return res.status(400).json({ detail: 'Subject, category, and message are required' });
     }
 
+    if (subject.trim().length < 5) {
+      return res.status(400).json({ detail: 'Ticket subject must be at least 5 characters long.' });
+    }
+
+    if (message.trim().length < 10) {
+      return res.status(400).json({ detail: 'Ticket message must be at least 10 characters long.' });
+    }
+
     const ticket = new SupportTicket({
       user_id: req.user.id,
       subject,

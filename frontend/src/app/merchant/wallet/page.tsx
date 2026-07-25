@@ -175,9 +175,22 @@ export default function MerchantWalletPage() {
   const handleWithdrawal = async (e: React.FormEvent) => {
     e.preventDefault();
     const amountNum = parseFloat(amount);
-    if (!amountNum || amountNum <= 0) { toast.error("Enter a valid withdrawal amount"); return; }
-    if (!bankName.trim()) { toast.error("Bank name is required"); return; }
-    if (!accountNumber.trim()) { toast.error("Account number is required"); return; }
+    if (!amountNum || amountNum < 500) { 
+      toast.error("Minimum withdrawal amount is ₹500."); 
+      return; 
+    }
+    if (!bankName.trim()) { toast.error("Bank name or payout method is required"); return; }
+    if (!accountNumber.trim()) { toast.error("Account number or UPI ID is required"); return; }
+
+    if (bankName !== "UPI Payout" && !/^\d{9,18}$/.test(accountNumber.trim())) {
+      toast.error("Please enter a valid 9 to 18-digit Bank Account Number.");
+      return;
+    }
+    if (bankName === "UPI Payout" && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2-64}$/.test(accountNumber.trim())) {
+      toast.error("Please enter a valid UPI ID format (e.g. name@okaxis or name@ybl).");
+      return;
+    }
+
     if (wallet && amountNum > wallet.available_balance) {
       toast.error(`Amount exceeds available balance of ${formatPrice(wallet.available_balance)}`);
       return;

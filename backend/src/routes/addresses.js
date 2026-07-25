@@ -17,10 +17,20 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+const { validatePhone, validatePincode } = require('../utils/validators');
+
 // Create address
 router.post('/', async (req, res, next) => {
   try {
     const payload = req.body;
+
+    if (payload.phone && !validatePhone(payload.phone.trim().replace(/\D/g, ''))) {
+      return res.status(400).json({ detail: 'Please enter a valid 10-digit Indian mobile number (starting with 6, 7, 8, or 9).' });
+    }
+
+    if (payload.pincode && !validatePincode(payload.pincode.trim())) {
+      return res.status(400).json({ detail: 'Please enter a valid 6-digit Indian PIN code.' });
+    }
 
     if (payload.is_default) {
       // Unset other defaults for this user

@@ -67,6 +67,35 @@ export default function SignupPage() {
       return;
     }
 
+    // Phone Validation: 10-digit Indian phone starting with 6,7,8,9
+    const cleanPhone = phone.trim().replace(/\D/g, "");
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      setErrorMsg("Please enter a valid 10-digit Indian mobile number (starting with 6, 7, 8, or 9).");
+      return;
+    }
+
+    // Password Complexity Validation: Min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+    if (password.length < 8) {
+      setErrorMsg("Password must be at least 8 characters long.");
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      setErrorMsg("Password must contain at least 1 uppercase letter.");
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      setErrorMsg("Password must contain at least 1 lowercase letter.");
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      setErrorMsg("Password must contain at least 1 numeric digit.");
+      return;
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      setErrorMsg("Password must contain at least 1 special character (!@#$%^&*).");
+      return;
+    }
+
     setIsLoading(true);
     try {
       await authApi.signup({

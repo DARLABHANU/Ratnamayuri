@@ -31,13 +31,13 @@ const loadRazorpayScript = () => {
 
 const addressSchema = z.object({
   label: z.string().default("Home"),
-  full_name: z.string().min(2),
-  phone: z.string().min(10),
-  line1: z.string().min(5),
+  full_name: z.string().min(2, "Full name must be at least 2 characters").regex(/^[a-zA-Z\s]{2,50}$/, "Full name must contain only letters"),
+  phone: z.string().regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian phone number (starting with 6, 7, 8, or 9)"),
+  line1: z.string().min(5, "Address Line 1 must be at least 5 characters"),
   line2: z.string().optional(),
-  city: z.string().min(2),
-  state: z.string().min(2),
-  pincode: z.string().length(6),
+  city: z.string().min(2, "City is required"),
+  state: z.string().min(2, "State is required"),
+  pincode: z.string().regex(/^[1-9][0-9]{5}$/, "Please enter a valid 6-digit Indian PIN code"),
   country: z.string().default("India"),
 });
 type AddressForm = z.infer<typeof addressSchema>;

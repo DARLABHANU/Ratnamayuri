@@ -28,18 +28,20 @@ const strictLimiter = rateLimiter({
 
 const router = express.Router();
 
+const { validatePassword, validatePhone } = require('../utils/validators');
+
 // Public Signup
 router.post('/signup', authLimiter, async (req, res, next) => {
   try {
     const { email, password, full_name, phone, role } = req.body;
 
-    if (!password || password.length < 8) {
-      return res.status(400).json({ detail: 'Password must be at least 8 characters long.' });
+    const passCheck = validatePassword(password);
+    if (!passCheck.valid) {
+      return res.status(400).json({ detail: passCheck.message });
     }
-    const hasLetter = /[a-zA-Z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    if (!hasLetter || !hasNumber) {
-      return res.status(400).json({ detail: 'Password must contain both letters and numbers.' });
+
+    if (phone && !validatePhone(phone.trim().replace(/\D/g, ''))) {
+      return res.status(400).json({ detail: 'Please enter a valid 10-digit Indian mobile number (starting with 6, 7, 8, or 9).' });
     }
 
     // Enforce role restriction - only Customer self-registration is allowed
@@ -509,6 +511,8 @@ router.post('/send-otp', strictLimiter, async (req, res, next) => {
   }
 });
 
+const { validateBankAccount, validateIFSC, validateUPI } = require('../utils/validators');
+
 // Update Payout Settings (Bank details & UPI account)
 router.put('/payout-settings', getCurrentUser, async (req, res, next) => {
   try {
@@ -520,13 +524,25 @@ router.put('/payout-settings', getCurrentUser, async (req, res, next) => {
       payout_upi_id
     } = req.body;
 
+    if (payout_upi_id && payout_upi_id.trim() && !validateUPI(payout_upi_id.trim())) {
+      return res.status(400).json({ detail: 'Invalid UPI ID format. Expected user@bank (e.g. name@okaxis or name@ybl).' });
+    }
+
+    if (payout_account_number && payout_account_number.trim() && !validateBankAccount(payout_account_number.trim())) {
+      return res.status(400).json({ detail: 'Invalid Bank Account Number. Must be 9 to 18 numeric digits.' });
+    }
+
+    if (payout_ifsc_code && payout_ifsc_code.trim() && !validateIFSC(payout_ifsc_code.trim().toUpperCase())) {
+      return res.status(400).json({ detail: 'Invalid IFSC Code. Must be 11 characters (e.g. SBIN0001234).' });
+    }
+
     const user = req.user;
 
-    user.payout_bank_name = payout_bank_name !== undefined ? payout_bank_name : user.payout_bank_name;
-    user.payout_account_number = payout_account_number !== undefined ? payout_account_number : user.payout_account_number;
-    user.payout_ifsc_code = payout_ifsc_code !== undefined ? payout_ifsc_code : user.payout_ifsc_code;
-    user.payout_account_holder_name = payout_account_holder_name !== undefined ? payout_account_holder_name : user.payout_account_holder_name;
-    user.payout_upi_id = payout_upi_id !== undefined ? payout_upi_id : user.payout_upi_id;
+    user.payout_bank_name = payout_bank_name !== undefined ? payout_bank_name.trim() : user.payout_bank_name;
+    user.payout_account_number = payout_account_number !== undefined ? payout_account_number.trim() : user.payout_account_number;
+    user.payout_ifsc_code = payout_ifsc_code !== undefined ? payout_ifsc_code.trim().toUpperCase() : user.payout_ifsc_code;
+    user.payout_account_holder_name = payout_account_holder_name !== undefined ? payout_account_holder_name.trim() : user.payout_account_holder_name;
+    user.payout_upi_id = payout_upi_id !== undefined ? payout_upi_id.trim() : user.payout_upi_id;
 
     await user.save();
 

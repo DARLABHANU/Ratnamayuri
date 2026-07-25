@@ -13,15 +13,15 @@ import { formatPrice, getApiError } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
 const productSchema = z.object({
-  name: z.string().min(2),
+  name: z.string().min(2, "Product name must be at least 2 characters"),
   description: z.string().optional(),
   short_description: z.string().optional(),
-  price: z.coerce.number().positive("Price must be positive"),
+  price: z.coerce.number().positive("Price must be a positive number"),
   compare_price: z.coerce.number().optional(),
   sku: z.string().optional(),
-  stock_quantity: z.coerce.number().int().min(0),
+  stock_quantity: z.coerce.number().int().min(0, "Stock quantity cannot be negative"),
   low_stock_threshold: z.coerce.number().int().min(0).default(5),
-  weight_grams: z.coerce.number().optional(),
+  weight_grams: z.coerce.number().positive("Weight must be positive").optional(),
   is_active: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   images: z.string().optional(), // comma-separated URLs
@@ -29,6 +29,9 @@ const productSchema = z.object({
   category_id: z.string().optional().nullable(),
   main_category: z.string().optional(),
   subcategory: z.string().optional(),
+}).refine(data => !data.compare_price || data.compare_price >= data.price, {
+  message: "Compare Price (M.R.P) must be greater than or equal to Base Price",
+  path: ["compare_price"]
 });
 type ProductForm = z.infer<typeof productSchema>;
 

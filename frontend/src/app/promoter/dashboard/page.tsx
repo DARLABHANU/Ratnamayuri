@@ -52,6 +52,25 @@ export default function PromoterDashboard() {
 
   const handleSavePayoutSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (payoutMode === "upi") {
+      if (!payoutUpiId.trim() || !/^[a-zA-Z0-9.\-_]{2-256}@[a-zA-Z]{2-64}$/.test(payoutUpiId.trim())) {
+        toast.error("Please enter a valid UPI ID (e.g. name@okaxis or name@ybl).");
+        return;
+      }
+    } else {
+      if (!payoutBankName.trim()) { toast.error("Bank name is required."); return; }
+      if (!payoutAccountHolderName.trim()) { toast.error("Account holder name is required."); return; }
+      if (!/^\d{9,18}$/.test(payoutAccountNumber.trim())) {
+        toast.error("Please enter a valid 9 to 18-digit Bank Account Number.");
+        return;
+      }
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(payoutIfscCode.trim().toUpperCase())) {
+        toast.error("Please enter a valid 11-character IFSC Code (e.g. SBIN0001234).");
+        return;
+      }
+    }
+
     setIsUpdatingPayout(true);
     try {
       const payload = payoutMode === "upi" ? {
@@ -64,7 +83,7 @@ export default function PromoterDashboard() {
         payout_upi_id: "",
         payout_bank_name: payoutBankName.trim(),
         payout_account_number: payoutAccountNumber.trim(),
-        payout_ifsc_code: payoutIfscCode.trim(),
+        payout_ifsc_code: payoutIfscCode.trim().toUpperCase(),
         payout_account_holder_name: payoutAccountHolderName.trim()
       };
 

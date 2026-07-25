@@ -80,3 +80,13 @@ export function getProductImage(images?: string[]): string {
   if (images && images.length > 0) return images[0];
   return "/placeholder-product.svg";
 }
+
+// ── Validation Regex Patterns ──────────────────────────────────────────
+export const REGEX_INDIAN_PHONE = /^[6-9]\d{9}$/;
+export const REGEX_INDIAN_PINCODE = /^[1-9][0-9]{5}$/;
+export const REGEX_BANK_ACCOUNT = /^\d{9,18}$/;
+export const REGEX_IFSC = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+export const REGEX_UPI_ID = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2-64}$/;
+export const REGEX_GSTIN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+export const REGEX_COUPON = /^[A-Z0-9]{3,15}$/;
+export const REGEX_STRONG_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;

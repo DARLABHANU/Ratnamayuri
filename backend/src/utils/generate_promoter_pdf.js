@@ -203,7 +203,7 @@ function createPromoterGuidePDF(outputPath) {
     doc.fillColor(DARK_TEXT).font('Helvetica').fontSize(9.5).text('Share short unboxing videos, festival drape ideas, or bridal jewellery highlights on WhatsApp groups, Instagram stories, and YouTube descriptions with your referral link.', 55, 190, { width: doc.page.width - 110 });
 
     doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(10).text('💡 Strategy #3: Emphasize Quality & Trust Seals', 55, 230);
-    doc.fillColor(DARK_TEXT).font('Helvetica').fontSize(9.5).text('Highlight that Ratnamayuri products come with 22K Gold Hallmark certification, 100% Genuine Silk seals, sanitized factory packaging, and Cash on Delivery options.', 55, 245, { width: doc.page.width - 110 });
+    doc.fillColor(DARK_TEXT).font('Helvetica').fontSize(9.5).text('Highlight that Ratnamayuri products come with 22K Gold Hallmark certification, 100% Genuine Silk seals, sanitized factory packaging, and 100% Insured Express Delivery.', 55, 245, { width: doc.page.width - 110 });
 
     // Official Support Box
     doc.rect(40, 310, doc.page.width - 80, 140).fillColor(MAROON).fillAndStroke(MAROON, GOLD);

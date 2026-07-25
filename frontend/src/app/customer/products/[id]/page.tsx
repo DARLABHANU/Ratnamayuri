@@ -443,34 +443,47 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Sold By / Merchant Store Card (Meesho Style) */}
+          {/* Sold By / Merchant Store Card (Dynamically rendered based on who added the product) */}
           <div className="border border-gold-200 rounded-lg p-4 bg-gradient-to-r from-ivory to-white space-y-3 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-deep text-gold-400 flex items-center justify-center font-cinzel font-bold text-sm border border-gold-400 shadow-sm">
-                  RM
-                </div>
+                {product.merchant?.logo_url ? (
+                  <img 
+                    src={product.merchant.logo_url} 
+                    alt={product.merchant.business_name} 
+                    className="w-10 h-10 rounded-full object-cover border border-gold-400 shadow-sm"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-deep text-gold-400 flex items-center justify-center font-cinzel font-bold text-sm border border-gold-400 shadow-sm">
+                    {product.merchant?.business_name ? product.merchant.business_name.substring(0, 2).toUpperCase() : "RM"}
+                  </div>
+                )}
                 <div>
                   <h4 className="font-cinzel text-xs font-bold text-brown uppercase tracking-wider">
-                    RATNAMAYURI BOUTIQUE OFFICIAL
+                    {product.merchant?.business_name || "RATNAMAYURI BOUTIQUE OFFICIAL"}
                   </h4>
                   <div className="flex items-center gap-2 mt-0.5 text-xs text-muted font-garamond">
                     <span className="bg-green-700 text-white text-[10px] font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5">
-                      4.7 <Star size={9} fill="white" />
+                      4.8 <Star size={9} fill="white" />
                     </span>
-                    <span>1,850 Ratings</span>
+                    <span>1,850+ Ratings</span>
                     <span>•</span>
-                    <span className="text-green-700 font-semibold">Verified Authorised Seller</span>
+                    <span className="text-green-700 font-semibold">Verified Authorised Merchant</span>
                   </div>
+                  {product.merchant?.business_description && (
+                    <p className="text-[11px] font-garamond text-muted mt-0.5 italic">
+                      "{product.merchant.business_description}"
+                    </p>
+                  )}
                 </div>
               </div>
-              <Link href="/customer/products" className="btn-outline px-3 py-1 text-[10px] whitespace-nowrap">
+              <Link href={`/customer/products?merchant_id=${product.merchant_id}`} className="btn-outline px-3 py-1 text-[10px] whitespace-nowrap">
                 VIEW SHOP
               </Link>
             </div>
           </div>
 
-          {/* Trust Seals Bar (Meesho/Amazon Style) */}
+          {/* Trust Seals Bar (100% Cash/Pay on Delivery Removed) */}
           <div className="grid grid-cols-3 gap-2 border-t border-b border-gold-100 py-3 my-4 bg-gold-50/30 rounded-lg text-center">
             <div className="flex flex-col items-center">
               <ShieldCheck size={18} className="text-gold-600 mb-1" />
@@ -478,9 +491,9 @@ export default function ProductDetailPage() {
               <span className="text-[9px] font-garamond text-muted">Direct Factory Rate</span>
             </div>
             <div className="flex flex-col items-center border-x border-gold-100 px-1">
-              <Package size={18} className="text-gold-600 mb-1" />
-              <span className="text-[10px] font-cinzel font-bold text-brown">CASH ON DELIVERY</span>
-              <span className="text-[9px] font-garamond text-muted">Pay at Doorstep</span>
+              <ShieldCheck size={18} className="text-gold-600 mb-1" />
+              <span className="text-[10px] font-cinzel font-bold text-brown">100% SECURE</span>
+              <span className="text-[9px] font-garamond text-muted">Razorpay Encrypted</span>
             </div>
             <div className="flex flex-col items-center">
               <RefreshCw size={18} className="text-gold-600 mb-1" />

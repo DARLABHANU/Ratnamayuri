@@ -130,9 +130,9 @@ export default function ProductCard({ product }: Props) {
           </div>
         )}
 
-        {/* Brand / Category Info */}
-        <p className="font-cinzel text-xs font-bold tracking-widest text-gold-500 uppercase leading-none mb-1">
-          {product.category ? product.category.name : "RATNAMAYURI"}
+        {/* Merchant Store / Category Info */}
+        <p className="font-cinzel text-xs font-bold tracking-widest text-gold-500 uppercase leading-none mb-1 truncate">
+          {product.merchant?.business_name || (product.category ? product.category.name : "RATNAMAYURI BOUTIQUE")}
         </p>
 
         {/* Product Title */}

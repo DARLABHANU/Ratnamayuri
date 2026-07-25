@@ -54,8 +54,18 @@ export interface Category {
   slug: string;
 }
 
+export interface MerchantProfileSummary {
+  id: number;
+  business_name: string;
+  business_description?: string;
+  gstin?: string;
+  logo_url?: string;
+  is_approved?: boolean;
+}
+
 export interface Product {
   id: number;
+  merchant_id: number;
   name: string;
   slug: string;
   description?: string;
@@ -80,6 +90,7 @@ export interface Product {
   category?: Category;
   subcategory?: string;
   subcategory_slug?: string;
+  merchant?: MerchantProfileSummary;
   created_at: string;
   updated_at: string;
 }

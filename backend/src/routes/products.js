@@ -20,18 +20,44 @@ const getMerchantProfile = async (userId) => {
   return profile;
 };
 
-// Helper to attach Category to Product
+// Helper to attach Category & Merchant details to Product
 const attachCategories = async (products) => {
   const isArray = Array.isArray(products);
   const items = isArray ? products : [products];
 
   const categoryIds = [...new Set(items.map(p => p.category_id).filter(id => id !== null))];
-  const categories = await Category.find({ id: { $in: categoryIds } });
+  const merchantIds = [...new Set(items.map(p => p.merchant_id).filter(id => id !== null))];
+
+  const [categories, merchants] = await Promise.all([
+    Category.find({ id: { $in: categoryIds } }),
+    MerchantProfile.find({ id: { $in: merchantIds } })
+  ]);
+
   const categoryMap = new Map(categories.map(c => [c.id, c]));
+  const merchantMap = new Map(merchants.map(m => [m.id, m]));
 
   const enriched = items.map(p => {
-    const pObj = p.toObject();
+    const pObj = typeof p.toObject === 'function' ? p.toObject() : { ...p };
     pObj.category = pObj.category_id ? categoryMap.get(pObj.category_id) || null : null;
+
+    // Attach exact merchant profile details based on who added the respective product
+    const merch = pObj.merchant_id ? merchantMap.get(pObj.merchant_id) || null : null;
+    pObj.merchant = merch ? {
+      id: merch.id,
+      business_name: merch.business_name || 'RATNAMAYURI BOUTIQUE OFFICIAL',
+      business_description: merch.business_description || 'Certified Luxury Weavers & Artisans',
+      gstin: merch.gstin || null,
+      logo_url: merch.logo_url || null,
+      is_approved: merch.is_approved
+    } : {
+      id: pObj.merchant_id || 1,
+      business_name: 'RATNAMAYURI BOUTIQUE OFFICIAL',
+      business_description: 'Certified Luxury Weavers & Artisans',
+      gstin: null,
+      logo_url: null,
+      is_approved: true
+    };
+
     return pObj;
   });
 

@@ -184,6 +184,32 @@ const startServer = async () => {
     console.error('Error during self-healing SKU normalization:', err);
   }
 
+  // Self-healing migration for all existing products: Ensure customer display price = seller base_price + ₹299
+  try {
+    const Product = require('./models/Product');
+    const products = await Product.find({});
+    let updatedCount = 0;
+    for (const p of products) {
+      let sellerBase = p.base_price;
+      if (!sellerBase || sellerBase <= 0 || (p.price === p.base_price && p.price > 299)) {
+        sellerBase = p.base_price || p.price;
+      }
+      const targetPrice = sellerBase + 299;
+
+      if (p.price !== targetPrice || p.base_price !== sellerBase) {
+        p.base_price = sellerBase;
+        p.price = targetPrice;
+        await p.save();
+        updatedCount++;
+      }
+    }
+    if (updatedCount > 0) {
+      console.log(`[Self-Healing] Migration complete: Updated ${updatedCount} existing products to have customer display price = seller base_price + ₹299!`);
+    }
+  } catch (err) {
+    console.error('Error during self-healing product pricing migration:', err);
+  }
+
   // Seed default Admin & Categories
   await bootstrapAdmin();
   await bootstrapCategories();

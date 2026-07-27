@@ -16,7 +16,7 @@ const couponSchema = z.object({
   code:                 z.string().min(3).max(20).toUpperCase(),
   description:          z.string().optional(),
   discount_type:        z.enum(["fixed", "percentage"]).default("fixed"),
-  discount_value:       z.coerce.number().positive("Discount value must be greater than 0").default(200),
+  discount_value:       z.coerce.number().positive("Discount value must be greater than 0").default(199),
   discount_amount:      z.coerce.number().optional(),
   max_discount_amount:  z.coerce.number().optional(),
   promoter_commission:  z.coerce.number().min(0).default(100),
@@ -32,6 +32,7 @@ export default function AdminCouponsPage() {
   const router = useRouter();
   const { isAuthenticated, role } = useAuthStore();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [usersList, setUsersList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -40,7 +41,7 @@ export default function AdminCouponsPage() {
     resolver: zodResolver(couponSchema),
     defaultValues: { 
       discount_type: "fixed", 
-      discount_value: 200, 
+      discount_value: 199, 
       promoter_commission: 100, 
       platform_profit: 100, 
       min_order_amount: 0 
@@ -50,12 +51,22 @@ export default function AdminCouponsPage() {
   useEffect(() => {
     if (!isAuthenticated || role !== "admin") { router.push("/auth/login"); return; }
     loadCoupons();
+    loadUsers();
   }, [isAuthenticated, role]);
 
   const loadCoupons = async () => {
     setIsLoading(true);
     try { const { data } = await adminApi.coupons(); setCoupons(data); }
     finally { setIsLoading(false); }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const { data } = await adminApi.users({ page_size: 100 });
+      setUsersList(data.items || []);
+    } catch (err) {
+      console.error("Error fetching registered users list:", err);
+    }
   };
 
   const onSubmit = async (data: CouponForm) => {
@@ -195,8 +206,16 @@ export default function AdminCouponsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">PROMOTER CUSTOMER ID</label>
-                  <input {...register("promoter_id")} type="text" placeholder="e.g. #RM1421133920" className="input-field" />
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">ASSIGN PROMOTER / AFFILIATE USER</label>
+                  <select {...register("promoter_id")} className="input-field py-2 font-garamond bg-white">
+                    <option value="">No Promoter (General Coupon)</option>
+                    {usersList.map((u) => (
+                      <option key={u.id} value={String(u.id)}>
+                        {u.full_name} ({u.account_number || `#${u.id}`} - {u.email})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] font-garamond text-muted mt-0.5">Select registered user to assign affiliate promoter commission.</p>
                 </div>
                 <div>
                   <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">MIN ORDER (₹)</label>

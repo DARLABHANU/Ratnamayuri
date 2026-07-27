@@ -2,12 +2,11 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Search, UserCheck, UserX, ShieldCheck, Store, Percent, Trash2 } from "lucide-react";
-
+import { Loader2, Search, UserCheck, UserX, ShieldCheck, Store, Percent, Trash2, Award } from "lucide-react";
 import toast from "react-hot-toast";
 import { adminApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { User, UserRole } from "@/types";
+import { User } from "@/types";
 import { formatDate, getApiError } from "@/lib/utils";
 
 const ROLE_OPTIONS: { value: string; label: string }[] = [
@@ -71,6 +70,29 @@ function UsersContent() {
     }
   };
 
+  const createPromoterCoupon = async (user: User) => {
+    const code = window.prompt(`Create unique ₹199 promoter coupon code for ${user.full_name}:`, `PROMO${user.id}`);
+    if (!code) return;
+    setActionUserId(user.id);
+    try {
+      await adminApi.createCoupon({
+        code: code.trim().toUpperCase(),
+        description: `Affiliate Promoter coupon for ${user.full_name}`,
+        discount_type: "fixed",
+        discount_value: 199,
+        promoter_commission: 100,
+        platform_profit: 30,
+        promoter_id: String(user.id),
+      });
+      toast.success(`Promoter coupon "${code.trim().toUpperCase()}" created for ${user.full_name}!`);
+      loadUsers();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated || !["admin","support"].includes(role || "")) { router.push("/auth/login"); return; }
     if (activeTab === "users") {
@@ -98,7 +120,6 @@ function UsersContent() {
       setMerchants(data.items);
       setMerchantsTotal(data.total);
 
-      // Prepopulate commission rate inputs
       const inputs: Record<number, number> = {};
       data.items.forEach((m: any) => {
         inputs[m.id] = m.commission_rate ?? 10;
@@ -124,7 +145,7 @@ function UsersContent() {
   };
 
   const approveUser = async (user: User) => {
-    if (user.is_verified) return; // Already approved
+    if (user.is_verified) return;
     setActionUserId(user.id);
     try {
       await adminApi.updateUser(user.id, { is_verified: true });
@@ -247,7 +268,7 @@ function UsersContent() {
                           </div>
                         </td>
                         <td className="table-td">
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-2">
                             {actionUserId === user.id ? (
                               <Loader2 size={14} className="animate-spin text-gold-500" />
                             ) : (
@@ -266,11 +287,15 @@ function UsersContent() {
                                     <ShieldCheck size={15} />
                                   </button>
                                 )}
+                                <button onClick={() => createPromoterCoupon(user)} title="Make Promoter (Assign ₹199 Coupon Code)"
+                                  className="text-gold-600 hover:text-gold-500 transition-colors ml-1">
+                                  <Award size={15} />
+                                </button>
                                 <button onClick={() => handleDeleteUser(user)} title="Permanently Delete User"
-                                    className="text-muted hover:text-red-600 transition-colors ml-1">
-                                    <Trash2 size={15} />
-                                  </button>
-                                </>
+                                  className="text-muted hover:text-red-600 transition-colors ml-1">
+                                  <Trash2 size={15} />
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -308,83 +333,66 @@ function UsersContent() {
                   <tr>
                     <th className="table-th text-left">Store Details</th>
                     <th className="table-th text-left">Merchant Owner</th>
-                    <th className="table-th text-left">GSTIN & Bank Details</th>
-                    <th className="table-th text-left">Status</th>
-                    <th className="table-th text-left">Comm. Rate</th>
-                    <th className="table-th text-left">Actions</th>
+                    <th className="table-th text-left font-cinzel">Commission %</th>
+                    <th className="table-th text-left font-cinzel">Status</th>
+                    <th className="table-th text-left font-cinzel">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {merchants.map((merchant) => (
-                    <tr key={merchant.id} className="hover:bg-ivory/50 transition-colors border-b border-gold-100">
-                      <td className="table-td py-4">
-                        <p className="font-garamond text-sm font-semibold text-brown">{merchant.business_name}</p>
-                        <p className="font-garamond text-xs text-muted max-w-xs mt-0.5 line-clamp-2" title={merchant.business_description}>
-                          {merchant.business_description || "No description provided"}
-                        </p>
+                  {merchants.map((m) => (
+                    <tr key={m.id} className="hover:bg-ivory/50 transition-colors">
+                      <td className="table-td">
+                        <p className="font-garamond text-sm font-medium text-brown">{m.business_name}</p>
+                        <p className="font-garamond text-xs text-muted">{m.business_type || "Store"}</p>
                       </td>
-                      <td className="table-td py-4">
-                        <p className="font-garamond text-sm font-medium text-brown">{merchant.user?.full_name || "N/A"}</p>
-                        <p className="font-garamond text-xs text-muted">{merchant.user?.email || "N/A"}</p>
+                      <td className="table-td">
+                        <p className="font-garamond text-xs text-brown">{m.user?.full_name || `User #${m.user_id}`}</p>
+                        <p className="font-garamond text-xs text-muted">{m.user?.email}</p>
                       </td>
-                      <td className="table-td py-4">
-                        <div className="flex flex-col text-xs space-y-0.5">
-                          <span className="font-garamond text-brown"><strong className="text-[10px] font-cinzel text-muted">GST:</strong> {merchant.gstin || "N/A"}</span>
-                          <span className="font-garamond text-muted"><strong className="text-[10px] font-cinzel text-muted">A/C:</strong> {merchant.bank_account || "N/A"}</span>
-                          <span className="font-garamond text-muted"><strong className="text-[10px] font-cinzel text-muted">IFSC:</strong> {merchant.ifsc_code || "N/A"}</span>
+                      <td className="table-td">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            value={commissionInputs[m.id] ?? m.commission_rate ?? 10}
+                            onChange={(e) => setCommissionInputs({
+                              ...commissionInputs,
+                              [m.id]: Number(e.target.value)
+                            })}
+                            className="w-16 bg-white border border-gold-200 text-xs px-2 py-1 rounded text-brown font-semibold focus:outline-none focus:border-gold-500"
+                            min={0}
+                            max={100}
+                          />
+                          <span className="font-cinzel text-xs text-muted">%</span>
                         </div>
                       </td>
-                      <td className="table-td py-4">
-                        <span className={`badge text-[10px] tracking-wide font-cinzel font-medium inline-block py-1 px-2.5 rounded-full
-                          ${merchant.is_approved
-                            ? "!bg-emerald-700 !text-white font-semibold"
-                            : "!bg-amber-600 !text-white font-semibold animate-pulse"}`}>
-                          {merchant.is_approved ? "✓ APPROVED" : "⏳ PENDING"}
+                      <td className="table-td">
+                        <span className={`badge text-xs ${m.is_approved ? "!bg-emerald-100 !text-emerald-800" : "!bg-amber-100 !text-amber-800"}`}>
+                          {m.is_approved ? "APPROVED" : "PENDING"}
                         </span>
                       </td>
-                      <td className="table-td py-4">
-                        {merchant.is_approved ? (
-                          <div className="flex items-center gap-1 text-gold-700 font-cinzel font-semibold text-xs">
-                            <Percent size={12} className="text-gold-500" />
-                            {merchant.commission_rate}%
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={commissionInputs[merchant.id] ?? 10}
-                              onChange={(e) => setCommissionInputs(prev => ({ ...prev, [merchant.id]: Number(e.target.value) }))}
-                              className="input-field py-1 px-2 w-16 text-center text-xs font-cinzel border border-gold-200 focus:border-gold-500 rounded bg-white"
-                            />
-                            <span className="text-xs text-muted font-cinzel">%</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="table-td py-4">
+                      <td className="table-td">
                         <div className="flex items-center gap-2">
-                          {actionMerchantId === merchant.id ? (
+                          {actionMerchantId === m.id ? (
                             <Loader2 size={14} className="animate-spin text-gold-500" />
                           ) : (
                             <>
-                              {!merchant.is_approved ? (
-                                <button
-                                  onClick={() => approveMerchantProfile(merchant)}
-                                  className="btn-primary text-[10px] tracking-widest font-cinzel px-3.5 py-2 leading-none hover:bg-gold-700 transition-all shadow-sm"
-                                >
-                                  APPROVE
-                                </button>
-                              ) : (
-                                <span className="text-xs text-green-600 font-cinzel font-semibold tracking-wider mr-1">✓ ACTIVE</span>
-                              )}
                               <button
-                                  onClick={() => handleDeleteMerchant(merchant)}
-                                  title="Permanently Delete Merchant Store"
-                                  className="text-muted hover:text-red-600 transition-colors p-1"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
+                                onClick={() => approveMerchantProfile(m)}
+                                className={`text-xs px-3 py-1 rounded font-cinzel font-bold tracking-wider transition-colors ${
+                                  m.is_approved 
+                                    ? "bg-gold-50 text-gold-700 hover:bg-gold-100 border border-gold-300"
+                                    : "bg-emerald-800 text-gold-300 hover:bg-emerald-900"
+                                }`}
+                              >
+                                {m.is_approved ? "UPDATE RATE" : "APPROVE STORE"}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteMerchant(m)}
+                                title="Permanently Delete Merchant Store"
+                                className="text-muted hover:text-red-600 transition-colors p-1"
+                              >
+                                <Trash2 size={15} />
+                              </button>
                             </>
                           )}
                         </div>
@@ -392,14 +400,14 @@ function UsersContent() {
                     </tr>
                   ))}
                   {merchants.length === 0 && (
-                    <tr><td colSpan={6} className="table-td text-center py-10 font-garamond text-muted">No merchant profiles found</td></tr>
+                    <tr><td colSpan={5} className="table-td text-center py-10 font-garamond text-muted">No merchant profiles found</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
 
               <div className="p-4 border-t border-gold-100 flex justify-between items-center">
-                <p className="font-garamond text-xs text-muted">{merchantsTotal} merchant profiles</p>
+                <p className="font-garamond text-xs text-muted">{merchantsTotal} total merchant stores</p>
                 <div className="flex gap-2">
                   <button onClick={() => setMerchantsPage(p => Math.max(1, p - 1))} disabled={merchantsPage === 1}
                     className="btn-ghost text-xs px-3 py-1 disabled:opacity-40">← Prev</button>
@@ -416,5 +424,9 @@ function UsersContent() {
 }
 
 export default function AdminUsersPage() {
-  return <Suspense fallback={<div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-gold-500" size={28}/></div>}><UsersContent /></Suspense>;
+  return (
+    <Suspense fallback={<div className="h-48 flex items-center justify-center"><Loader2 className="animate-spin text-gold-500" size={24} /></div>}>
+      <UsersContent />
+    </Suspense>
+  );
 }

@@ -36,20 +36,19 @@ const ProductSchema = new mongoose.Schema({
 
 // Auto-increment sequence hook and dynamic customer price calculation
 ProductSchema.pre('save', async function (next) {
-  if (this.isModified('price') && !this.isModified('base_price')) {
-    this.base_price = this.price;
-  }
+  const PLATFORM_MARGIN = 299;
 
-  // If base_price is not set (e.g. initial seed files), default it to price
-  if (this.base_price === undefined || this.base_price === null) {
-    this.base_price = this.price;
+  // If seller sets base_price, customer selling price = base_price + 299
+  // If seller passes price directly without base_price, compute base_price = price - 299
+  if (this.base_price !== undefined && this.base_price !== null) {
+    this.price = Math.round((Number(this.base_price) + PLATFORM_MARGIN) * 100) / 100;
+  } else if (this.price !== undefined && this.price !== null) {
+    this.base_price = Math.max(0, Math.round((Number(this.price) - PLATFORM_MARGIN) * 100) / 100);
+    this.price = Math.round(Number(this.price) * 100) / 100;
+  } else {
+    this.base_price = 1700;
+    this.price = 1999;
   }
-
-  // Calculate final customer price: base_price + promoter_cut + admin_cut
-  // If base_price < 1000: promoter = 5% of base_price, admin = 5% of base_price (total 10% markup)
-  // If base_price >= 1000: promoter = 10% of base_price, admin = 10% of base_price (total 20% markup)
-  const pct = this.base_price < 1000 ? 0.05 : 0.10;
-  this.price = Math.round(this.base_price * (1 + 2 * pct) * 100) / 100;
 
   if (this.isNew) {
     try {

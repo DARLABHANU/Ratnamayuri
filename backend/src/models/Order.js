@@ -9,6 +9,7 @@ const OrderSchema = new mongoose.Schema({
   coupon_id: { type: Number, ref: 'Coupon', default: null },
   subtotal: { type: Number, required: true },
   discount_amount: { type: Number, default: 0.0 },
+  platform_fee: { type: Number, default: 0.0 }, // Platform/Service fee e.g. ₹30 for promoter coupon
   shipping_amount: { type: Number, default: 0.0 },
   tax_amount: { type: Number, default: 0.0 },
   total_amount: { type: Number, required: true },

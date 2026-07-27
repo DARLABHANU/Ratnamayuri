@@ -446,13 +446,24 @@ export default function MerchantProductsPage() {
                 </div>
 
                 <div>
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">PRICE (₹) *</label>
-                  <input {...register("price")} type="number" step="0.01" className="input-field" />
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">SELLER PRODUCT PRICE (₹) *</label>
+                  <input {...register("price")} type="number" step="0.01" className="input-field" placeholder="e.g. 1700" />
                   {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>}
+                  {(() => {
+                    const val = Number(watch("price")) || 0;
+                    if (val > 0) {
+                      return (
+                        <p className="text-[11px] font-garamond text-emerald-800 bg-emerald-50 border border-emerald-200 p-1.5 rounded mt-1">
+                          ✦ Seller Price: ₹{val.toLocaleString('en-IN')} | +₹299 Auto Margin ➔ <strong>Customer Selling Price: ₹{(val + 299).toLocaleString('en-IN')}</strong>
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
                 <div>
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">COMPARE PRICE (₹)</label>
-                  <input {...register("compare_price")} type="number" step="0.01" className="input-field" />
+                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">COMPARE PRICE / M.R.P (₹)</label>
+                  <input {...register("compare_price")} type="number" step="0.01" className="input-field" placeholder="e.g. 2499" />
                 </div>
 
                 <div>

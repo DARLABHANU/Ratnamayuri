@@ -58,6 +58,8 @@ function CheckoutContent() {
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [isPlacing, setIsPlacing] = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
+  const [platformFee, setPlatformFee] = useState(0);
+  const [isPromoterCoupon, setIsPromoterCoupon] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<AddressForm>({
     resolver: zodResolver(addressSchema),
@@ -83,13 +85,19 @@ function CheckoutContent() {
       }).then(({ data }) => {
         if (data.valid) {
           setCouponDiscount(data.discount_amount);
+          setPlatformFee(data.platform_fee || 0);
+          setIsPromoterCoupon(Boolean(data.is_promoter_coupon));
         } else {
           setCouponDiscount(0);
+          setPlatformFee(0);
+          setIsPromoterCoupon(false);
           setCouponCode("");
           Cookies.remove("affiliate_coupon");
         }
       }).catch(() => {
         setCouponDiscount(0);
+        setPlatformFee(0);
+        setIsPromoterCoupon(false);
         setCouponCode("");
         Cookies.remove("affiliate_coupon");
       });
@@ -117,11 +125,13 @@ function CheckoutContent() {
       });
       if (data.valid) {
         setCouponDiscount(data.discount_amount);
+        setPlatformFee(data.platform_fee || 0);
+        setIsPromoterCoupon(Boolean(data.is_promoter_coupon));
         setCouponCode(code.trim());
         Cookies.set("affiliate_coupon", code.trim(), { expires: 7, sameSite: "Lax" });
         toast.success(`Coupon "${code}" applied successfully!`);
       } else {
-        toast.error("Invalid coupon code or total total condition not met.");
+        toast.error("Invalid coupon code or minimum order condition not met.");
       }
     } catch (err) {
       toast.error("Invalid or expired coupon code.");
@@ -134,6 +144,8 @@ function CheckoutContent() {
     setCouponCode("");
     setTypedCoupon("");
     setCouponDiscount(0);
+    setPlatformFee(0);
+    setIsPromoterCoupon(false);
     Cookies.remove("affiliate_coupon");
     toast.success("Coupon removed.");
   };
@@ -249,9 +261,9 @@ function CheckoutContent() {
   if (!cart) return <div className="h-96 flex items-center justify-center"><Loader2 className="animate-spin text-gold-500" size={32} /></div>;
 
   const subtotal = cart.subtotal;
-  const shipping = subtotal >= 2999 ? 0 : 99;
-  const tax = Math.round(subtotal * 0.18);
-  const total = subtotal - couponDiscount + shipping + tax;
+  const shipping = subtotal >= 2999 ? 0 : 0; // Free delivery threshold
+  const tax = 0; // Price inclusive of GST
+  const total = Math.max(0, subtotal - couponDiscount + platformFee + shipping + tax);
 
   return (
     <div className="max-w-6xl mx-auto px-4 lg:px-8 py-12">
@@ -392,7 +404,7 @@ function CheckoutContent() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="e.g. WELCOME15"
+                    placeholder="e.g. PROMOTER199"
                     value={typedCoupon}
                     onChange={(e) => setTypedCoupon(e.target.value.toUpperCase())}
                     className="flex-1 bg-white border border-gold-200 text-xs p-2 rounded focus:outline-none focus:border-gold-500 uppercase font-cinzel font-bold text-brown"
@@ -411,25 +423,27 @@ function CheckoutContent() {
 
             <div className="space-y-2 border-t border-gold-100 pt-4 mb-4">
               <div className="flex justify-between font-garamond text-sm">
-                <span className="text-muted">Subtotal</span><span>{formatPrice(subtotal)}</span>
+                <span className="text-muted">Display Price</span><span>{formatPrice(subtotal)}</span>
               </div>
               {couponDiscount > 0 && (
                 <div className="flex justify-between font-garamond text-sm text-green-600">
-                  <span>Coupon ({couponCode})</span><span>-{formatPrice(couponDiscount)}</span>
+                  <span>Promoter Coupon Discount ({couponCode})</span><span>-{formatPrice(couponDiscount)}</span>
+                </div>
+              )}
+              {platformFee > 0 && (
+                <div className="flex justify-between font-garamond text-sm text-amber-800">
+                  <span>Platform / Service Fee</span><span>+{formatPrice(platformFee)}</span>
                 </div>
               )}
               <div className="flex justify-between font-garamond text-sm">
-                <span className="text-muted">Shipping</span>
-                <span className={shipping === 0 ? "text-green-600" : ""}>{shipping === 0 ? "FREE" : formatPrice(shipping)}</span>
-              </div>
-              <div className="flex justify-between font-garamond text-sm">
-                <span className="text-muted">GST (18%)</span><span>{formatPrice(tax)}</span>
+                <span className="text-muted">Delivery Charge</span>
+                <span className="text-green-600">FREE</span>
               </div>
             </div>
 
             <div className="flex justify-between font-cinzel text-sm border-t-2 border-gold-300 pt-3 mb-6">
-              <span>TOTAL</span>
-              <span className="text-base">{formatPrice(total)}</span>
+              <span>TOTAL PAYABLE</span>
+              <span className="text-base font-bold text-deep">{formatPrice(total)}</span>
             </div>
 
             <button onClick={handlePlaceOrder} disabled={isPlacing || !selectedAddressId}

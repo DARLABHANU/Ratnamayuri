@@ -172,7 +172,13 @@ orderRouter.post('/validate-coupon', async (req, res, next) => {
 
     // Calculate discount amount based on discount_type (percentage vs fixed)
     let calculatedDiscount = 0;
-    if (coupon.discount_type === 'percentage') {
+    let platformFee = 0;
+    const isPromoterCoupon = Boolean(coupon.promoter_id);
+
+    if (isPromoterCoupon) {
+      calculatedDiscount = coupon.discount_value || coupon.discount_amount || 199;
+      platformFee = 30;
+    } else if (coupon.discount_type === 'percentage') {
       calculatedDiscount = Math.round((order_amount * (coupon.discount_value || 0)) / 100);
       if (coupon.max_discount_amount && coupon.max_discount_amount > 0) {
         calculatedDiscount = Math.min(calculatedDiscount, coupon.max_discount_amount);
@@ -185,11 +191,16 @@ orderRouter.post('/validate-coupon', async (req, res, next) => {
     res.json({
       valid: true,
       discount_amount: calculatedDiscount,
+      platform_fee: platformFee,
+      is_promoter_coupon: isPromoterCoupon,
+      promoter_commission: isPromoterCoupon ? (coupon.promoter_commission || 100) : 0,
       discount_type: coupon.discount_type || 'fixed',
       discount_value: coupon.discount_value || 0,
-      message: coupon.discount_type === 'percentage' 
-        ? `Coupon applied! You save ${coupon.discount_value}% (₹${calculatedDiscount})`
-        : `Coupon applied! You save ₹${calculatedDiscount}`
+      message: isPromoterCoupon
+        ? `Promoter Coupon Applied! You save ₹${calculatedDiscount} + ₹30 platform service fee`
+        : (coupon.discount_type === 'percentage' 
+          ? `Coupon applied! You save ${coupon.discount_value}% (₹${calculatedDiscount})`
+          : `Coupon applied! You save ₹${calculatedDiscount}`)
     });
   } catch (error) {
     next(error);
@@ -223,6 +234,7 @@ orderRouter.post('/', async (req, res, next) => {
 
     const subtotal = enrichedCart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
     let discount_amount = 0.0;
+    let platform_fee = 0.0;
     let coupon = null;
     let coupon_id = null;
 
@@ -236,7 +248,10 @@ orderRouter.post('/', async (req, res, next) => {
         const minAmountValid = subtotal >= coupon.min_order_amount;
 
         if (datesValid && usesValid && minAmountValid) {
-          if (coupon.discount_type === 'percentage') {
+          if (coupon.promoter_id) {
+            discount_amount = Math.min(coupon.discount_value || coupon.discount_amount || 199, subtotal);
+            platform_fee = 30.0;
+          } else if (coupon.discount_type === 'percentage') {
             let calc = Math.round((subtotal * (coupon.discount_value || 0)) / 100);
             if (coupon.max_discount_amount && coupon.max_discount_amount > 0) {
               calc = Math.min(calc, coupon.max_discount_amount);
@@ -252,9 +267,9 @@ orderRouter.post('/', async (req, res, next) => {
       }
     }
 
-    const shipping_amount = subtotal >= 2999 ? 0.0 : 99.0;
-    const tax_amount = Math.round(subtotal * 0.18 * 100) / 100; // 18% GST
-    const total_amount = subtotal - discount_amount + shipping_amount + tax_amount;
+    const shipping_amount = subtotal >= 2999 ? 0.0 : (cartItems.length > 0 ? 0.0 : 99.0);
+    const tax_amount = 0.0; // Included in product price
+    const total_amount = subtotal - discount_amount + platform_fee + shipping_amount;
 
     let orderNumber = generateOrderNumber();
     while (true) {
@@ -270,6 +285,7 @@ orderRouter.post('/', async (req, res, next) => {
       coupon_id: coupon_id,
       subtotal,
       discount_amount,
+      platform_fee,
       shipping_amount,
       tax_amount,
       total_amount,
@@ -287,21 +303,9 @@ orderRouter.post('/', async (req, res, next) => {
     // Create Order Items and decrease stock
     const emailItems = [];
     for (const item of enrichedCart) {
-      const base_price = item.product.base_price || item.product.price;
-      const pct = base_price < 1000 ? 0.05 : 0.10;
-      const promoter_cut = base_price * pct;
-      const admin_cut = base_price * pct;
-
+      const base_price = item.product.base_price || (item.product.price > 299 ? item.product.price - 299 : item.product.price);
       const merchant_payout = Number((base_price * item.quantity).toFixed(2));
-      
-      let platform_fee;
-      if (coupon && coupon.promoter_id) {
-        // Promoter coupon used: admin gets only admin_cut, promoter gets promoter_cut
-        platform_fee = Number((admin_cut * item.quantity).toFixed(2));
-      } else {
-        // Direct purchase: admin gets both admin_cut and promoter_cut
-        platform_fee = Number(((admin_cut + promoter_cut) * item.quantity).toFixed(2));
-      }
+      const item_platform_fee = Number(((item.product.price - base_price) * item.quantity).toFixed(2));
 
       const orderItem = new OrderItem({
         order_id: order.id,
@@ -313,7 +317,7 @@ orderRouter.post('/', async (req, res, next) => {
         unit_price: item.product.price,
         total_price: item.product.price * item.quantity,
         merchant_payout,
-        platform_fee
+        platform_fee: item_platform_fee
       });
 
       await orderItem.save();
@@ -336,21 +340,14 @@ orderRouter.post('/', async (req, res, next) => {
       });
     }
 
-    // Create commission record if promoter applies
+    // Create promoter commission record (₹100 commission)
     if (coupon && coupon.promoter_id && coupon_id) {
-      let totalPromoterCommission = 0;
-      for (const item of enrichedCart) {
-        const base_price = item.product.base_price || item.product.price;
-        const pct = base_price < 1000 ? 0.05 : 0.10;
-        const promoter_cut = base_price * pct;
-        totalPromoterCommission += promoter_cut * item.quantity;
-      }
-
+      const commissionAmount = coupon.promoter_commission || 100;
       const commission = new Commission({
         order_id: order.id,
         coupon_id: coupon_id,
         promoter_id: coupon.promoter_id,
-        amount: Number(totalPromoterCommission.toFixed(2))
+        amount: Number(commissionAmount.toFixed(2))
       });
       await commission.save();
     }

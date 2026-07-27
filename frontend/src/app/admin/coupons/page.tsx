@@ -155,34 +155,19 @@ export default function AdminCouponsPage() {
                 <input type="hidden" {...register("discount_type")} value="fixed" />
               </div>
 
-              {/* Financial breakdown */}
-              <div className="bg-gold-50 border border-gold-200 p-4 space-y-3 rounded-md">
-                <p className="font-cinzel text-xs tracking-widest text-muted font-bold">COMMISSION & PROFIT SPLIT</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="font-cinzel text-xs text-muted block mb-1">PROMOTER COMMISSION (₹)</label>
-                    <input {...register("promoter_commission")} type="number" className="input-field py-2" />
-                  </div>
-                  <div>
-                    <label className="font-cinzel text-xs text-muted block mb-1">PLATFORM PROFIT (₹)</label>
-                    <input {...register("platform_profit")} type="number" className="input-field py-2" />
-                  </div>
+              {/* Promoter Commission Split */}
+              <div className="bg-gold-50 border border-gold-200 p-4 space-y-2 rounded-md">
+                <div className="flex items-center justify-between">
+                  <span className="font-cinzel text-xs tracking-widest text-brown font-bold">PROMOTER COMMISSION SPLIT</span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded font-cinzel">
+                    ₹100 PER REFERRAL SALE
+                  </span>
                 </div>
-                <div className="flex flex-wrap gap-4 pt-2 border-t border-gold-200">
-                  <p className="font-garamond text-xs text-muted">
-                    Customer saves: <span className="text-brown font-medium">
-                      {discountType === "percentage" 
-                        ? `${discountValue}% Off ${maxDiscountAmount ? `(Max ${formatPrice(maxDiscountAmount)})` : ""}`
-                        : formatPrice(discountValue)}
-                    </span>
-                  </p>
-                  <p className="font-garamond text-xs text-muted">
-                    Promoter: <span className="text-green-600 font-medium">{formatPrice(promoterCommission)}</span>
-                  </p>
-                  <p className="font-garamond text-xs text-muted">
-                    Platform: <span className="text-blue-600 font-medium">{formatPrice(platformProfit)}</span>
-                  </p>
-                </div>
+                <p className="font-garamond text-xs text-muted">
+                  When a customer uses this coupon, <strong className="text-emerald-700">₹100 commission</strong> will automatically be credited to the assigned promoter.
+                </p>
+                <input type="hidden" {...register("promoter_commission")} value={100} />
+                <input type="hidden" {...register("platform_profit")} value={30} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">

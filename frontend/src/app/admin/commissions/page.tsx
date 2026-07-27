@@ -41,6 +41,8 @@ export default function AdminCommissionsPage() {
 
   // Payout Modal State
   const [selectedCommission, setSelectedCommission] = useState<Commission | null>(null);
+  const [utrNumber, setUtrNumber] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("UPI");
   const [transactionNotes, setTransactionNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -61,9 +63,16 @@ export default function AdminCommissionsPage() {
     if (!selectedCommission) return;
     setIsSubmitting(true);
     try {
-      await adminApi.payCommission(selectedCommission.id, { notes: transactionNotes });
-      toast.success("Commission marked as paid and reference saved!");
+      await adminApi.payCommission(selectedCommission.id, {
+        utr_number: utrNumber.trim() || undefined,
+        payment_method: paymentMethod,
+        admin_notes: transactionNotes.trim() || undefined,
+        notes: transactionNotes.trim() || undefined
+      });
+      toast.success("Commission marked as paid and transaction reference saved!");
       setSelectedCommission(null);
+      setUtrNumber("");
+      setTransactionNotes("");
       loadCommissions();
     } catch (err) {
       toast.error(getApiError(err));
@@ -269,21 +278,51 @@ export default function AdminCommissionsPage() {
                 )}
               </div>
 
-              {/* Transaction Reference / Notes */}
-              <div>
-                <label className="font-cinzel text-xs tracking-wider text-brown block mb-2">
-                  TRANSACTION REF / NOTES
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. UPI Ref: 1234567890, Bank Transfer Ref: N1234"
-                  value={transactionNotes}
-                  onChange={(e) => setTransactionNotes(e.target.value)}
-                  className="w-full font-garamond px-4 py-2 border border-gold-300 focus:outline-none focus:border-gold-600 bg-white"
-                />
-                <span className="font-garamond text-[11px] text-muted mt-1 block leading-relaxed">
-                  Add transaction IDs, notes, or reference numbers to track this payout in the database.
-                </span>
+              {/* Payment Mode & Transaction Reference */}
+              <div className="space-y-4 pt-2 border-t border-gold-100">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-cinzel text-[10px] tracking-wider font-bold text-brown block mb-1">
+                      PAYMENT MODE *
+                    </label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="input-field py-2 text-xs font-garamond bg-white"
+                    >
+                      <option value="UPI">UPI (PhonePe / GPay / Paytm)</option>
+                      <option value="NEFT">NEFT Bank Transfer</option>
+                      <option value="IMPS">IMPS Instant Transfer</option>
+                      <option value="RTGS">RTGS Bank Transfer</option>
+                      <option value="Cash/Manual">Cash / Offline Manual</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="font-cinzel text-[10px] tracking-wider font-bold text-brown block mb-1">
+                      OFFLINE UTR / REF NUMBER *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. UTR9876543210"
+                      value={utrNumber}
+                      onChange={(e) => setUtrNumber(e.target.value)}
+                      className="input-field py-2 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-cinzel text-[10px] tracking-wider font-bold text-brown block mb-1">
+                    ADMIN NOTES (OPTIONAL)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Sent via PhonePe to promoter's registered mobile UPI"
+                    value={transactionNotes}
+                    onChange={(e) => setTransactionNotes(e.target.value)}
+                    className="input-field py-2 text-xs font-garamond"
+                  />
+                </div>
               </div>
 
             </div>
@@ -299,16 +338,16 @@ export default function AdminCommissionsPage() {
               </button>
               <button
                 onClick={handlePay}
-                className="font-cinzel text-xs tracking-wide px-6 py-2 bg-deep text-gold-400 hover:bg-deep-hover hover:text-gold-300 transition-all flex items-center gap-2"
+                className="btn-primary px-6 py-2 flex items-center gap-2"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 size={12} className="animate-spin" />
-                    SETTLING...
+                    RECORDING PAYOUT...
                   </>
                 ) : (
-                  "SETTLE PAYOUT"
+                  "MARK PAID & SAVE REF"
                 )}
               </button>
             </div>

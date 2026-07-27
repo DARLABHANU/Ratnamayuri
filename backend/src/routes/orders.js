@@ -140,6 +140,23 @@ cartRouter.delete('/', async (req, res, next) => {
 
 // ─── Coupon Validation ───────────────────────────────────────────────────────
 
+// Get active coupons for customer checkout selection
+orderRouter.get('/active-coupons', async (req, res, next) => {
+  try {
+    const now = new Date();
+    const coupons = await Coupon.find({
+      is_active: true,
+      $or: [
+        { valid_until: { $gte: now } },
+        { valid_until: null }
+      ]
+    }).select('code description discount_value promoter_id min_order_amount').limit(10);
+    res.json(coupons);
+  } catch (error) {
+    next(error);
+  }
+});
+
 orderRouter.post('/validate-coupon', async (req, res, next) => {
   try {
     const { code, order_amount } = req.body;

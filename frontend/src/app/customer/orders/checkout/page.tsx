@@ -60,6 +60,7 @@ function CheckoutContent() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [platformFee, setPlatformFee] = useState(0);
   const [isPromoterCoupon, setIsPromoterCoupon] = useState(false);
+  const [activeCouponsList, setActiveCouponsList] = useState<any[]>([]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<AddressForm>({
     resolver: zodResolver(addressSchema),
@@ -69,6 +70,7 @@ function CheckoutContent() {
     if (!isAuthenticated) { router.push("/auth/login"); return; }
     fetchCart();
     loadAddresses();
+    loadActiveCoupons();
 
     const code = params.get("coupon") || Cookies.get("affiliate_coupon") || "";
     if (code) {
@@ -76,6 +78,13 @@ function CheckoutContent() {
       setTypedCoupon(code);
     }
   }, [isAuthenticated, params]);
+
+  const loadActiveCoupons = async () => {
+    try {
+      const { data } = await orderApi.activeCoupons();
+      setActiveCouponsList(data || []);
+    } catch {}
+  };
 
   useEffect(() => {
     if (couponCode && cart) {
@@ -401,22 +410,46 @@ function CheckoutContent() {
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. PROMOTER199"
-                    value={typedCoupon}
-                    onChange={(e) => setTypedCoupon(e.target.value.toUpperCase())}
-                    className="flex-1 bg-white border border-gold-200 text-xs p-2 rounded focus:outline-none focus:border-gold-500 uppercase font-cinzel font-bold text-brown"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => validateCouponCode(typedCoupon)}
-                    disabled={isValidatingCoupon || !typedCoupon.trim()}
-                    className="bg-[#4A0F0F] hover:bg-[#6B1A1A] text-gold-400 text-xs font-bold tracking-widest px-4 py-2 rounded disabled:opacity-40"
-                  >
-                    {isValidatingCoupon ? "..." : "APPLY"}
-                  </button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. PROMOTER199"
+                      value={typedCoupon}
+                      onChange={(e) => setTypedCoupon(e.target.value.toUpperCase())}
+                      className="flex-1 bg-white border border-gold-200 text-xs p-2 rounded focus:outline-none focus:border-gold-500 uppercase font-cinzel font-bold text-brown"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => validateCouponCode(typedCoupon)}
+                      disabled={isValidatingCoupon || !typedCoupon.trim()}
+                      className="bg-[#4A0F0F] hover:bg-[#6B1A1A] text-gold-400 text-xs font-bold tracking-widest px-4 py-2 rounded disabled:opacity-40"
+                    >
+                      {isValidatingCoupon ? "..." : "APPLY"}
+                    </button>
+                  </div>
+
+                  {/* Active promoter coupon suggestions */}
+                  {activeCouponsList.length > 0 && (
+                    <div className="pt-1">
+                      <p className="text-[10px] font-cinzel font-bold text-gold-700 tracking-wider mb-1">AVAILABLE PROMOTER COUPONS:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {activeCouponsList.map((c) => (
+                          <button
+                            key={c.id || c.code}
+                            type="button"
+                            onClick={() => {
+                              setTypedCoupon(c.code);
+                              validateCouponCode(c.code);
+                            }}
+                            className="bg-gold-50 hover:bg-gold-100 border border-gold-300 text-brown text-[11px] font-cinzel font-semibold px-2 py-1 rounded transition-colors flex items-center gap-1"
+                          >
+                            🏷️ {c.code} <span className="text-emerald-700 font-bold">(₹199 OFF)</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

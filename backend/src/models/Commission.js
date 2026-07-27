@@ -12,6 +12,9 @@ const CommissionSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'paid', 'rejected'],
     default: 'pending'
   },
+  utr_number: { type: String, default: null },
+  payment_method: { type: String, default: null },
+  admin_notes: { type: String, default: null },
   notes: { type: String, default: null },
   paid_at: { type: Date, default: null },
   created_at: { type: Date, default: Date.now }

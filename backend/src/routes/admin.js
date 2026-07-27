@@ -512,11 +512,11 @@ router.get('/commissions', requireAdmin, async (req, res, next) => {
   }
 });
 
-// Pay Promoter Commission
+// Pay Promoter Commission (Offline Settlement)
 router.patch('/commissions/:commission_id/pay', requireAdmin, async (req, res, next) => {
   try {
     const commissionId = Number(req.params.commission_id);
-    const { notes } = req.body;
+    const { utr_number, payment_method, admin_notes, notes } = req.body;
 
     const commission = await Commission.findOne({ id: commissionId });
     if (!commission) {
@@ -525,11 +525,11 @@ router.patch('/commissions/:commission_id/pay', requireAdmin, async (req, res, n
 
     commission.status = 'paid';
     commission.paid_at = new Date();
-    if (notes !== undefined) {
-      commission.notes = notes;
-    }
-    await commission.save();
+    if (utr_number) commission.utr_number = utr_number;
+    if (payment_method) commission.payment_method = payment_method;
+    if (admin_notes || notes) commission.admin_notes = admin_notes || notes;
 
+    await commission.save();
     res.json(commission);
   } catch (error) {
     next(error);
@@ -749,25 +749,39 @@ router.get('/settlements', requireAdmin, async (req, res, next) => {
       .skip((page - 1) * pageSize)
       .limit(pageSize);
 
-    // Enrich with order number & business name
+    // Enrich with order number & business name & merchant user bank/UPI details
     const orderIds = settlements.map(s => s.order_id);
     const merchantIds = settlements.map(s => s.merchant_id);
 
     const Order = require('../models/Order');
     const MerchantProfile = require('../models/MerchantProfile');
+    const User = require('../models/User');
 
     const [orders, profiles] = await Promise.all([
       Order.find({ id: { $in: orderIds } }, 'id order_number'),
-      MerchantProfile.find({ id: { $in: merchantIds } }, 'id business_name')
+      MerchantProfile.find({ id: { $in: merchantIds } }, 'id user_id business_name bank_account ifsc_code')
     ]);
+
+    const userIds = [...new Set(profiles.map(p => p.user_id))];
+    const users = await User.find({ id: { $in: userIds } });
 
     const orderMap = new Map(orders.map(o => [o.id, o]));
     const profileMap = new Map(profiles.map(p => [p.id, p]));
+    const userMap = new Map(users.map(u => [u.id, u]));
 
     const enriched = settlements.map(s => {
       const sObj = s.toObject();
+      const prof = profileMap.get(s.merchant_id);
+      const user = prof ? userMap.get(prof.user_id) : null;
       sObj.order_number = orderMap.get(s.order_id)?.order_number || `Order #${s.order_id}`;
-      sObj.business_name = profileMap.get(s.merchant_id)?.business_name || `Merchant #${s.merchant_id}`;
+      sObj.business_name = prof?.business_name || `Merchant #${s.merchant_id}`;
+      sObj.merchant_bank_details = {
+        bank_name: user?.payout_bank_name || null,
+        account_number: user?.payout_account_number || prof?.bank_account || null,
+        ifsc_code: user?.payout_ifsc_code || prof?.ifsc_code || null,
+        account_holder_name: user?.payout_account_holder_name || user?.full_name || null,
+        upi_id: user?.payout_upi_id || null
+      };
       return sObj;
     });
 
@@ -778,6 +792,75 @@ router.get('/settlements', requireAdmin, async (req, res, next) => {
       page_size: pageSize,
       pages: Math.ceil(total / pageSize)
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Pay Merchant Settlement (Offline Settlement by Admin)
+router.patch('/settlements/:settlement_id/pay', requireAdmin, async (req, res, next) => {
+  try {
+    const Settlement = require('../models/Settlement');
+    const Wallet = require('../models/Wallet');
+    const settlementId = Number(req.params.settlement_id);
+    const { utr_number, payment_method, admin_notes } = req.body;
+
+    const settlement = await Settlement.findOne({ id: settlementId });
+    if (!settlement) {
+      return res.status(404).json({ detail: 'Settlement record not found' });
+    }
+
+    settlement.status = 'paid';
+    settlement.paid_at = new Date();
+    if (utr_number) settlement.utr_number = utr_number;
+    if (payment_method) settlement.payment_method = payment_method;
+    if (admin_notes) settlement.admin_notes = admin_notes;
+
+    await settlement.save();
+
+    // Update merchant wallet ledger
+    let wallet = await Wallet.findOne({ merchant_id: settlement.merchant_id });
+    if (wallet) {
+      wallet.pending_balance = Number(Math.max(0, (wallet.pending_balance || 0) - settlement.amount).toFixed(2));
+      wallet.withdrawn_balance = Number(((wallet.withdrawn_balance || 0) + settlement.amount).toFixed(2));
+      await wallet.save();
+    }
+
+    res.json(settlement);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Pay Merchant Withdrawal (Offline Payout by Admin)
+router.patch('/withdrawals/:id/pay', requireAdmin, async (req, res, next) => {
+  try {
+    const WithdrawalRequest = require('../models/WithdrawalRequest');
+    const Wallet = require('../models/Wallet');
+    const requestId = Number(req.params.id);
+    const { utr_number, payment_method, admin_notes } = req.body;
+
+    const request = await WithdrawalRequest.findOne({ id: requestId });
+    if (!request) {
+      return res.status(404).json({ detail: 'Withdrawal request not found' });
+    }
+
+    request.status = 'paid';
+    request.processed_at = new Date();
+    if (utr_number) request.utr_number = utr_number;
+    if (payment_method) request.payment_method = payment_method;
+    if (admin_notes) request.admin_notes = admin_notes;
+
+    await request.save();
+
+    let wallet = await Wallet.findOne({ merchant_id: request.merchant_id });
+    if (wallet) {
+      wallet.pending_balance = Number(Math.max(0, (wallet.pending_balance || 0) - request.amount).toFixed(2));
+      wallet.withdrawn_balance = Number(((wallet.withdrawn_balance || 0) + request.amount).toFixed(2));
+      await wallet.save();
+    }
+
+    res.json(request);
   } catch (error) {
     next(error);
   }

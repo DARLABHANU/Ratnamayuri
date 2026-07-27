@@ -135,6 +135,7 @@ export const orderApi = {
   get: (id: number) => api.get(`/orders/${id}`),
   create: (data: object) => api.post("/orders", data),
   validateCoupon: (data: object) => api.post("/orders/validate-coupon", data),
+  activeCoupons: () => api.get("/orders/active-coupons"),
   updateStatus: (id: number, data: object) => api.patch(`/orders/${id}/status`, data),
   merchantOrders: (params?: object) => api.get("/orders/merchant/incoming", { params }),
   createOrder: (data: { amount: number; currency?: string; receipt?: string }) => api.post("/create-order", data),
@@ -190,8 +191,12 @@ export const adminApi = {
   withdrawals: (params?: object) => api.get("/admin/withdrawals", { params }),
   approveWithdrawal: (id: number, data: { status: "approved" | "rejected" }) =>
     api.patch(`/admin/withdrawals/${id}/approval`, data),
+  payWithdrawal: (id: number, data?: { utr_number?: string; payment_method?: string; admin_notes?: string }) =>
+    api.patch(`/admin/withdrawals/${id}/pay`, data),
   deleteWithdrawal: (id: number) => api.delete(`/admin/withdrawals/${id}`),
   settlements: (params?: object) => api.get("/admin/settlements", { params }),
+  paySettlement: (id: number, data?: { utr_number?: string; payment_method?: string; admin_notes?: string }) =>
+    api.patch(`/admin/settlements/${id}/pay`, data),
   deleteSettlement: (id: number) => api.delete(`/admin/settlements/${id}`),
   wallets: () => api.get("/admin/wallets"),
   returnRequests: (params?: object) => api.get("/admin/return-requests", { params }),

@@ -7,13 +7,16 @@ const WithdrawalRequestSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'approved', 'paid', 'rejected'],
     default: 'pending',
     index: true
   },
   bank_name: { type: String, default: null },
   account_number: { type: String, default: null },
-  routing_details: { type: String, default: null }, // IFSC, routing code, etc.
+  routing_details: { type: String, default: null }, // IFSC, UPI, routing code, etc.
+  utr_number: { type: String, default: null },
+  payment_method: { type: String, default: null },
+  admin_notes: { type: String, default: null },
   processed_at: { type: Date, default: null },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }

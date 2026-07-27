@@ -39,11 +39,20 @@ const addressSchema = z.object({
   is_default: z.boolean().default(false),
 });
 
+const payoutSchema = z.object({
+  payout_bank_name: z.string().optional(),
+  payout_account_number: z.string().optional(),
+  payout_ifsc_code: z.string().optional(),
+  payout_account_holder_name: z.string().optional(),
+  payout_upi_id: z.string().optional(),
+});
+
 type ProfileForm = z.infer<typeof profileSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 type AddressForm = z.infer<typeof addressSchema>;
+type PayoutForm = z.infer<typeof payoutSchema>;
 
-type Tab = "profile" | "password" | "addresses";
+type Tab = "profile" | "payout" | "password" | "addresses";
 
 export default function CustomerProfilePage() {
   const router = useRouter();
@@ -56,12 +65,20 @@ export default function CustomerProfilePage() {
   const profileForm = useForm<ProfileForm>({ resolver: zodResolver(profileSchema) });
   const passwordForm = useForm<PasswordForm>({ resolver: zodResolver(passwordSchema) });
   const addressForm = useForm<AddressForm>({ resolver: zodResolver(addressSchema) });
+  const payoutForm = useForm<PayoutForm>({ resolver: zodResolver(payoutSchema) });
 
   useEffect(() => {
     if (!isAuthenticated) { router.push("/auth/login"); return; }
     authApi.me().then(r => {
       setUser(r.data);
       profileForm.reset({ full_name: r.data.full_name, phone: r.data.phone || "" });
+      payoutForm.reset({
+        payout_bank_name: r.data.payout_bank_name || "",
+        payout_account_number: r.data.payout_account_number || "",
+        payout_ifsc_code: r.data.payout_ifsc_code || "",
+        payout_account_holder_name: r.data.payout_account_holder_name || "",
+        payout_upi_id: r.data.payout_upi_id || "",
+      });
     });
     loadAddresses();
   }, [isAuthenticated]);
@@ -71,6 +88,17 @@ export default function CustomerProfilePage() {
       const { data } = await addressApi.list();
       setAddresses(data);
     } catch {}
+  };
+
+  const onPayoutSubmit = async (data: PayoutForm) => {
+    setIsSaving(true);
+    try {
+      await authApi.updatePayoutSettings(data);
+      toast.success("Payout bank & UPI details saved successfully!");
+      const r = await authApi.me();
+      setUser(r.data);
+    } catch (err) { toast.error(getApiError(err)); }
+    finally { setIsSaving(false); }
   };
 
   const onProfileSubmit = async (data: ProfileForm) => {
@@ -115,6 +143,7 @@ export default function CustomerProfilePage() {
 
   const TABS: { id: Tab; label: string; icon: typeof User }[] = [
     { id: "profile", label: "Profile", icon: User },
+    { id: "payout", label: "Payout Bank / UPI", icon: Lock },
     { id: "password", label: "Password", icon: Lock },
     { id: "addresses", label: "Addresses", icon: MapPin },
   ];
@@ -180,6 +209,55 @@ export default function CustomerProfilePage() {
             <button type="submit" disabled={isSaving} className="btn-primary flex items-center gap-2">
               {isSaving && <Loader2 size={12} className="animate-spin" />}
               SAVE CHANGES
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Payout Bank & UPI Details tab */}
+      {tab === "payout" && (
+        <div className="card p-6 animate-fade-up">
+          <div className="mb-5">
+            <h2 className="font-cinzel text-xs tracking-widest text-brown font-bold uppercase">PAYOUT BANK ACCOUNT &amp; UPI CREDENTIALS</h2>
+            <p className="font-garamond text-xs text-muted mt-1">
+              Enter your bank account details or UPI ID below. Platform admin will send referral commissions and seller payouts directly to these credentials.
+            </p>
+          </div>
+
+          <form onSubmit={payoutForm.handleSubmit(onPayoutSubmit)} className="space-y-4">
+            <div className="bg-gold-50/50 border border-gold-200 p-4 rounded space-y-3">
+              <p className="font-cinzel text-[10px] tracking-wider text-brown font-bold">1. BANK ACCOUNT TRANSFER DETAILS</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-cinzel text-xs text-muted block mb-1">BANK NAME</label>
+                  <input {...payoutForm.register("payout_bank_name")} className="input-field" placeholder="e.g. State Bank of India, HDFC" />
+                </div>
+                <div>
+                  <label className="font-cinzel text-xs text-muted block mb-1">ACCOUNT HOLDER NAME</label>
+                  <input {...payoutForm.register("payout_account_holder_name")} className="input-field" placeholder="Full name on bank account" />
+                </div>
+                <div>
+                  <label className="font-cinzel text-xs text-muted block mb-1">ACCOUNT NUMBER</label>
+                  <input {...payoutForm.register("payout_account_number")} className="input-field font-mono" placeholder="Enter bank account number" />
+                </div>
+                <div>
+                  <label className="font-cinzel text-xs text-muted block mb-1">IFSC CODE</label>
+                  <input {...payoutForm.register("payout_ifsc_code")} className="input-field font-mono uppercase" placeholder="e.g. SBIN0001234" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gold-50/50 border border-gold-200 p-4 rounded space-y-2">
+              <p className="font-cinzel text-[10px] tracking-wider text-brown font-bold">2. UPI ADDRESS (GPay / PhonePe / Paytm)</p>
+              <div>
+                <label className="font-cinzel text-xs text-muted block mb-1">UPI ID</label>
+                <input {...payoutForm.register("payout_upi_id")} className="input-field font-mono text-emerald-800" placeholder="e.g. mobile@ybl or username@okicici" />
+              </div>
+            </div>
+
+            <button type="submit" disabled={isSaving} className="btn-primary flex items-center gap-2">
+              {isSaving && <Loader2 size={12} className="animate-spin" />}
+              SAVE PAYOUT DETAILS
             </button>
           </form>
         </div>

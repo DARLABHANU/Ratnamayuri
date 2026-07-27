@@ -473,6 +473,11 @@ router.get('/me', getCurrentUser, async (req, res) => {
     is_active: req.user.is_active,
     is_verified: req.user.is_verified,
     avatar_url: req.user.avatar_url,
+    payout_bank_name: req.user.payout_bank_name,
+    payout_account_number: req.user.payout_account_number,
+    payout_ifsc_code: req.user.payout_ifsc_code,
+    payout_account_holder_name: req.user.payout_account_holder_name,
+    payout_upi_id: req.user.payout_upi_id,
     created_at: req.user.created_at,
     is_promoter: is_promoter
   });

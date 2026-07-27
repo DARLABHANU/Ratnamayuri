@@ -169,28 +169,36 @@ export const adminApi = {
   getUser: (id: number) => api.get(`/admin/users/${id}`),
   updateUser: (id: number, data: object) => api.patch(`/admin/users/${id}`, data),
   createUser: (data: object) => api.post("/admin/users", data),
+  deleteUser: (id: number) => api.delete(`/admin/users/${id}`),
   merchants: (params?: object) => api.get("/admin/merchants", { params }),
   approveMerchant: (id: number, data: object) =>
     api.patch(`/admin/merchants/${id}/approval`, data),
+  deleteMerchant: (id: number) => api.delete(`/admin/merchants/${id}`),
   orders: (params?: object) => api.get("/admin/orders", { params }),
+  deleteOrder: (id: number) => api.delete(`/admin/orders/${id}`),
   coupons: () => api.get("/admin/coupons"),
   createCoupon: (data: object) => api.post("/admin/coupons", data),
   updateCoupon: (id: number, data: object) => api.patch(`/admin/coupons/${id}`, data),
   deleteCoupon: (id: number) => api.delete(`/admin/coupons/${id}`),
   commissions: (params?: object) => api.get("/admin/commissions", { params }),
   payCommission: (id: number, data?: object) => api.patch(`/admin/commissions/${id}/pay`, data),
+  deleteCommission: (id: number) => api.delete(`/admin/commissions/${id}`),
   salesAnalytics: (days?: number) => api.get("/admin/analytics/sales", { params: { days } }),
   products: (params?: object) => api.get("/admin/products", { params }),
   approveProduct: (id: number, data: { is_approved: boolean }) => api.patch(`/admin/products/${id}/approve`, data),
+  deleteProduct: (id: number) => api.delete(`/admin/products/${id}`),
   withdrawals: (params?: object) => api.get("/admin/withdrawals", { params }),
   approveWithdrawal: (id: number, data: { status: "approved" | "rejected" }) =>
     api.patch(`/admin/withdrawals/${id}/approval`, data),
+  deleteWithdrawal: (id: number) => api.delete(`/admin/withdrawals/${id}`),
   settlements: (params?: object) => api.get("/admin/settlements", { params }),
+  deleteSettlement: (id: number) => api.delete(`/admin/settlements/${id}`),
   wallets: () => api.get("/admin/wallets"),
   returnRequests: (params?: object) => api.get("/admin/return-requests", { params }),
   approveReturnRequest: (id: number, data: { status: "approved" | "rejected", admin_notes?: string }) =>
     api.patch(`/admin/return-requests/${id}/approval`, data),
   completeReturnRequest: (id: number) => api.post(`/admin/return-requests/${id}/complete`),
+  deleteReturnRequest: (id: number) => api.delete(`/admin/return-requests/${id}`),
 };
 
 export const supportApi = {

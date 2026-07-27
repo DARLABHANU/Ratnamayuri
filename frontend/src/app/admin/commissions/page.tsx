@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle, DollarSign, X } from "lucide-react";
+import { Loader2, CheckCircle, DollarSign, X, Trash2 } from "lucide-react";
+
 import toast from "react-hot-toast";
 import { adminApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -23,6 +24,20 @@ export default function AdminCommissionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>("");
   const [payingId, setPayingId] = useState<number | null>(null);
+
+  const handleDeleteCommission = async (id: number) => {
+    if (!confirm(`Are you sure you want to permanently delete Commission record #${id} from the database?`)) return;
+    setPayingId(id);
+    try {
+      await adminApi.deleteCommission(id);
+      toast.success("Commission record permanently deleted from database");
+      loadCommissions();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setPayingId(null);
+    }
+  };
 
   // Payout Modal State
   const [selectedCommission, setSelectedCommission] = useState<Commission | null>(null);
@@ -123,25 +138,31 @@ export default function AdminCommissionsPage() {
                   <td className="table-td font-garamond text-xs text-muted">
                     {c.paid_at ? formatDate(c.paid_at) : formatDate(c.created_at)}
                   </td>
-                  <td className="table-td">
-                    {c.status === "pending" && (
-                      <button onClick={() => { setSelectedCommission(c); setTransactionNotes(""); }}
-                        className="flex items-center gap-1 font-cinzel text-xs text-green-700
-                          hover:text-green-600 transition-colors">
-                        <CheckCircle size={12} />
-                        PAY
+                  <td className="table-td text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {["pending", "approved"].includes(c.status) && (
+                        <button onClick={() => setSelectedCommission(c)}
+                          className="flex items-center gap-1 font-cinzel text-xs text-green-700 font-semibold border border-green-200 bg-green-50 px-2.5 py-1.5 rounded-sm hover:bg-green-100 hover:text-green-800 transition-colors">
+                          <CheckCircle size={12} />
+                          PAY
+                        </button>
+                      )}
+                      {c.status === "paid" && (
+                        <div className="space-y-0.5">
+                          <span className="font-garamond text-xs text-green-600 font-semibold block">✓ Paid</span>
+                          {c.notes && (
+                            <span className="block text-[10px] text-muted font-mono max-w-[150px] truncate" title={c.notes}>
+                              Ref: {c.notes}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <button onClick={() => handleDeleteCommission(c.id)}
+                        title="Permanently Delete Commission Record"
+                        className="text-muted hover:text-red-600 transition-colors p-1">
+                        <Trash2 size={15} />
                       </button>
-                    )}
-                    {c.status === "paid" && (
-                      <div className="space-y-0.5">
-                        <span className="font-garamond text-xs text-green-600 font-semibold block">✓ Paid</span>
-                        {c.notes && (
-                          <span className="block text-[10px] text-muted font-mono max-w-[150px] truncate" title={c.notes}>
-                            Ref: {c.notes}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle, XCircle, Clock, ArrowDownToLine } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Clock, ArrowDownToLine, Trash2 } from "lucide-react";
+
 import toast from "react-hot-toast";
 import { adminApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -42,6 +43,20 @@ export default function AdminWithdrawalsPage() {
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+
+  const handleDeleteWithdrawal = async (id: number) => {
+    if (!confirm(`Are you sure you want to permanently delete Withdrawal Request #${id} from the database?`)) return;
+    setProcessingId(id);
+    try {
+      await adminApi.deleteWithdrawal(id);
+      toast.success("Withdrawal request permanently deleted from database");
+      loadRequests();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
@@ -175,40 +190,49 @@ export default function AdminWithdrawalsPage() {
                   </div>
 
                   {/* Right: Action Buttons */}
-                  {req.status === "pending" && (
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => handleAction(req.id, "approved")}
-                        disabled={processingId === req.id}
-                        className="flex items-center gap-1.5 font-cinzel text-xs px-4 py-2
-                          bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                      >
-                        {processingId === req.id
-                          ? <Loader2 size={12} className="animate-spin" />
-                          : <CheckCircle size={12} />}
-                        APPROVE
-                      </button>
-                      <button
-                        onClick={() => handleAction(req.id, "rejected")}
-                        disabled={processingId === req.id}
-                        className="flex items-center gap-1.5 font-cinzel text-xs px-4 py-2
-                          border border-red-300 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                      >
-                        <XCircle size={12} />
-                        REJECT
-                      </button>
-                    </div>
-                  )}
-                  {req.status === "approved" && (
-                    <div className="flex items-center gap-1.5 font-cinzel text-xs text-green-600 flex-shrink-0">
-                      <CheckCircle size={14} /> Approved & Paid
-                    </div>
-                  )}
-                  {req.status === "rejected" && (
-                    <div className="flex items-center gap-1.5 font-cinzel text-xs text-red-500 flex-shrink-0">
-                      <XCircle size={14} /> Rejected
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {req.status === "pending" && (
+                      <>
+                        <button
+                          onClick={() => handleAction(req.id, "approved")}
+                          disabled={processingId === req.id}
+                          className="flex items-center gap-1.5 font-cinzel text-xs px-4 py-2
+                            bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                        >
+                          {processingId === req.id
+                            ? <Loader2 size={12} className="animate-spin" />
+                            : <CheckCircle size={12} />}
+                          APPROVE
+                        </button>
+                        <button
+                          onClick={() => handleAction(req.id, "rejected")}
+                          disabled={processingId === req.id}
+                          className="flex items-center gap-1.5 font-cinzel text-xs px-4 py-2
+                            border border-red-300 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          <XCircle size={12} />
+                          REJECT
+                        </button>
+                      </>
+                    )}
+                    {req.status === "approved" && (
+                      <div className="flex items-center gap-1.5 font-cinzel text-xs text-green-600">
+                        <CheckCircle size={14} /> Approved & Paid
+                      </div>
+                    )}
+                    {req.status === "rejected" && (
+                      <div className="flex items-center gap-1.5 font-cinzel text-xs text-red-500">
+                        <XCircle size={14} /> Rejected
+                      </div>
+                    )}
+                    <button
+                      onClick={() => handleDeleteWithdrawal(req.id)}
+                      title="Permanently Delete Withdrawal Request"
+                      className="text-muted hover:text-red-600 transition-colors p-1.5 border border-gold-200 rounded hover:bg-red-50 ml-1"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))

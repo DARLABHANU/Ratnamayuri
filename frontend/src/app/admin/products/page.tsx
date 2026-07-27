@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Eye, EyeOff, Search, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Eye, EyeOff, Search, CheckCircle, XCircle, Trash2 } from "lucide-react";
+
 import toast from "react-hot-toast";
 import { adminApi, productApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -20,6 +21,20 @@ export default function AdminProductsPage() {
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [approvingId, setApprovingId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "pending">("all");
+
+  const handleDeleteProduct = async (product: Product) => {
+    if (!confirm(`Are you sure you want to permanently delete product "${product.name}" from the database?`)) return;
+    setTogglingId(product.id);
+    try {
+      await adminApi.deleteProduct(product.id);
+      toast.success("Product permanently deleted from database");
+      loadProducts();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated || role !== "admin") { router.push("/auth/login"); return; }
@@ -183,10 +198,16 @@ export default function AdminProductsPage() {
                       {togglingId === p.id ? (
                         <Loader2 size={14} className="animate-spin text-gold-500" />
                       ) : (
-                        <button onClick={() => toggleActive(p)} title={p.is_active ? "Hide Product" : "Show Product"}
-                          className="text-muted hover:text-brown transition-colors">
-                          {p.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
+                        <>
+                          <button onClick={() => toggleActive(p)} title={p.is_active ? "Hide Product" : "Show Product"}
+                            className="text-muted hover:text-brown transition-colors">
+                            {p.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          <button onClick={() => handleDeleteProduct(p)} title="Permanently Delete Product"
+                            className="text-muted hover:text-red-600 transition-colors ml-1">
+                            <Trash2 size={14} />
+                          </button>
+                        </>
                       )}
                     </div>
                   </td>

@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Wallet, ShieldAlert, Loader2, ArrowRightLeft, DollarSign } from "lucide-react";
+import { Wallet, ShieldAlert, Loader2, ArrowRightLeft, DollarSign, Trash2 } from "lucide-react";
+import { getApiError } from "@/lib/utils";
+
 import { adminApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { formatPrice, formatDate } from "@/lib/utils";
@@ -54,6 +56,17 @@ export default function AdminSettlementsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const handleDeleteSettlement = async (id: number) => {
+    if (!confirm(`Are you sure you want to permanently delete Settlement record #${id} from the database?`)) return;
+    try {
+      await adminApi.deleteSettlement(id);
+      toast.success("Settlement record permanently deleted from database");
+      loadData();
+    } catch (err) {
+      toast.error(getApiError(err));
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated || role !== "admin") {
@@ -186,6 +199,7 @@ export default function AdminSettlementsPage() {
                         <th className="table-th text-right">Platform Fee</th>
                         <th className="table-th">Status</th>
                         <th className="table-th">Release Date</th>
+                        <th className="table-th text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -211,6 +225,15 @@ export default function AdminSettlementsPage() {
                           </td>
                           <td className="table-td font-garamond text-xs text-muted">
                             {formatDate(item.release_date)}
+                          </td>
+                          <td className="table-td text-right">
+                            <button
+                              onClick={() => handleDeleteSettlement(item.id)}
+                              title="Permanently Delete Settlement Record"
+                              className="text-muted hover:text-red-600 transition-colors p-1"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </td>
                         </tr>
                       ))}

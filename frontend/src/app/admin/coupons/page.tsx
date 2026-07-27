@@ -79,11 +79,11 @@ export default function AdminCouponsPage() {
     finally { setIsSaving(false); }
   };
 
-  const handleDeactivate = async (coupon: Coupon) => {
-    if (!confirm(`Deactivate coupon "${coupon.code}"?`)) return;
+  const handleDeleteCoupon = async (coupon: Coupon) => {
+    if (!confirm(`Are you sure you want to permanently delete coupon "${coupon.code}" from the database?`)) return;
     try {
       await adminApi.deleteCoupon(coupon.id);
-      toast.success("Coupon deactivated");
+      toast.success("Coupon permanently deleted from database");
       loadCoupons();
     } catch (err) { toast.error(getApiError(err)); }
   };
@@ -278,12 +278,11 @@ export default function AdminCouponsPage() {
                     </span>
                   </td>
                   <td className="table-td">
-                    {coupon.is_active && (
-                      <button onClick={() => handleDeactivate(coupon)}
-                        className="text-muted hover:text-red-500 transition-colors">
-                        <Trash2 size={14} />
-                      </button>
-                    )}
+                    <button onClick={() => handleDeleteCoupon(coupon)}
+                      title="Permanently Delete Coupon"
+                      className="text-muted hover:text-red-600 transition-colors p-1">
+                      <Trash2 size={15} />
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -2,7 +2,8 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Search, UserCheck, UserX, ShieldCheck, Store, Percent } from "lucide-react";
+import { Loader2, Search, UserCheck, UserX, ShieldCheck, Store, Percent, Trash2 } from "lucide-react";
+
 import toast from "react-hot-toast";
 import { adminApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -41,6 +42,34 @@ function UsersContent() {
   const [merchantsPage, setMerchantsPage] = useState(1);
   const [commissionInputs, setCommissionInputs] = useState<Record<number, number>>({});
   const [actionMerchantId, setActionMerchantId] = useState<number | null>(null);
+
+  const handleDeleteUser = async (user: User) => {
+    if (!confirm(`Are you sure you want to permanently delete user "${user.full_name}" (${user.email}) from the database?`)) return;
+    setActionUserId(user.id);
+    try {
+      await adminApi.deleteUser(user.id);
+      toast.success("User permanently deleted from database");
+      loadUsers();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
+  const handleDeleteMerchant = async (merchantProfile: any) => {
+    if (!confirm(`Are you sure you want to permanently delete merchant store "${merchantProfile.business_name}" from the database?`)) return;
+    setActionMerchantId(merchantProfile.id);
+    try {
+      await adminApi.deleteMerchant(merchantProfile.id);
+      toast.success("Merchant profile permanently deleted from database");
+      loadMerchants();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setActionMerchantId(null);
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated || !["admin","support"].includes(role || "")) { router.push("/auth/login"); return; }
@@ -237,7 +266,11 @@ function UsersContent() {
                                     <ShieldCheck size={15} />
                                   </button>
                                 )}
-                              </>
+                                <button onClick={() => handleDeleteUser(user)} title="Permanently Delete User"
+                                    className="text-muted hover:text-red-600 transition-colors ml-1">
+                                    <Trash2 size={15} />
+                                  </button>
+                                </>
                             )}
                           </div>
                         </td>
@@ -330,7 +363,7 @@ function UsersContent() {
                         )}
                       </td>
                       <td className="table-td py-4">
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                           {actionMerchantId === merchant.id ? (
                             <Loader2 size={14} className="animate-spin text-gold-500" />
                           ) : (
@@ -343,8 +376,15 @@ function UsersContent() {
                                   APPROVE
                                 </button>
                               ) : (
-                                <span className="text-xs text-green-600 font-cinzel font-semibold tracking-wider">✓ ACTIVE</span>
+                                <span className="text-xs text-green-600 font-cinzel font-semibold tracking-wider mr-1">✓ ACTIVE</span>
                               )}
+                              <button
+                                  onClick={() => handleDeleteMerchant(merchant)}
+                                  title="Permanently Delete Merchant Store"
+                                  className="text-muted hover:text-red-600 transition-colors p-1"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
                             </>
                           )}
                         </div>

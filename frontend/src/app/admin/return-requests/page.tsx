@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminApi } from "@/lib/api";
-import { Loader2, RefreshCw, AlertCircle, ArrowLeftRight, Check, X, ShieldAlert } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle, ArrowLeftRight, Check, X, ShieldAlert, Trash2 } from "lucide-react";
+
 import toast from "react-hot-toast";
 import { formatPrice, getApiError } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -46,6 +47,20 @@ export default function AdminReturnRequestsPage() {
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+
+  const handleDeleteRequest = async (id: number) => {
+    if (!confirm(`Are you sure you want to permanently delete Return Request #${id} from the database?`)) return;
+    setProcessingId(id);
+    try {
+      await adminApi.deleteReturnRequest(id);
+      toast.success("Return request permanently deleted from database");
+      loadRequests();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated || (role !== "admin" && role !== "support")) {
@@ -219,6 +234,13 @@ export default function AdminReturnRequestsPage() {
                           {(r.status === "completed" || r.status === "rejected") && (
                             <span className="text-[10px] text-muted uppercase font-cinzel">Closed</span>
                           )}
+                          <button
+                            onClick={() => handleDeleteRequest(r.id)}
+                            className="bg-red-50 text-red-600 p-1.5 rounded hover:bg-red-100 transition-colors border border-red-200 ml-1"
+                            title="Permanently Delete Return Request"
+                          >
+                            <Trash2 size={12} />
+                          </button>
                         </div>
                       )}
                     </td>

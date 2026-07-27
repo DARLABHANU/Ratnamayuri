@@ -2,7 +2,8 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown, Trash2 } from "lucide-react";
+
 import toast from "react-hot-toast";
 import { adminApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -22,6 +23,17 @@ function AdminOrdersContent() {
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+
+  const handleDeleteOrder = async (order: Order) => {
+    if (!confirm(`Are you sure you want to permanently delete order #${order.order_number} from the database?`)) return;
+    setUpdatingId(order.id);
+    try {
+      await adminApi.deleteOrder(order.id);
+      toast.success("Order permanently deleted from database");
+      loadOrders();
+    } catch (err) { toast.error(getApiError(err)); }
+    finally { setUpdatingId(null); }
+  };
 
   useEffect(() => {
     if (!isAuthenticated || !["admin","support"].includes(role || "")) { router.push("/auth/login"); return; }
@@ -94,6 +106,10 @@ function AdminOrdersContent() {
                     {ALL_STATUSES.map(s => <option key={s} value={s}>{ORDER_STATUS_LABELS[s]}</option>)}
                   </select>
                   {updatingId === order.id && <Loader2 size={14} className="animate-spin text-gold-500" />}
+                  <button onClick={() => handleDeleteOrder(order)} title="Permanently Delete Order"
+                    className="text-muted hover:text-red-600 transition-colors p-1 ml-1">
+                    <Trash2 size={15} />
+                  </button>
                 </div>
               </div>
 

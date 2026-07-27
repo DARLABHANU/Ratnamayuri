@@ -1010,4 +1010,162 @@ router.post('/return-requests/:id/complete', requireAdminOrSupport, async (req, 
   }
 });
 
+// ─── PERMANENT DELETE API ENDPOINTS FOR ADMIN FEATURES ────────────────────────
+
+// Delete User
+router.delete('/users/:user_id', requireAdmin, async (req, res, next) => {
+  try {
+    const userId = Number(req.params.user_id);
+    const user = await User.findOne({ id: userId });
+    if (!user) {
+      return res.status(404).json({ detail: 'User not found' });
+    }
+
+    if (user.role === 'admin' && user.id === req.user.id) {
+      return res.status(400).json({ detail: 'Cannot delete your own admin account' });
+    }
+
+    await User.deleteOne({ id: userId });
+    res.json({ detail: `User #${userId} permanently deleted from database` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete Merchant Profile
+router.delete('/merchants/:merchant_id', requireAdmin, async (req, res, next) => {
+  try {
+    const merchantId = Number(req.params.merchant_id);
+    const profile = await MerchantProfile.findOne({ id: merchantId });
+    if (!profile) {
+      return res.status(404).json({ detail: 'Merchant profile not found' });
+    }
+
+    await MerchantProfile.deleteOne({ id: merchantId });
+    if (profile.user_id) {
+      await User.deleteOne({ id: profile.user_id });
+    }
+    res.json({ detail: `Merchant profile #${merchantId} and user account deleted from database` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete Product
+router.delete('/products/:product_id', requireAdmin, async (req, res, next) => {
+  try {
+    const productId = Number(req.params.product_id);
+    const Product = require('../models/Product');
+    const product = await Product.findOne({ id: productId });
+    if (!product) {
+      return res.status(404).json({ detail: 'Product not found' });
+    }
+
+    await Product.deleteOne({ id: productId });
+    res.json({ detail: `Product #${productId} permanently deleted from database` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete Coupon (Permanent Database Deletion)
+router.delete('/coupons/:coupon_id', requireAdmin, async (req, res, next) => {
+  try {
+    const couponId = Number(req.params.coupon_id);
+    const coupon = await Coupon.findOne({ id: couponId });
+    if (!coupon) {
+      return res.status(404).json({ detail: 'Coupon not found' });
+    }
+
+    await Coupon.deleteOne({ id: couponId });
+    res.json({ detail: `Coupon #${couponId} permanently deleted from database` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete Order
+router.delete('/orders/:order_id', requireAdmin, async (req, res, next) => {
+  try {
+    const orderId = Number(req.params.order_id);
+    const order = await Order.findOne({ id: orderId });
+    if (!order) {
+      return res.status(404).json({ detail: 'Order not found' });
+    }
+
+    await Order.deleteOne({ id: orderId });
+    await OrderItem.deleteMany({ order_id: orderId });
+    res.json({ detail: `Order #${orderId} and items permanently deleted from database` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete Return Request
+router.delete('/return-requests/:request_id', requireAdmin, async (req, res, next) => {
+  try {
+    const requestId = Number(req.params.request_id);
+    const ReturnRequest = require('../models/ReturnRequest');
+    const request = await ReturnRequest.findOne({ id: requestId });
+    if (!request) {
+      return res.status(404).json({ detail: 'Return request not found' });
+    }
+
+    await ReturnRequest.deleteOne({ id: requestId });
+    res.json({ detail: `Return request #${requestId} permanently deleted from database` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete Withdrawal Request
+router.delete('/withdrawals/:request_id', requireAdmin, async (req, res, next) => {
+  try {
+    const requestId = Number(req.params.request_id);
+    const WithdrawalRequest = require('../models/WithdrawalRequest');
+    const request = await WithdrawalRequest.findOne({ id: requestId });
+    if (!request) {
+      return res.status(404).json({ detail: 'Withdrawal request not found' });
+    }
+
+    await WithdrawalRequest.deleteOne({ id: requestId });
+    res.json({ detail: `Withdrawal request #${requestId} permanently deleted from database` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete Settlement
+router.delete('/settlements/:settlement_id', requireAdmin, async (req, res, next) => {
+  try {
+    const settlementId = Number(req.params.settlement_id);
+    const Settlement = require('../models/Settlement');
+    const settlement = await Settlement.findOne({ id: settlementId });
+    if (!settlement) {
+      return res.status(404).json({ detail: 'Settlement not found' });
+    }
+
+    await Settlement.deleteOne({ id: settlementId });
+    res.json({ detail: `Settlement record #${settlementId} permanently deleted from database` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete Commission
+router.delete('/commissions/:commission_id', requireAdmin, async (req, res, next) => {
+  try {
+    const commissionId = Number(req.params.commission_id);
+    const commission = await Commission.findOne({ id: commissionId });
+    if (!commission) {
+      return res.status(404).json({ detail: 'Commission not found' });
+    }
+
+    await Commission.deleteOne({ id: commissionId });
+    res.json({ detail: `Commission record #${commissionId} permanently deleted from database` });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

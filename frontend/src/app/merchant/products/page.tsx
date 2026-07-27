@@ -251,8 +251,13 @@ export default function MerchantProductsPage() {
         parsedTags.push(data.main_category);
       }
 
+      const sellerBasePrice = Number(data.price);
+      const customerSellingPrice = sellerBasePrice + 299;
+
       const payload = {
         ...data,
+        base_price: sellerBasePrice,
+        price: customerSellingPrice,
         category_id: data.category_id ? Number(data.category_id) : null,
         subcategory: data.subcategory || null,
         subcategory_slug: data.subcategory ? data.subcategory.toLowerCase().replace(/\s+/g, '-') : null,

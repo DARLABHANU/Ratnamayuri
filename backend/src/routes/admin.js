@@ -381,10 +381,9 @@ router.post('/coupons', requireAdmin, async (req, res, next) => {
       payload.promoter_id = null;
     }
 
-    const discount_type = payload.discount_type === 'percentage' ? 'percentage' : 'fixed';
-    const discount_value = Number(payload.discount_value) || Number(payload.discount_amount) || 0;
-    const max_discount_amount = payload.max_discount_amount ? Number(payload.max_discount_amount) : null;
-    const discount_amount = discount_type === 'percentage' ? (max_discount_amount || discount_value) : discount_value;
+    const discount_type = 'fixed';
+    const discount_value = 199;
+    const discount_amount = 199;
 
     const coupon = new Coupon({
       ...payload,
@@ -392,7 +391,8 @@ router.post('/coupons', requireAdmin, async (req, res, next) => {
       discount_type,
       discount_value,
       discount_amount,
-      max_discount_amount,
+      promoter_commission: Number(payload.promoter_commission) || 100,
+      platform_profit: Number(payload.platform_profit) || 30,
       created_by: req.user.id
     });
 

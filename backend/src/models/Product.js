@@ -38,13 +38,14 @@ const ProductSchema = new mongoose.Schema({
 ProductSchema.pre('save', async function (next) {
   const PLATFORM_MARGIN = 299;
 
-  // If seller sets base_price, customer selling price = base_price + 299
-  // If seller passes price directly without base_price, compute base_price = price - 299
-  if (this.base_price !== undefined && this.base_price !== null) {
-    this.price = Math.round((Number(this.base_price) + PLATFORM_MARGIN) * 100) / 100;
-  } else if (this.price !== undefined && this.price !== null) {
-    this.base_price = Math.max(0, Math.round((Number(this.price) - PLATFORM_MARGIN) * 100) / 100);
-    this.price = Math.round(Number(this.price) * 100) / 100;
+  // Seller price is stored in base_price. If seller inputs 500, base_price=500 and price=799 (500 + 299).
+  if (this.base_price !== undefined && this.base_price !== null && Number(this.base_price) > 0) {
+    this.base_price = Number(this.base_price);
+    this.price = Math.round((this.base_price + PLATFORM_MARGIN) * 100) / 100;
+  } else if (this.price !== undefined && this.price !== null && Number(this.price) > 0) {
+    // If seller passed price without base_price (e.g. 500), 500 is seller price!
+    this.base_price = Number(this.price);
+    this.price = Math.round((this.base_price + PLATFORM_MARGIN) * 100) / 100;
   } else {
     this.base_price = 1700;
     this.price = 1999;

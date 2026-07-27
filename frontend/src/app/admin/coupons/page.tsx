@@ -72,15 +72,14 @@ export default function AdminCouponsPage() {
   const onSubmit = async (data: CouponForm) => {
     setIsSaving(true);
     try {
-      const discountVal = data.discount_value;
-      const maxDiscount = data.max_discount_amount || (data.discount_type === "fixed" ? discountVal : null);
-      
       await adminApi.createCoupon({ 
         ...data, 
         code: data.code.toUpperCase(),
-        discount_amount: data.discount_type === "fixed" ? discountVal : (maxDiscount || discountVal),
-        discount_value: discountVal,
-        max_discount_amount: maxDiscount
+        discount_type: "fixed",
+        discount_value: 199,
+        discount_amount: 199,
+        promoter_commission: Number(data.promoter_commission) || 100,
+        platform_profit: Number(data.platform_profit) || 30
       });
       toast.success("Coupon created successfully!");
       setShowForm(false);
@@ -143,36 +142,18 @@ export default function AdminCouponsPage() {
                 <input {...register("description")} placeholder="Brief description (e.g. Special Festival Discount)" className="input-field" />
               </div>
 
-              {/* Discount Type Selector */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">DISCOUNT TYPE *</label>
-                  <select {...register("discount_type")} className="input-field py-2 font-garamond">
-                    <option value="fixed">Fixed Amount (₹)</option>
-                    <option value="percentage">Percentage (%)</option>
-                  </select>
+              {/* Locked Coupon Discount Value (Fixed to ₹199) */}
+              <div>
+                <label className="font-cinzel text-xs tracking-widest text-muted block mb-1 font-bold">COUPON DISCOUNT AMOUNT *</label>
+                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-300 rounded px-3 py-2.5">
+                  <span className="font-cinzel text-base font-bold text-emerald-900">₹199 OFF</span>
+                  <span className="text-[10px] bg-emerald-700 text-gold-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider ml-auto">
+                    🔒 FIXED TO ₹199
+                  </span>
                 </div>
-                <div>
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-                    {discountType === "percentage" ? "DISCOUNT PERCENTAGE (%) *" : "DISCOUNT AMOUNT (₹) *"}
-                  </label>
-                  <input 
-                    {...register("discount_value")} 
-                    type="number" 
-                    placeholder={discountType === "percentage" ? "e.g. 15 for 15%" : "e.g. 200 for ₹200"} 
-                    className="input-field py-2" 
-                  />
-                  {errors.discount_value && <p className="text-red-500 text-xs mt-1">{errors.discount_value.message}</p>}
-                </div>
+                <input type="hidden" {...register("discount_value")} value={199} />
+                <input type="hidden" {...register("discount_type")} value="fixed" />
               </div>
-
-              {discountType === "percentage" && (
-                <div>
-                  <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">MAX DISCOUNT CAP (₹)</label>
-                  <input {...register("max_discount_amount")} type="number" placeholder="e.g. 1000 (Max limit for % discount)" className="input-field py-2" />
-                  <p className="text-[11px] font-garamond text-muted mt-0.5">Optional upper limit on discount amount for percentage coupons.</p>
-                </div>
-              )}
 
               {/* Financial breakdown */}
               <div className="bg-gold-50 border border-gold-200 p-4 space-y-3 rounded-md">

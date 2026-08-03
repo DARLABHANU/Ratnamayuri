@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
-import { Loader2, User, Lock, MapPin, Plus, Trash2 } from "lucide-react";
+import {
+  Loader2, User, Lock, MapPin, Plus, Trash2, Settings, ChevronRight,
+  ShoppingBag, Truck, CheckSquare, CreditCard, Tag, Gift, HelpCircle,
+  Info, LogOut, Clock, ChevronLeft
+} from "lucide-react";
 import { authApi, addressApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { Address } from "@/types";
@@ -21,7 +26,7 @@ const passwordSchema = z.object({
   current_password: z.string().min(1),
   new_password: z.string().min(8, "Min 8 characters"),
   confirm_password: z.string(),
-}).refine(d => d.new_password === d.confirm_password, {
+}).refine((d) => d.new_password === d.confirm_password, {
   message: "Passwords don't match",
   path: ["confirm_password"],
 });
@@ -52,12 +57,12 @@ type PasswordForm = z.infer<typeof passwordSchema>;
 type AddressForm = z.infer<typeof addressSchema>;
 type PayoutForm = z.infer<typeof payoutSchema>;
 
-type Tab = "profile" | "payout" | "password" | "addresses";
+type Tab = "main" | "profile" | "payout" | "password" | "addresses";
 
 export default function CustomerProfilePage() {
   const router = useRouter();
-  const { isAuthenticated, user, setUser } = useAuthStore();
-  const [tab, setTab] = useState<Tab>("profile");
+  const { isAuthenticated, user, setUser, logout } = useAuthStore();
+  const [tab, setTab] = useState<Tab>("main");
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -68,8 +73,11 @@ export default function CustomerProfilePage() {
   const payoutForm = useForm<PayoutForm>({ resolver: zodResolver(payoutSchema) });
 
   useEffect(() => {
-    if (!isAuthenticated) { router.push("/auth/login"); return; }
-    authApi.me().then(r => {
+    if (!isAuthenticated) {
+      router.push("/auth/login");
+      return;
+    }
+    authApi.me().then((r) => {
       setUser(r.data);
       profileForm.reset({ full_name: r.data.full_name, phone: r.data.phone || "" });
       payoutForm.reset({
@@ -97,27 +105,42 @@ export default function CustomerProfilePage() {
       toast.success("Payout bank & UPI details saved successfully!");
       const r = await authApi.me();
       setUser(r.data);
-    } catch (err) { toast.error(getApiError(err)); }
-    finally { setIsSaving(false); }
+      setTab("main");
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const onProfileSubmit = async (data: ProfileForm) => {
     setIsSaving(true);
     try {
-      await authApi.me(); // just refresh
+      await authApi.me();
       toast.success("Profile updated!");
-    } catch (err) { toast.error(getApiError(err)); }
-    finally { setIsSaving(false); }
+      setTab("main");
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const onPasswordSubmit = async (data: PasswordForm) => {
     setIsSaving(true);
     try {
-      await authApi.changePassword({ current_password: data.current_password, new_password: data.new_password });
+      await authApi.changePassword({
+        current_password: data.current_password,
+        new_password: data.new_password,
+      });
       toast.success("Password changed!");
       passwordForm.reset();
-    } catch (err) { toast.error(getApiError(err)); }
-    finally { setIsSaving(false); }
+      setTab("main");
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const onAddressSubmit = async (data: AddressForm) => {
@@ -128,8 +151,11 @@ export default function CustomerProfilePage() {
       setShowAddressForm(false);
       addressForm.reset();
       loadAddresses();
-    } catch (err) { toast.error(getApiError(err)); }
-    finally { setIsSaving(false); }
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteAddress = async (id: number) => {
@@ -138,264 +164,452 @@ export default function CustomerProfilePage() {
       await addressApi.delete(id);
       toast.success("Address deleted");
       loadAddresses();
-    } catch (err) { toast.error(getApiError(err)); }
+    } catch (err) {
+      toast.error(getApiError(err));
+    }
   };
 
-  const TABS: { id: Tab; label: string; icon: typeof User }[] = [
-    { id: "profile", label: "Profile", icon: User },
-    { id: "payout", label: "Payout Bank / UPI", icon: Lock },
-    { id: "password", label: "Password", icon: Lock },
-    { id: "addresses", label: "Addresses", icon: MapPin },
-  ];
+  const handleLogout = () => {
+    logout();
+    router.push("/auth/login");
+  };
+
+  // User display name
+  const userName = user?.full_name ? user.full_name.split(" ")[0] : "Sneha";
 
   return (
-    <div className="max-w-3xl mx-auto px-4 lg:px-8 py-12">
-      <div className="mb-8">
-        <span className="section-tag">ACCOUNT</span>
-        <h1 className="section-title">My <em className="italic">Profile</em></h1>
-        <div className="divider-gold mx-0 mt-4" />
-      </div>
+    <div className="min-h-screen bg-white md:bg-[#FAF8F3] text-[#1C2E24] font-garamond">
 
-      {/* User info card */}
-      {user && (
-        <div className="card p-4 sm:p-5 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-4">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gold-200 to-gold-500
-            flex items-center justify-center font-cinzel text-xl text-deep flex-shrink-0">
-            {user.full_name.charAt(0)}
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* MOBILE PROFILE VIEW (Exact match to design screenshot)   */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      <div className="md:hidden bg-white min-h-screen">
+        {/* Top Dark Green Banner */}
+        <div
+          className="px-5 pt-8 pb-10 relative overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #092B1B 0%, #0D3A25 50%, #082416 100%)" }}
+        >
+          {/* Top Settings Icon */}
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={() => setTab("profile")}
+              className="text-white/90 hover:text-white p-1 transition-colors"
+              aria-label="Settings"
+            >
+              <Settings size={22} />
+            </button>
           </div>
-          <div className="text-center sm:text-left">
-            <p className="font-cormorant text-xl text-brown">{user.full_name}</p>
-            <p className="font-garamond text-sm text-muted">{user.email}</p>
-            <p className="font-cinzel text-xs text-gold-600 mt-0.5">
-              #{user.account_number} · Member since {formatDate(user.created_at)}
-            </p>
+
+          {/* User Info Row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3.5">
+              {/* Circular Avatar */}
+              <div className="w-16 h-16 rounded-full border-2 border-white/30 bg-[#14472F] text-white flex items-center justify-center font-cormorant font-bold text-2xl shadow-md flex-shrink-0">
+                {user?.full_name ? user.full_name.charAt(0).toUpperCase() : "S"}
+              </div>
+
+              {/* Name & Welcome */}
+              <div className="space-y-0.5">
+                <h1 className="font-cormorant text-2xl font-bold text-white leading-tight flex items-center gap-1.5">
+                  Hello, {userName} <span className="text-xl">👋</span>
+                </h1>
+                <p className="font-garamond text-xs text-emerald-200/80">Welcome to Ratnamayuri</p>
+              </div>
+            </div>
+
+            {/* Chevron Right Arrow */}
+            <button
+              onClick={() => setTab("profile")}
+              className="text-white/80 hover:text-white p-2 transition-colors"
+              aria-label="Account details"
+            >
+              <ChevronRight size={22} />
+            </button>
           </div>
         </div>
-      )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 border border-gold-200 p-1 bg-white mb-6 rounded-md">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setTab(id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 font-cinzel text-xs tracking-wide transition-all rounded-sm
-              ${tab === id ? "bg-deep text-gold-300" : "text-muted hover:text-brown"}`}>
-            <Icon size={12} />
-            <span className="hidden xs:inline sm:inline">{label}</span>
-          </button>
-        ))}
-      </div>
+        {/* Overlapping White Container Card */}
+        <div className="-mt-5 rounded-t-3xl bg-white border-t border-[#E5E0D5]/80 shadow-lg px-4 pt-5 pb-16 min-h-[calc(100vh-140px)] space-y-6">
 
-      {/* Profile tab */}
-      {tab === "profile" && (
-        <div className="card p-6 animate-fade-up">
-          <h2 className="font-cinzel text-xs tracking-widest text-muted mb-5">PERSONAL INFORMATION</h2>
-          <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-            <div>
-              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">FULL NAME</label>
-              <input {...profileForm.register("full_name")} className="input-field" />
-              {profileForm.formState.errors.full_name && (
-                <p className="text-red-500 text-xs mt-1">{profileForm.formState.errors.full_name.message}</p>
+          {tab === "main" ? (
+            <>
+              {/* ── 1. My Orders Section ── */}
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-cormorant text-[19px] font-bold text-[#1C2E24]">My Orders</h2>
+                  <Link
+                    href="/customer/orders"
+                    className="font-garamond text-xs font-semibold text-[#556B5D] hover:text-[#1E3A2B] flex items-center gap-0.5 transition-colors"
+                  >
+                    View All <ChevronRight size={13} />
+                  </Link>
+                </div>
+
+                {/* 4 Order Status Columns */}
+                <div className="grid grid-cols-4 gap-2 pt-1">
+                  {[
+                    { label: "Pending", icon: <ShoppingBag size={22} />, status: "pending" },
+                    { label: "Confirmed", icon: <ShoppingBag size={22} />, status: "confirmed" },
+                    { label: "Shipped", icon: <Truck size={22} />, status: "shipped" },
+                    { label: "Delivered", icon: <CheckSquare size={22} />, status: "delivered" },
+                  ].map((item) => (
+                    <Link
+                      key={item.label}
+                      href={`/customer/orders?status=${item.status}`}
+                      className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl hover:bg-[#FAF8F3] transition-colors group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-[#FAF8F3] border border-[#EBE6DC] flex items-center justify-center text-[#1C2E24] group-hover:border-[#0D2619] group-hover:text-[#0D2619] transition-colors">
+                        {item.icon}
+                      </div>
+                      <span className="font-garamond text-xs font-semibold text-[#364B3E]">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── 2. Menu Options List ── */}
+              <div className="divide-y divide-[#F2EFE9] border-t border-[#F2EFE9] pt-2">
+
+                {/* My Addresses */}
+                <button
+                  onClick={() => setTab("addresses")}
+                  className="w-full flex items-center justify-between py-3.5 text-left hover:bg-[#FAF8F3] px-1 rounded-lg transition-colors group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#FAF8F3] border border-[#EBE6DC] flex items-center justify-center text-[#1C2E24]">
+                      <MapPin size={17} />
+                    </div>
+                    <span className="font-garamond text-sm font-bold text-[#1C2E24]">My Addresses</span>
+                  </div>
+                  <ChevronRight size={18} className="text-[#8C9890] group-hover:text-[#1C2E24] transition-colors" />
+                </button>
+
+                {/* Payment Methods */}
+                <button
+                  onClick={() => setTab("payout")}
+                  className="w-full flex items-center justify-between py-3.5 text-left hover:bg-[#FAF8F3] px-1 rounded-lg transition-colors group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#FAF8F3] border border-[#EBE6DC] flex items-center justify-center text-[#1C2E24]">
+                      <CreditCard size={17} />
+                    </div>
+                    <span className="font-garamond text-sm font-bold text-[#1C2E24]">Payment Methods</span>
+                  </div>
+                  <ChevronRight size={18} className="text-[#8C9890] group-hover:text-[#1C2E24] transition-colors" />
+                </button>
+
+                {/* My Coupons */}
+                <div className="w-full flex items-center justify-between py-3.5 px-1 hover:bg-[#FAF8F3] rounded-lg transition-colors group">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#FAF8F3] border border-[#EBE6DC] flex items-center justify-center text-[#1C2E24]">
+                      <Tag size={17} />
+                    </div>
+                    <span className="font-garamond text-sm font-bold text-[#1C2E24]">My Coupons</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-garamond text-xs text-[#7A6E5D]">2 Available</span>
+                    <ChevronRight size={18} className="text-[#8C9890]" />
+                  </div>
+                </div>
+
+                {/* Refer & Earn */}
+                <Link
+                  href="/promoter/dashboard"
+                  className="w-full flex items-center justify-between py-3.5 px-1 hover:bg-[#FAF8F3] rounded-lg transition-colors group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#FAF8F3] border border-[#EBE6DC] flex items-center justify-center text-[#1C2E24]">
+                      <Gift size={17} />
+                    </div>
+                    <span className="font-garamond text-sm font-bold text-[#1C2E24]">Refer & Earn</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-garamond text-xs font-bold text-[#0D2619]">Earn Rewards</span>
+                    <ChevronRight size={18} className="text-[#8C9890]" />
+                  </div>
+                </Link>
+
+                {/* Help & Support */}
+                <Link
+                  href="/customer/support"
+                  className="w-full flex items-center justify-between py-3.5 px-1 hover:bg-[#FAF8F3] rounded-lg transition-colors group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#FAF8F3] border border-[#EBE6DC] flex items-center justify-center text-[#1C2E24]">
+                      <HelpCircle size={17} />
+                    </div>
+                    <span className="font-garamond text-sm font-bold text-[#1C2E24]">Help & Support</span>
+                  </div>
+                  <ChevronRight size={18} className="text-[#8C9890]" />
+                </Link>
+
+                {/* About Us */}
+                <Link
+                  href="/about"
+                  className="w-full flex items-center justify-between py-3.5 px-1 hover:bg-[#FAF8F3] rounded-lg transition-colors group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#FAF8F3] border border-[#EBE6DC] flex items-center justify-center text-[#1C2E24]">
+                      <Info size={17} />
+                    </div>
+                    <span className="font-garamond text-sm font-bold text-[#1C2E24]">About Us</span>
+                  </div>
+                  <ChevronRight size={18} className="text-[#8C9890]" />
+                </Link>
+
+              </div>
+
+              {/* Sign Out Button */}
+              <div className="pt-2">
+                <button
+                  onClick={handleLogout}
+                  className="w-full bg-red-50 text-red-600 font-garamond text-xs font-bold py-3 rounded-xl border border-red-200 flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                >
+                  <LogOut size={16} /> Sign Out
+                </button>
+              </div>
+            </>
+          ) : (
+            /* Sub-view forms (Profile, Payout, Password, Addresses) on mobile */
+            <div className="space-y-4">
+              <button
+                onClick={() => setTab("main")}
+                className="inline-flex items-center gap-1 text-xs font-bold text-[#0D2619] hover:underline mb-2"
+              >
+                <ChevronLeft size={16} /> Back to Profile Menu
+              </button>
+
+              {tab === "profile" && (
+                <div className="space-y-4">
+                  <h2 className="font-cormorant text-xl font-bold text-[#1C2E24]">Personal Information</h2>
+                  <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-3 font-garamond">
+                    <div>
+                      <label className="text-xs font-bold text-[#1C2E24] block mb-1">Full Name</label>
+                      <input {...profileForm.register("full_name")} className="w-full border border-[#E5E0D5] rounded-xl px-3 py-2 text.xs font-bold bg-[#FAF8F3]" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-[#1C2E24] block mb-1">Phone Number</label>
+                      <input {...profileForm.register("phone")} type="tel" className="w-full border border-[#E5E0D5] rounded-xl px-3 py-2 text-xs font-bold bg-[#FAF8F3]" placeholder="+91 98765 43210" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-[#8C9890] block mb-1">Email Address</label>
+                      <input value={user?.email || ""} disabled className="w-full border border-[#E5E0D5] rounded-xl px-3 py-2 text-xs font-bold bg-[#FAF8F3] opacity-60 cursor-not-allowed" />
+                    </div>
+                    <button type="submit" disabled={isSaving} className="w-full bg-[#0D2619] text-white py-3 rounded-xl font-bold text-xs">
+                      {isSaving ? "Saving..." : "Save Changes"}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {tab === "payout" && (
+                <div className="space-y-4">
+                  <h2 className="font-cormorant text-xl font-bold text-[#1C2E24]">Payout Bank &amp; UPI Credentials</h2>
+                  <form onSubmit={payoutForm.handleSubmit(onPayoutSubmit)} className="space-y-3 font-garamond">
+                    <div>
+                      <label className="text-xs font-bold text-[#1C2E24] block mb-1">Bank Name</label>
+                      <input {...payoutForm.register("payout_bank_name")} className="w-full border border-[#E5E0D5] rounded-xl px-3 py-2 text-xs bg-[#FAF8F3]" placeholder="e.g. State Bank of India" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-[#1C2E24] block mb-1">Account Holder Name</label>
+                      <input {...payoutForm.register("payout_account_holder_name")} className="w-full border border-[#E5E0D5] rounded-xl px-3 py-2 text-xs bg-[#FAF8F3]" placeholder="Full name on bank account" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-[#1C2E24] block mb-1">Account Number</label>
+                      <input {...payoutForm.register("payout_account_number")} className="w-full border border-[#E5E0D5] rounded-xl px-3 py-2 text-xs font-mono bg-[#FAF8F3]" placeholder="Enter account number" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-[#1C2E24] block mb-1">IFSC Code</label>
+                      <input {...payoutForm.register("payout_ifsc_code")} className="w-full border border-[#E5E0D5] rounded-xl px-3 py-2 text-xs font-mono uppercase bg-[#FAF8F3]" placeholder="e.g. SBIN0001234" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-[#1C2E24] block mb-1">UPI ID</label>
+                      <input {...payoutForm.register("payout_upi_id")} className="w-full border border-[#E5E0D5] rounded-xl px-3 py-2 text-xs font-mono bg-[#FAF8F3]" placeholder="username@upi" />
+                    </div>
+                    <button type="submit" disabled={isSaving} className="w-full bg-[#0D2619] text-white py-3 rounded-xl font-bold text-xs">
+                      {isSaving ? "Saving..." : "Save Payout Details"}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {tab === "addresses" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-cormorant text-xl font-bold text-[#1C2E24]">Saved Addresses</h2>
+                    <button
+                      onClick={() => setShowAddressForm(!showAddressForm)}
+                      className="inline-flex items-center gap-1 text-xs font-bold bg-[#0D2619] text-white px-3 py-1.5 rounded-lg"
+                    >
+                      <Plus size={12} /> Add New
+                    </button>
+                  </div>
+
+                  {showAddressForm && (
+                    <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="space-y-3 bg-[#FAF8F3] p-4 rounded-xl border border-[#E5E0D5] font-garamond">
+                      <input {...addressForm.register("full_name")} placeholder="Full Name" className="w-full border p-2 text-xs rounded-lg" />
+                      <input {...addressForm.register("phone")} placeholder="Phone Number" className="w-full border p-2 text-xs rounded-lg" />
+                      <input {...addressForm.register("line1")} placeholder="Address Line 1" className="w-full border p-2 text-xs rounded-lg" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input {...addressForm.register("city")} placeholder="City" className="border p-2 text-xs rounded-lg" />
+                        <input {...addressForm.register("state")} placeholder="State" className="border p-2 text-xs rounded-lg" />
+                      </div>
+                      <input {...addressForm.register("pincode")} placeholder="Pincode" className="w-full border p-2 text-xs rounded-lg" />
+                      <button type="submit" disabled={isSaving} className="w-full bg-[#0D2619] text-white py-2 rounded-lg font-bold text-xs">
+                        Save Address
+                      </button>
+                    </form>
+                  )}
+
+                  <div className="space-y-3 font-garamond">
+                    {addresses.map((addr) => (
+                      <div key={addr.id} className="p-3 border border-[#E5E0D5] rounded-xl bg-white flex justify-between items-start">
+                        <div>
+                          <span className="text-[10px] font-bold bg-[#E8F5E9] text-[#2E7D32] px-2 py-0.5 rounded uppercase">{addr.label}</span>
+                          <p className="font-bold text-xs mt-1">{addr.full_name}</p>
+                          <p className="text-xs text-[#7A6E5D]">{addr.line1}, {addr.city}, {addr.state} - {addr.pincode}</p>
+                          <p className="text-xs text-[#7A6E5D]">{addr.phone}</p>
+                        </div>
+                        <button onClick={() => handleDeleteAddress(addr.id)} className="text-red-600 p-1">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-            <div>
-              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">PHONE NUMBER</label>
-              <input {...profileForm.register("phone")} type="tel" className="input-field" placeholder="+91 98765 43210" />
-            </div>
-            <div>
-              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">EMAIL ADDRESS</label>
-              <input value={user?.email || ""} disabled className="input-field opacity-60 cursor-not-allowed" />
-              <p className="font-garamond text-xs text-muted mt-1">Email cannot be changed</p>
-            </div>
-            <button type="submit" disabled={isSaving} className="btn-primary flex items-center gap-2">
-              {isSaving && <Loader2 size={12} className="animate-spin" />}
-              SAVE CHANGES
-            </button>
-          </form>
-        </div>
-      )}
+          )}
 
-      {/* Payout Bank & UPI Details tab */}
-      {tab === "payout" && (
-        <div className="card p-6 animate-fade-up">
-          <div className="mb-5">
-            <h2 className="font-cinzel text-xs tracking-widest text-brown font-bold uppercase">PAYOUT BANK ACCOUNT &amp; UPI CREDENTIALS</h2>
-            <p className="font-garamond text-xs text-muted mt-1">
-              Enter your bank account details or UPI ID below. Platform admin will send referral commissions and seller payouts directly to these credentials.
-            </p>
+        </div>
+      </div>
+
+
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* DESKTOP PROFILE VIEW                                      */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      <div className="hidden md:block max-w-3xl mx-auto px-4 lg:px-8 py-12">
+        <div className="mb-8">
+          <h1 className="font-cormorant text-3xl font-bold text-[#1C2E24]">My <em className="italic text-[#0D2619]">Profile</em></h1>
+          <div className="w-10 h-0.5 bg-[#0D2619] mt-3" />
+        </div>
+
+        {/* User Card */}
+        {user && (
+          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-5 mb-6 flex items-center gap-4 shadow-xs">
+            <div className="w-14 h-14 rounded-full bg-[#0D2619] flex items-center justify-center font-cormorant text-2xl font-bold text-white flex-shrink-0">
+              {user.full_name.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-cormorant text-xl font-bold text-[#1C2E24]">{user.full_name}</p>
+              <p className="font-garamond text-xs text-[#8C9890]">{user.email}</p>
+              <p className="font-garamond text-xs text-[#0D2619] font-semibold mt-0.5">
+                #{user.account_number} · Member since {formatDate(user.created_at)}
+              </p>
+            </div>
           </div>
+        )}
 
-          <form onSubmit={payoutForm.handleSubmit(onPayoutSubmit)} className="space-y-4">
-            <div className="bg-gold-50/50 border border-gold-200 p-4 rounded space-y-3">
-              <p className="font-cinzel text-[10px] tracking-wider text-brown font-bold">1. BANK ACCOUNT TRANSFER DETAILS</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="font-cinzel text-xs text-muted block mb-1">BANK NAME</label>
-                  <input {...payoutForm.register("payout_bank_name")} className="input-field" placeholder="e.g. State Bank of India, HDFC" />
-                </div>
-                <div>
-                  <label className="font-cinzel text-xs text-muted block mb-1">ACCOUNT HOLDER NAME</label>
-                  <input {...payoutForm.register("payout_account_holder_name")} className="input-field" placeholder="Full name on bank account" />
-                </div>
-                <div>
-                  <label className="font-cinzel text-xs text-muted block mb-1">ACCOUNT NUMBER</label>
-                  <input {...payoutForm.register("payout_account_number")} className="input-field font-mono" placeholder="Enter bank account number" />
-                </div>
-                <div>
-                  <label className="font-cinzel text-xs text-muted block mb-1">IFSC CODE</label>
-                  <input {...payoutForm.register("payout_ifsc_code")} className="input-field font-mono uppercase" placeholder="e.g. SBIN0001234" />
-                </div>
-              </div>
-            </div>
+        {/* Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-1 mb-6">
+          {[
+            { id: "profile", label: "Profile", icon: User },
+            { id: "payout", label: "Payout Bank / UPI", icon: Lock },
+            { id: "password", label: "Password", icon: Lock },
+            { id: "addresses", label: "Addresses", icon: MapPin },
+          ].map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setTab(id as Tab)}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full font-garamond text-xs font-semibold transition-all border
+                ${tab === id || (tab === "main" && id === "profile")
+                  ? "bg-[#0D2619] text-white border-[#0D2619]"
+                  : "bg-white text-[#556B5D] border-[#E5E0D5] hover:border-[#0D2619]"}`}
+            >
+              <Icon size={12} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
 
-            <div className="bg-gold-50/50 border border-gold-200 p-4 rounded space-y-2">
-              <p className="font-cinzel text-[10px] tracking-wider text-brown font-bold">2. UPI ADDRESS (GPay / PhonePe / Paytm)</p>
+        {/* Desktop Tab Contents */}
+        {(tab === "profile" || tab === "main") && (
+          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-6 shadow-xs space-y-4">
+            <h2 className="font-cormorant text-xl font-bold text-[#1C2E24]">Personal Information</h2>
+            <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4 font-garamond">
               <div>
-                <label className="font-cinzel text-xs text-muted block mb-1">UPI ID</label>
-                <input {...payoutForm.register("payout_upi_id")} className="input-field font-mono text-emerald-800" placeholder="e.g. mobile@ybl or username@okicici" />
+                <label className="text-xs font-bold text-[#1C2E24] block mb-1">FULL NAME</label>
+                <input {...profileForm.register("full_name")} className="w-full border border-[#E5E0D5] rounded-xl px-4 py-2.5 text-xs font-bold bg-[#FAF8F3]" />
               </div>
-            </div>
-
-            <button type="submit" disabled={isSaving} className="btn-primary flex items-center gap-2">
-              {isSaving && <Loader2 size={12} className="animate-spin" />}
-              SAVE PAYOUT DETAILS
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Password tab */}
-      {tab === "password" && (
-        <div className="card p-6 animate-fade-up">
-          <h2 className="font-cinzel text-xs tracking-widest text-muted mb-5">CHANGE PASSWORD</h2>
-          <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-            {["current_password", "new_password", "confirm_password"].map((field) => (
-              <div key={field}>
-                <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
-                  {field.replace(/_/g, " ").toUpperCase()}
-                </label>
-                <input
-                  {...passwordForm.register(field as any)}
-                  type="password"
-                  className="input-field"
-                  placeholder={field === "current_password" ? "Current password" : "New password"}
-                />
-                {(passwordForm.formState.errors as any)[field] && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {(passwordForm.formState.errors as any)[field]?.message}
-                  </p>
-                )}
+              <div>
+                <label className="text-xs font-bold text-[#1C2E24] block mb-1">PHONE NUMBER</label>
+                <input {...profileForm.register("phone")} type="tel" className="w-full border border-[#E5E0D5] rounded-xl px-4 py-2.5 text-xs font-bold bg-[#FAF8F3]" placeholder="+91 98765 43210" />
               </div>
-            ))}
-            <button type="submit" disabled={isSaving} className="btn-primary flex items-center gap-2">
-              {isSaving && <Loader2 size={12} className="animate-spin" />}
-              CHANGE PASSWORD
-            </button>
-          </form>
-        </div>
-      )}
+              <div>
+                <label className="text-xs font-bold text-[#8C9890] block mb-1">EMAIL ADDRESS</label>
+                <input value={user?.email || ""} disabled className="w-full border border-[#E5E0D5] rounded-xl px-4 py-2.5 text-xs font-bold bg-[#FAF8F3] opacity-60 cursor-not-allowed" />
+              </div>
+              <button type="submit" disabled={isSaving} className="bg-[#0D2619] hover:bg-[#19402B] text-white px-6 py-3 rounded-xl font-bold text-xs transition-colors">
+                {isSaving ? "Saving..." : "SAVE CHANGES"}
+              </button>
+            </form>
+          </div>
+        )}
 
-      {/* Addresses tab */}
-      {tab === "addresses" && (
-        <div className="animate-fade-up">
-          <div className="space-y-3 mb-4">
-            {addresses.map((addr) => (
-              <div key={addr.id} className="card p-4 flex justify-between items-start gap-4">
+        {tab === "payout" && (
+          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-6 shadow-xs space-y-4">
+            <h2 className="font-cormorant text-xl font-bold text-[#1C2E24]">Payout Bank &amp; UPI Credentials</h2>
+            <form onSubmit={payoutForm.handleSubmit(onPayoutSubmit)} className="space-y-4 font-garamond">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-deep text-gold-400 font-cinzel text-xs px-2 py-0.5">{addr.label}</span>
-                    {addr.is_default && <span className="font-cinzel text-xs text-gold-600">DEFAULT</span>}
-                  </div>
-                  <p className="font-garamond text-sm font-medium text-brown">{addr.full_name}</p>
-                  <p className="font-garamond text-sm text-muted">
-                    {addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}, {addr.city}, {addr.state} — {addr.pincode}
-                  </p>
-                  <p className="font-garamond text-sm text-muted">📞 {addr.phone}</p>
+                  <label className="text-xs font-bold text-[#1C2E24] block mb-1">BANK NAME</label>
+                  <input {...payoutForm.register("payout_bank_name")} className="w-full border border-[#E5E0D5] rounded-xl px-4 py-2.5 text-xs bg-[#FAF8F3]" placeholder="e.g. State Bank of India" />
                 </div>
-                <button onClick={() => handleDeleteAddress(addr.id)}
-                  className="text-muted hover:text-red-500 transition-colors flex-shrink-0">
-                  <Trash2 size={14} />
+                <div>
+                  <label className="text-xs font-bold text-[#1C2E24] block mb-1">ACCOUNT HOLDER NAME</label>
+                  <input {...payoutForm.register("payout_account_holder_name")} className="w-full border border-[#E5E0D5] rounded-xl px-4 py-2.5 text-xs bg-[#FAF8F3]" placeholder="Full name" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#1C2E24] block mb-1">ACCOUNT NUMBER</label>
+                  <input {...payoutForm.register("payout_account_number")} className="w-full border border-[#E5E0D5] rounded-xl px-4 py-2.5 text-xs font-mono bg-[#FAF8F3]" placeholder="Account number" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#1C2E24] block mb-1">IFSC CODE</label>
+                  <input {...payoutForm.register("payout_ifsc_code")} className="w-full border border-[#E5E0D5] rounded-xl px-4 py-2.5 text-xs font-mono uppercase bg-[#FAF8F3]" placeholder="e.g. SBIN0001234" />
+                </div>
+              </div>
+              <button type="submit" disabled={isSaving} className="bg-[#0D2619] hover:bg-[#19402B] text-white px-6 py-3 rounded-xl font-bold text-xs transition-colors">
+                {isSaving ? "Saving..." : "SAVE PAYOUT CREDENTIALS"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {tab === "addresses" && (
+          <div className="bg-white border border-[#E5E0D5] rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="font-cormorant text-xl font-bold text-[#1C2E24]">Saved Addresses</h2>
+              <button onClick={() => setShowAddressForm(!showAddressForm)} className="bg-[#0D2619] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1">
+                <Plus size={14} /> Add Address
+              </button>
+            </div>
+            {addresses.map((addr) => (
+              <div key={addr.id} className="p-4 border border-[#E5E0D5] rounded-xl bg-[#FAF8F3] flex justify-between items-start font-garamond">
+                <div>
+                  <span className="text-[10px] font-bold bg-[#E8F5E9] text-[#2E7D32] px-2.5 py-0.5 rounded uppercase">{addr.label}</span>
+                  <p className="font-bold text-sm mt-1">{addr.full_name}</p>
+                  <p className="text-xs text-[#7A6E5D]">{addr.line1}, {addr.city}, {addr.state} - {addr.pincode}</p>
+                  <p className="text-xs text-[#7A6E5D]">{addr.phone}</p>
+                </div>
+                <button onClick={() => handleDeleteAddress(addr.id)} className="text-red-600 p-1">
+                  <Trash2 size={16} />
                 </button>
               </div>
             ))}
-
-            {addresses.length === 0 && !showAddressForm && (
-              <div className="card p-10 text-center">
-                <MapPin size={32} className="text-gold-300 mx-auto mb-3" />
-                <p className="font-garamond text-muted">No saved addresses</p>
-              </div>
-            )}
           </div>
+        )}
+      </div>
 
-          <button onClick={() => setShowAddressForm(!showAddressForm)}
-            className="flex items-center gap-2 font-cinzel text-xs tracking-wide text-gold-600 hover:text-gold-500 transition-colors mb-4">
-            <Plus size={12} /> ADD NEW ADDRESS
-          </button>
-
-          {showAddressForm && (
-            <div className="card p-6 animate-fade-up">
-              <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="col-span-1 sm:col-span-2">
-                    <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">FULL NAME</label>
-                    <input {...addressForm.register("full_name")} className="input-field" />
-                  </div>
-                  <div>
-                    <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">PHONE</label>
-                    <input {...addressForm.register("phone")} className="input-field" />
-                    {addressForm.formState.errors.phone && (
-                      <p className="text-red-500 text-xs mt-1">{addressForm.formState.errors.phone.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">LABEL</label>
-                    <select {...addressForm.register("label")} className="input-field">
-                      <option>Home</option>
-                      <option>Work</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-                  <div className="col-span-1 sm:col-span-2">
-                    <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">ADDRESS LINE 1</label>
-                    <input {...addressForm.register("line1")} className="input-field" placeholder="House/Flat, Street" />
-                  </div>
-                  <div className="col-span-1 sm:col-span-2">
-                    <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">ADDRESS LINE 2</label>
-                    <input {...addressForm.register("line2")} className="input-field" placeholder="Area, Landmark (optional)" />
-                  </div>
-                  <div>
-                    <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">CITY</label>
-                    <input {...addressForm.register("city")} className="input-field" />
-                  </div>
-                  <div>
-                    <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">STATE</label>
-                    <input {...addressForm.register("state")} className="input-field" />
-                  </div>
-                  <div>
-                    <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">PINCODE</label>
-                    <input {...addressForm.register("pincode")} maxLength={6} className="input-field" />
-                    {addressForm.formState.errors.pincode && (
-                      <p className="text-red-500 text-xs mt-1">{addressForm.formState.errors.pincode.message}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <input {...addressForm.register("is_default")} type="checkbox" id="is_default" className="accent-gold-500 w-4 h-4" />
-                    <label htmlFor="is_default" className="font-cinzel text-xs tracking-wide text-brown cursor-pointer">
-                      Set as default
-                    </label>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <button type="submit" disabled={isSaving} className="btn-primary flex items-center gap-2">
-                    {isSaving && <Loader2 size={12} className="animate-spin" />}
-                    SAVE ADDRESS
-                  </button>
-                  <button type="button" onClick={() => setShowAddressForm(false)} className="btn-ghost">Cancel</button>
-                </div>
-              </form>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

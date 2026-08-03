@@ -95,10 +95,21 @@
 ::-webkit-scrollbar-track { background: var(--cream); }
 ::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 3px; }
 
+/* Hide scrollbar for horizontal scroll strips */
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
 /* Explicit Visual Themes (Burgundy & Biscuit combination) */
 .sidebar-bg {
   background-color: #4A0F0F !important;
 }
 .dashboard-bg {
   background-color: #FAF6EE !important;
+}
+/* ── Mobile Bottom Nav Global Clearance ── */
+/* Ensures content on EVERY page is never hidden behind the fixed bottom nav */
+@media (max-width: 767px) {
+  body {
+    padding-bottom: 80px;
+  }
 }

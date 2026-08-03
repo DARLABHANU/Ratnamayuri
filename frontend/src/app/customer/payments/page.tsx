@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CreditCard, ExternalLink, ArrowDownLeft, RefreshCcw } from "lucide-react";
+import { Loader2, CreditCard, ExternalLink, RefreshCw, ChevronLeft } from "lucide-react";
 import { orderApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { Order } from "@/types";
@@ -29,11 +29,9 @@ export default function PaymentHistoryPage() {
     setIsLoading(true);
     try {
       const { data } = await orderApi.list({ page: 1, page_size: 50 });
-      // Filter out any cancelled orders that didn't have payments if needed,
-      // but standard is listing all transactions. Let's list all orders and map their payments!
       setPayments(data.items);
-    } catch (err) {
-      console.error("Failed to load payment history:", err);
+    } catch {
+      setPayments([]);
     } finally {
       setIsLoading(false);
     }
@@ -41,111 +39,157 @@ export default function PaymentHistoryPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="h-96 flex items-center justify-center">
-        <Loader2 className="animate-spin text-gold-500" size={32} />
+      <div className="h-96 flex items-center justify-center bg-[#FAF8F3]">
+        <Loader2 className="animate-spin text-[#0D2619]" size={32} />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 lg:px-8 py-12">
-      <div className="mb-8 flex justify-between items-end">
-        <div>
-          <span className="section-tag">LEDGER SYSTEM</span>
-          <h1 className="section-title">
-            Payment <em className="italic">History</em>
+    <div className="min-h-screen bg-[#FAF8F3] text-[#1C2E24] font-garamond">
+      {/* ── Mobile Top Bar ── */}
+      <div className="md:hidden sticky top-0 z-40 bg-[#FAF8F3] border-b border-[#E5E0D5] shadow-xs">
+        <div className="flex items-center justify-between px-4 py-3.5">
+          <button
+            onClick={() => router.back()}
+            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#F0ECE5] transition-colors"
+            aria-label="Go back"
+          >
+            <ChevronLeft size={22} className="text-[#1C2E24]" />
+          </button>
+          <h1 className="font-cormorant text-[20px] font-bold tracking-wide text-[#1C2E24]">
+            Payment History
           </h1>
-          <div className="divider-gold mx-0 mt-4" />
-        </div>
-        <button onClick={loadPayments} className="btn-ghost text-xs flex items-center gap-1">
-          <RefreshCcw size={12} /> REFRESH
-        </button>
-      </div>
-
-      {payments.length === 0 ? (
-        <div className="text-center py-20 bg-gold-50/50 border border-gold-100 card flex flex-col items-center justify-center">
-          <CreditCard size={48} className="text-gold-300 mb-4" />
-          <h2 className="font-cinzel text-base tracking-widest text-brown mb-2">NO TRANSACTIONS FOUND</h2>
-          <p className="font-garamond text-sm text-muted max-w-sm mb-6">
-            You haven't made any online payments on the marketplace yet.
-          </p>
-          <button onClick={() => router.push("/customer/products")} className="btn-primary px-6 py-2.5 text-xs">
-            SHOP NOW
+          <button
+            onClick={loadPayments}
+            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#F0ECE5] transition-colors text-[#0D2619]"
+            aria-label="Refresh"
+          >
+            <RefreshCw size={18} />
           </button>
         </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <div className="p-5 border-b border-gold-100 bg-gold-50/30">
-            <h3 className="font-cinzel text-xs tracking-widest text-brown">STATEMENT PANEL</h3>
-            <p className="font-garamond text-xs text-muted mt-1">Immutable transaction ledger for placed prepaid orders.</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-ivory border-b border-gold-100">
-                  <th className="table-th py-4">Transaction Details</th>
-                  <th className="table-th py-4">Order Link</th>
-                  <th className="table-th py-4">Payment Method</th>
-                  <th className="table-th py-4">Status</th>
-                  <th className="table-th py-4 text-right">Net Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gold-50">
-                {payments.map((p) => {
-                  const paymentStatus = p.payment_status || "paid";
-                  const statusColors: Record<string, string> = {
-                    paid: "!bg-emerald-700 !text-white font-semibold",
-                    pending: "!bg-amber-600 !text-white font-semibold",
-                    failed: "!bg-red-700 !text-white font-semibold",
-                    refunded: "!bg-blue-600 !text-white font-semibold",
-                  };
+      </div>
 
-                  return (
-                    <tr key={p.id} className="hover:bg-gold-50/20 transition-colors font-garamond">
-                      <td className="table-td py-4">
-                        <div className="flex items-start gap-3">
-                          <div className={`p-2 rounded-full mt-0.5 ${paymentStatus === "refunded" ? "bg-blue-50" : "bg-green-50"}`}>
-                            <ArrowDownLeft size={16} className={paymentStatus === "refunded" ? "text-blue-600" : "text-green-600"} />
-                          </div>
-                          <div>
-                            <p className="font-garamond text-sm font-semibold text-brown">
-                              {paymentStatus === "refunded" ? "Refund processed" : "Payment Authorized"}
-                            </p>
-                            <p className="text-xs text-muted">{formatDate(p.created_at)}</p>
-                            {p.payment_reference && (
-                              <p className="text-[10px] text-muted font-mono mt-0.5 uppercase">REF: {p.payment_reference}</p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="table-td py-4 font-cinzel text-xs">
-                        <Link href={`/customer/orders/${p.id}`} className="text-gold-600 hover:text-gold-500 hover:underline inline-flex items-center gap-1">
-                          #{p.order_number} <ExternalLink size={10} />
-                        </Link>
-                      </td>
-                      <td className="table-td py-4 text-xs font-semibold text-brown uppercase">
-                        {p.payment_method || "UPI"}
-                      </td>
-                      <td className="table-td py-4">
-                        <span className={`badge text-xs ${statusColors[paymentStatus] || "bg-green-100 text-green-700"}`}>
-                          {paymentStatus === "paid" ? "Success" : paymentStatus}
-                        </span>
-                      </td>
-                      <td className={`table-td py-4 text-right font-cinzel text-sm font-semibold ${paymentStatus === "refunded" ? "text-blue-600" : "text-brown"}`}>
-                        {paymentStatus === "refunded" ? "-" : ""}{formatPrice(p.total_amount)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      {/* ── Desktop Header ── */}
+      <div className="hidden md:block max-w-6xl mx-auto px-6 pt-6 pb-2">
+        <div className="flex justify-between items-end border-b border-[#F0ECE1] pb-3 mb-4">
+          <div>
+            <span className="text-[10px] font-bold tracking-widest text-[#0D2619] bg-[#E8F5E9] border border-[#C8E6C9] px-2.5 py-1 rounded-md uppercase inline-block mb-1">
+              PAYMENT LEDGER
+            </span>
+            <h1 className="font-cormorant text-3xl font-bold text-[#1C2E24]">Payment History</h1>
+            <p className="text-xs text-[#8C9890] mt-0.5">Immutable transaction ledger for placed prepaid orders</p>
           </div>
-          <div className="p-4 border-t border-gold-100 bg-gold-50/10 flex justify-between items-center text-xs text-muted font-garamond">
-            <p>✦ Transactions are immutable and logged securely via SSL audit trails.</p>
-            <p>{payments.length} ledger entries</p>
-          </div>
+          <button
+            onClick={loadPayments}
+            className="inline-flex items-center gap-1.5 bg-white border border-[#E5E0D5] hover:border-[#0D2619] text-[#1C2E24] px-4 py-2 rounded-xl text-xs font-bold transition-all"
+          >
+            <RefreshCw size={13} /> REFRESH
+          </button>
         </div>
-      )}
+      </div>
+
+      {/* ── Main Content Area ── */}
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-6">
+        {payments.length === 0 ? (
+          <div className="bg-white border border-[#E5E0D5] rounded-3xl p-12 text-center shadow-xs space-y-4 max-w-lg mx-auto my-8">
+            <div className="w-16 h-16 bg-[#FAF8F3] rounded-full flex items-center justify-center mx-auto text-[#8C9890]">
+              <CreditCard size={28} />
+            </div>
+            <h2 className="font-cormorant text-2xl font-bold text-[#1C2E24]">No Transactions Found</h2>
+            <p className="text-xs text-[#8C9890]">You haven't made any transactions on the marketplace yet.</p>
+            <button
+              onClick={() => router.push("/customer/products")}
+              className="inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white px-6 py-3 rounded-xl text-xs font-bold transition-all shadow-xs"
+            >
+              START SHOPPING
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Mobile Card List */}
+            <div className="md:hidden space-y-3">
+              {payments.map((p) => {
+                const paymentStatus = p.payment_status || "paid";
+                const isPaid = paymentStatus === "paid";
+                return (
+                  <div key={p.id} className="bg-white border border-[#E5E0D5] rounded-2xl p-4 shadow-xs space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-garamond text-xs font-bold text-[#1C2E24]">#{p.order_number}</span>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase ${
+                          isPaid ? "bg-[#E8F5E9] text-[#2E7D32] border border-[#C8E6C9]" : "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}
+                      >
+                        {paymentStatus}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-baseline pt-1 border-t border-[#F2EFE9]">
+                      <div>
+                        <p className="text-[11px] text-[#8C9890]">Date: {formatDate(p.created_at)}</p>
+                        <p className="text-xs text-[#556B5D] uppercase mt-0.5">{p.payment_method || "Online Razorpay / UPI"}</p>
+                      </div>
+                      <span className="font-cormorant text-lg font-bold text-[#0D2619]">{formatPrice(p.total_amount)}</span>
+                    </div>
+                    <div className="pt-2 border-t border-[#F2EFE9]">
+                      <Link
+                        href={`/customer/orders/${p.id}`}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[#0D2619] hover:underline"
+                      >
+                        View Order Details <ExternalLink size={12} />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white border border-[#E5E0D5] rounded-2xl overflow-hidden shadow-xs">
+              <table className="w-full text-left border-collapse font-garamond">
+                <thead>
+                  <tr className="bg-[#FAF8F3] border-b border-[#E5E0D5] text-xs font-bold text-[#1C2E24]">
+                    <th className="py-3.5 px-4">Order Ref</th>
+                    <th className="py-3.5 px-4">Date</th>
+                    <th className="py-3.5 px-4">Payment Method</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4 text-right">Net Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F2EFE9] text-xs">
+                  {payments.map((p) => {
+                    const paymentStatus = p.payment_status || "paid";
+                    const isPaid = paymentStatus === "paid";
+                    return (
+                      <tr key={p.id} className="hover:bg-[#FAF8F3] transition-colors">
+                        <td className="py-3.5 px-4 font-bold text-[#1C2E24]">
+                          <Link href={`/customer/orders/${p.id}`} className="hover:text-[#0D2619] flex items-center gap-1">
+                            #{p.order_number} <ExternalLink size={11} className="text-[#8C9890]" />
+                          </Link>
+                        </td>
+                        <td className="py-3.5 px-4 text-[#7A6E5D]">{formatDate(p.created_at)}</td>
+                        <td className="py-3.5 px-4 uppercase text-[#556B5D]">{p.payment_method || "Online Razorpay / UPI"}</td>
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase ${
+                              isPaid ? "bg-[#E8F5E9] text-[#2E7D32] border border-[#C8E6C9]" : "bg-amber-50 text-amber-700 border border-amber-200"
+                            }`}
+                          >
+                            {paymentStatus}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-cormorant font-bold text-base text-[#0D2619]">
+                          {formatPrice(p.total_amount)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

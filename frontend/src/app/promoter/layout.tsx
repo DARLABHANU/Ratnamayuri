@@ -25,41 +25,46 @@ export default function PromoterLayout({ children }: { children: React.ReactNode
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
-      <div className="p-6 border-b border-white/10">
+    <div className="flex flex-col h-full bg-[#0D2619] text-emerald-100 font-garamond">
+      <div className="p-6 border-b border-emerald-800/40">
         <Link href="/" className="block" onClick={() => setMobileOpen(false)}>
-          <p className="font-cinzel text-sm tracking-[0.3em] text-gold-300">RATNAMAYURI</p>
-          <p className="font-garamond text-xs tracking-widest text-gold-600 mt-0.5">AFFILIATE PORTAL</p>
+          <p className="font-cormorant font-bold text-lg tracking-widest text-white">RATNAMAYURI</p>
+          <p className="text-[10px] font-semibold tracking-widest text-emerald-400 mt-0.5 uppercase">AFFILIATE PORTAL</p>
         </Link>
       </div>
 
-      <div className="p-4 border-b border-white/10">
+      <div className="p-4 border-b border-emerald-800/40">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gold-500/20 flex items-center justify-center">
-            <Award size={16} className="text-gold-400" />
+          <div className="w-9 h-9 rounded-2xl bg-[#19402B] border border-emerald-700/50 flex items-center justify-center">
+            <Award size={16} className="text-emerald-300" />
           </div>
           <div className="min-w-0">
-            <p className="font-cinzel text-xs text-gold-300 truncate">{user?.full_name || "Promoter"}</p>
-            <p className="font-garamond text-xs text-gold-600 truncate">{user?.email}</p>
+            <p className="font-bold text-xs text-white truncate">{user?.full_name || "Promoter"}</p>
+            <p className="text-[11px] text-emerald-400 truncate">{user?.email}</p>
           </div>
         </div>
       </div>
 
       <nav className="flex-1 p-3 space-y-1">
         <Link href="/promoter/dashboard" onClick={() => setMobileOpen(false)}
-          className={cn("sidebar-link rounded-sm", pathname === "/promoter/dashboard" && "active")}>
+          className={cn(
+            "flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all",
+            pathname === "/promoter/dashboard" 
+              ? "bg-[#19402B] text-white shadow-2xs" 
+              : "text-emerald-200/80 hover:bg-[#19402B]/50 hover:text-white"
+          )}>
           <LayoutDashboard size={15} />
           Overview Dashboard
         </Link>
         <Link href="/" onClick={() => setMobileOpen(false)}
-          className="sidebar-link rounded-sm">
+          className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-emerald-200/80 hover:bg-[#19402B]/50 hover:text-white transition-all">
           <ShoppingBag size={15} />
           Back to Storefront
         </Link>
       </nav>
 
-      <div className="p-3 border-t border-white/10 space-y-1">
-        <button onClick={handleLogout} className="sidebar-link rounded-sm w-full text-red-400 hover:text-red-300 hover:bg-red-900/20">
+      <div className="p-3 border-t border-emerald-800/40">
+        <button onClick={handleLogout} className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold w-full text-red-300 hover:bg-red-950/40 transition-all">
           <LogOut size={15} /> Sign Out
         </button>
       </div>
@@ -67,33 +72,30 @@ export default function PromoterLayout({ children }: { children: React.ReactNode
   );
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[#FAF8F3] font-garamond text-[#1C2E24]">
       {/* Mobile Top Bar */}
-      <header className="lg:hidden flex items-center justify-between p-4 bg-deep sidebar-bg border-b border-white/10">
+      <header className="lg:hidden flex items-center justify-between p-4 bg-[#0D2619] border-b border-emerald-800/40">
         <div className="flex flex-col">
-          <p className="font-cinzel text-xs tracking-[0.2em] text-gold-300">RATNAMAYURI</p>
-          <p className="font-garamond text-[9px] tracking-widest text-gold-600 mt-0.5">AFFILIATE PORTAL</p>
+          <p className="font-cormorant font-bold text-base tracking-widest text-white">RATNAMAYURI</p>
+          <p className="text-[9px] font-semibold tracking-widest text-emerald-400 mt-0.5 uppercase">AFFILIATE PORTAL</p>
         </div>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-gold-300 hover:text-cream p-1">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-white p-1">
           {mobileOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </header>
 
       {/* Desktop Sidebar (Left side, permanent) */}
-      <aside className="hidden lg:flex w-60 bg-deep sidebar-bg flex-col flex-shrink-0 min-h-screen">
+      <aside className="hidden lg:flex w-60 bg-[#0D2619] flex-col flex-shrink-0 min-h-screen border-r border-emerald-800/40">
         {sidebarContent}
       </aside>
 
       {/* Mobile Sliding Drawer Sidebar Overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
-          {/* Backdrop */}
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          
-          {/* Drawer Panel */}
-          <aside className="relative flex flex-col w-64 max-w-xs bg-deep sidebar-bg shadow-2xl h-full z-10 animate-slide-in">
-            <div className="absolute top-4 right-4">
-              <button onClick={() => setMobileOpen(false)} className="text-gold-300 hover:text-cream p-1">
+          <aside className="relative flex flex-col w-64 max-w-xs bg-[#0D2619] shadow-2xl h-full z-10 animate-slide-in">
+            <div className="absolute top-4 right-4 z-20">
+              <button onClick={() => setMobileOpen(false)} className="text-white p-1">
                 <X size={20} />
               </button>
             </div>
@@ -103,7 +105,7 @@ export default function PromoterLayout({ children }: { children: React.ReactNode
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 bg-cream dashboard-bg overflow-auto min-h-0">
+      <main className="flex-1 bg-[#FAF8F3] overflow-auto min-h-0">
         <div className="p-4 md:p-8">{children}</div>
       </main>
     </div>

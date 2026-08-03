@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
-import { Loader2, Mail, ChevronLeft } from "lucide-react";
+import { Loader2, Mail, ChevronLeft, ShieldCheck } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { getApiError } from "@/lib/utils";
 
@@ -32,7 +32,6 @@ export default function ForgotPasswordPage() {
       });
       toast.success("Password reset OTP sent to your email!");
       
-      // Redirect to OTP verification page for password reset
       router.push(`/auth/verify-otp?email=${encodeURIComponent(data.email.trim().toLowerCase())}&purpose=password_reset`);
     } catch (err) {
       toast.error(getApiError(err) || "Failed to request password reset OTP.");
@@ -42,50 +41,63 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="animate-fade-up">
-      <div className="mb-6">
+    <div className="space-y-6 text-[#1C2E24] font-garamond w-full">
+      <div>
         <Link 
           href="/auth/login" 
-          className="inline-flex items-center gap-1 font-cinzel text-xs text-gold-600 hover:text-gold-500 tracking-wider mb-4 transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-bold text-[#0D2619] hover:underline mb-4 transition-colors"
         >
-          <ChevronLeft size={14} /> Back to Sign In
+          <ChevronLeft size={16} /> Back to Sign In
         </Link>
-        <span className="section-tag">ACCOUNT RECOVERY</span>
-        <h2 className="font-cormorant text-3xl font-light text-brown">Forgot Password</h2>
-        <p className="font-garamond text-sm text-muted mt-2">
-          Enter the email address associated with your account. We will send you a secure 6-digit verification code to reset your password.
-        </p>
+        <div className="text-center space-y-1">
+          <span className="text-[10px] font-bold tracking-widest text-[#0D2619] bg-[#E8F5E9] border border-[#C8E6C9] px-2.5 py-1 rounded-md uppercase inline-block mb-1">
+            ACCOUNT RECOVERY
+          </span>
+          <h2 className="font-cormorant text-2xl sm:text-3xl font-bold text-[#1C2E24]">Forgot Password</h2>
+          <p className="text-xs text-[#8C9890] leading-relaxed">
+            Enter your email address. We will send you a 6-digit OTP code to reset your password.
+          </p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full">
         <div>
-          <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+          <label className="text-xs font-bold text-[#1C2E24] block mb-1">
             EMAIL ADDRESS
           </label>
           <div className="relative">
+            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890] w-4 h-4" />
             <input
               {...register("email")}
               type="email"
               placeholder="yourname@example.com"
-              className="input-field bg-white"
+              className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
               autoComplete="email"
               required
             />
           </div>
           {errors.email && (
-            <p className="text-red-500 text-xs mt-1 font-garamond">{errors.email.message}</p>
+            <p className="text-red-500 text-xs mt-1 font-semibold">{errors.email.message}</p>
           )}
         </div>
 
         <button 
           type="submit" 
           disabled={isLoading} 
-          className="btn-primary w-full flex items-center justify-center gap-2"
+          className="w-full inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white py-3 rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50"
         >
           {isLoading && <Loader2 size={14} className="animate-spin" />}
           SEND VERIFICATION CODE
         </button>
       </form>
+
+      {/* Security Badge */}
+      <div className="bg-[#E8F5E9] border border-[#C8E6C9] p-3 rounded-2xl flex items-center gap-2.5 w-full">
+        <ShieldCheck className="text-[#2E7D32] flex-shrink-0" size={16} />
+        <p className="text-[11px] text-[#2E7D32] font-semibold leading-normal">
+          Ratnamayuri Security System. Verification codes expire in 10 minutes.
+        </p>
+      </div>
     </div>
   );
 }

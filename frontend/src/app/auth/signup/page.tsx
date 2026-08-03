@@ -103,7 +103,7 @@ export default function SignupPage() {
         password,
         full_name: fullName.trim(),
         phone: phone.trim(),
-        role: "customer", // Hardcoded to Customer signup
+        role: "customer",
       });
 
       toast.success("Account created! Verification code sent to email.");
@@ -163,107 +163,106 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="animate-fade-up max-w-sm mx-auto">
+    <div className="space-y-6 text-[#1C2E24] font-garamond w-full">
       {step === "register" ? (
         <>
           <div className="mb-6 text-center">
-            <span className="section-tag flex items-center justify-center gap-1">
-              <Sparkles size={10} className="text-gold-500 animate-pulse" />
+            <span className="text-[10px] font-bold tracking-widest text-[#0D2619] bg-[#E8F5E9] border border-[#C8E6C9] px-2.5 py-1 rounded-md uppercase inline-flex items-center gap-1">
+              <Sparkles size={10} className="text-[#2E7D32] animate-pulse" />
               CREATE ACCOUNT
-              <Sparkles size={10} className="text-gold-500 animate-pulse" />
             </span>
-            <h2 className="font-cormorant text-3xl font-light text-brown mt-1">Join Ratnamayuri</h2>
-            <p className="font-garamond text-sm text-muted mt-2">
+            <h2 className="font-cormorant text-3xl font-bold text-[#1C2E24] mt-2">Join Ratnamayuri</h2>
+            <p className="text-xs text-[#8C9890] mt-1 leading-relaxed">
               Sign up to discover luxury handlooms, fine sarees, and authentic bridal collections.
             </p>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+              <label className="text-xs font-bold text-[#1C2E24] block mb-1">
                 FULL NAME
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890] w-4 h-4" />
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="John Doe"
-                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+              <label className="text-xs font-bold text-[#1C2E24] block mb-1">
                 EMAIL ADDRESS
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890] w-4 h-4" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+              <label className="text-xs font-bold text-[#1C2E24] block mb-1">
                 PHONE NUMBER
               </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890] w-4 h-4" />
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+919876543210"
-                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  placeholder="9876543210"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+              <label className="text-xs font-bold text-[#1C2E24] block mb-1">
                 PASSWORD
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890] w-4 h-4" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                   required
                 />
               </div>
             </div>
 
             {errorMsg && (
-              <p className="text-red-500 text-xs font-garamond text-center">{errorMsg}</p>
+              <p className="text-red-500 text-xs font-semibold text-center">{errorMsg}</p>
             )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-4"
+              className="w-full inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white py-3 rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50 mt-2"
             >
               {isLoading && <Loader2 size={14} className="animate-spin" />}
               CREATE ACCOUNT
             </button>
           </form>
 
-          <p className="text-center font-garamond text-sm text-muted mt-6">
+          <p className="text-center text-xs text-[#8C9890] mt-6">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-gold-600 underline font-semibold hover:text-gold-500 transition-colors">
+            <Link href="/auth/login" className="text-[#0D2619] font-bold hover:underline">
               Sign In
             </Link>
           </p>
@@ -274,20 +273,19 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={handleBackToRegister}
-              className="flex items-center gap-1 text-gold-600 hover:text-gold-500 font-cinzel text-xs tracking-wider mb-4"
+              className="flex items-center gap-1 text-[#0D2619] font-bold text-xs mb-4 hover:underline"
             >
               <ChevronLeft size={16} />
-              EDIT REGISTER DETAILS
+              Edit Register Details
             </button>
-            <span className="section-tag">VERIFICATION REQUIRED</span>
-            <h2 className="font-cormorant text-3xl font-light text-brown">Enter Code</h2>
-            <p className="font-garamond text-sm text-muted mt-2">
-              We sent a 6-digit verification code to your email <strong className="text-brown">{email}</strong>.
+            <h2 className="font-cormorant text-3xl font-bold text-[#1C2E24]">Enter Code</h2>
+            <p className="text-xs text-[#8C9890] mt-1">
+              We sent a 6-digit verification code to <strong className="text-[#1C2E24]">{email}</strong>.
             </p>
           </div>
 
           <form onSubmit={handleVerifyOtp} className="space-y-6">
-            <div className="flex gap-3 justify-center" onPaste={handleOtpPaste}>
+            <div className="flex gap-2 justify-between" onPaste={handleOtpPaste}>
               {otpCode.map((digit, i) => (
                 <input
                   key={i}
@@ -298,20 +296,17 @@ export default function SignupPage() {
                   value={digit}
                   onChange={(e) => handleOtpChange(i, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                  className={`w-12 h-14 text-center text-2xl font-cinzel border-2 bg-white
-                    focus:outline-none transition-all rounded-md
-                    ${digit ? "border-gold-500 text-brown font-bold" : "border-gold-200 text-muted"}
-                    focus:border-gold-500`}
+                  className="w-11 h-12 text-center text-lg font-bold bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl text-[#1C2E24] focus:outline-none focus:border-[#0D2619] focus:bg-white transition-all shadow-xs"
                   required
                 />
               ))}
             </div>
 
             {errorMsg && (
-              <p className="text-red-500 text-xs text-center font-garamond">{errorMsg}</p>
+              <p className="text-red-500 text-xs text-center font-semibold">{errorMsg}</p>
             )}
 
-            <button type="submit" disabled={isLoading || otpCode.join("").length < 6} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
+            <button type="submit" disabled={isLoading || otpCode.join("").length < 6} className="w-full inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white py-3 rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50">
               {isLoading && <Loader2 size={14} className="animate-spin" />}
               VERIFY & ACTIVATE ACCOUNT
             </button>
@@ -320,9 +315,9 @@ export default function SignupPage() {
       )}
 
       {/* Safety warning */}
-      <div className="bg-emerald-50 border border-emerald-100 p-3 rounded mt-8 flex items-start gap-2.5 shadow-sm">
-        <ShieldCheck className="text-emerald-600 flex-shrink-0 mt-0.5" size={16} />
-        <p className="text-[10px] text-emerald-800 leading-normal font-sans">
+      <div className="bg-[#E8F5E9] border border-[#C8E6C9] p-3 rounded-2xl flex items-center gap-2.5 shadow-xs">
+        <ShieldCheck className="text-[#2E7D32] flex-shrink-0" size={16} />
+        <p className="text-[11px] text-[#2E7D32] font-semibold leading-normal">
           Ratnamayuri uses automated secure verification checks to validate and activate your login session.
         </p>
       </div>

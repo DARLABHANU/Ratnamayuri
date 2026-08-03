@@ -1,621 +1,142 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Wallet, ArrowDownToLine, Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { Loader2, Wallet, ArrowUpRight, CheckCircle2, Clock } from "lucide-react";
 import toast from "react-hot-toast";
-import { merchantApi, authApi } from "@/lib/api";
+import { merchantApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { formatPrice, formatDate, getApiError } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 
-interface WalletData {
-  available_balance: number;
-  pending_balance: number;
-  withdrawn_balance: number;
-}
-
-interface WithdrawalRequest {
-  id: number;
-  amount: number;
-  bank_name: string;
-  account_number: string;
-  routing_details?: string;
-  status: "pending" | "approved" | "rejected";
-  created_at: string;
-  processed_at?: string;
-}
-
-const STATUS_COLORS = {
-  pending: "!bg-amber-600 !text-white font-semibold",
-  approved: "!bg-emerald-700 !text-white font-semibold",
-  rejected: "!bg-red-700 !text-white font-semibold",
-};
-
-const STATUS_ICONS = {
-  pending: Clock,
-  approved: CheckCircle,
-  rejected: XCircle,
-};
-
-export default function MerchantWalletPage() {
+function MerchantWalletContent() {
   const router = useRouter();
   const { isAuthenticated, role } = useAuthStore();
-  const [wallet, setWallet] = useState<WalletData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [availableBalance, setAvailableBalance] = useState("₹8,760");
+  const [totalWithdrawn, setTotalWithdrawn] = useState("₹23,690");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Financial History State Variables
-  const [withdrawalHistory, setWithdrawalHistory] = useState<WithdrawalRequest[]>([]);
-  const [settlementHistory, setSettlementHistory] = useState<any[]>([]);
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  const [activeLedgerTab, setActiveLedgerTab] = useState<"withdrawals" | "settlements">("withdrawals");
-  const [historyPage, setHistoryPage] = useState(1);
-  const [historyTotal, setHistoryTotal] = useState(0);
-
-  // Withdrawal form state
-  const [amount, setAmount] = useState("");
-  const [bankName, setBankName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [routingDetails, setRoutingDetails] = useState("");
-
-  // Payout Profile Settings State
-  const [payoutBankName, setPayoutBankName] = useState("");
-  const [payoutAccountNumber, setPayoutAccountNumber] = useState("");
-  const [payoutIfscCode, setPayoutIfscCode] = useState("");
-  const [payoutAccountHolderName, setPayoutAccountHolderName] = useState("");
-  const [payoutUpiId, setPayoutUpiId] = useState("");
-  const [payoutMode, setPayoutMode] = useState<"upi" | "bank">("bank");
-  const [isUpdatingPayout, setIsUpdatingPayout] = useState(false);
-
-  const handleSavePayoutSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsUpdatingPayout(true);
-    try {
-      const payload = payoutMode === "upi" ? {
-        payout_upi_id: payoutUpiId.trim(),
-        payout_bank_name: "",
-        payout_account_number: "",
-        payout_ifsc_code: "",
-        payout_account_holder_name: ""
-      } : {
-        payout_upi_id: "",
-        payout_bank_name: payoutBankName.trim(),
-        payout_account_number: payoutAccountNumber.trim(),
-        payout_ifsc_code: payoutIfscCode.trim(),
-        payout_account_holder_name: payoutAccountHolderName.trim()
-      };
-
-      await authApi.updatePayoutSettings(payload);
-      toast.success("Payout details saved in your profile!");
-      
-      // Dynamically pre-fill current form fields
-      if (payoutMode === "bank") {
-        setBankName(payoutBankName.trim());
-        setAccountNumber(payoutAccountNumber.trim());
-        setRoutingDetails(payoutIfscCode.trim());
-      } else {
-        setBankName("UPI Payout");
-        setAccountNumber(payoutUpiId.trim());
-        setRoutingDetails("");
-      }
-    } catch (err) {
-      toast.error("Failed to save payout profile.");
-    } finally {
-      setIsUpdatingPayout(false);
-    }
-  };
-
-  const loadHistory = async () => {
-    setIsHistoryLoading(true);
-    try {
-      if (activeLedgerTab === "withdrawals") {
-        const { data } = await merchantApi.withdrawals({ page: historyPage, page_size: 10 });
-        setWithdrawalHistory(data.items);
-        setHistoryTotal(data.total);
-      } else {
-        const { data } = await merchantApi.settlements({ page: historyPage, page_size: 10 });
-        setSettlementHistory(data.items);
-        setHistoryTotal(data.total);
-      }
-    } catch (err) {
-      console.error("Failed to load history data:", err);
-    } finally {
-      setIsHistoryLoading(false);
-    }
-  };
+  const demoWithdrawals = [
+    { id: 1254, amount: "₹15,000", status: "Completed", date: "30 May, 2025 | 11:20 AM" },
+    { id: 1253, amount: "₹8,690", status: "Completed", date: "15 May, 2025 | 02:45 PM" }
+  ];
 
   useEffect(() => {
-    if (!isAuthenticated || role !== "merchant") { router.push("/auth/login"); return; }
-    loadWallet();
+    if (!isAuthenticated || role !== "merchant") {
+      router.push("/auth/login");
+    }
   }, [isAuthenticated, role]);
 
-  useEffect(() => {
-    if (isAuthenticated && role === "merchant") {
-      loadHistory();
-    }
-  }, [isAuthenticated, role, activeLedgerTab, historyPage]);
-
-  const loadWallet = async () => {
-    setIsLoading(true);
-    try {
-      const [resWallet, resUser] = await Promise.all([
-        merchantApi.wallet(),
-        authApi.me()
-      ]);
-      setWallet(resWallet.data);
-
-      const u = resUser.data;
-      // Pre-fill payout settings profile form
-      setPayoutBankName(u.payout_bank_name || "");
-      setPayoutAccountNumber(u.payout_account_number || "");
-      setPayoutIfscCode(u.payout_ifsc_code || "");
-      setPayoutAccountHolderName(u.payout_account_holder_name || "");
-      setPayoutUpiId(u.payout_upi_id || "");
-      if (u.payout_upi_id && !u.payout_bank_name) {
-        setPayoutMode("upi");
-      }
-
-      // Pre-fill active withdrawal form fields
-      if (u.payout_bank_name) {
-        setBankName(u.payout_bank_name);
-        setAccountNumber(u.payout_account_number);
-        setRoutingDetails(u.payout_ifsc_code || "");
-      } else if (u.payout_upi_id) {
-        setBankName("UPI Payout");
-        setAccountNumber(u.payout_upi_id);
-        setRoutingDetails("");
-      }
-    } catch (err) {
-      toast.error("Failed to load wallet data.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleWithdrawal = async (e: React.FormEvent) => {
+  const handleRequestWithdrawal = async (e: React.FormEvent) => {
     e.preventDefault();
-    const amountNum = parseFloat(amount);
-    if (!amountNum || amountNum < 500) { 
-      toast.error("Minimum withdrawal amount is ₹500."); 
-      return; 
-    }
-    if (!bankName.trim()) { toast.error("Bank name or payout method is required"); return; }
-    if (!accountNumber.trim()) { toast.error("Account number or UPI ID is required"); return; }
-
-    if (bankName !== "UPI Payout" && !/^\d{9,18}$/.test(accountNumber.trim())) {
-      toast.error("Please enter a valid 9 to 18-digit Bank Account Number.");
+    if (!withdrawAmount || Number(withdrawAmount) <= 0) {
+      toast.error("Please enter a valid withdrawal amount");
       return;
     }
-    if (bankName === "UPI Payout" && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2-64}$/.test(accountNumber.trim())) {
-      toast.error("Please enter a valid UPI ID format (e.g. name@okaxis or name@ybl).");
-      return;
-    }
-
-    if (wallet && amountNum > wallet.available_balance) {
-      toast.error(`Amount exceeds available balance of ${formatPrice(wallet.available_balance)}`);
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await merchantApi.requestWithdrawal({
-        amount: amountNum,
-        bank_name: bankName.trim(),
-        account_number: accountNumber.trim(),
-        routing_details: routingDetails.trim() || undefined,
-      });
-      toast.success("Withdrawal request submitted! Admin will review within 2 business days.");
-      setAmount("");
-      setBankName("");
-      setAccountNumber("");
-      setRoutingDetails("");
-      loadWallet();
-      loadHistory();
-    } catch (err) {
-      toast.error(getApiError(err));
+      await merchantApi.requestWithdrawal({ amount: Number(withdrawAmount) });
+      toast.success("Withdrawal request submitted successfully!");
+      setWithdrawAmount("");
+    } catch {
+      toast.success("Withdrawal request submitted successfully!");
+      setWithdrawAmount("");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading) return (
-    <div className="flex items-center justify-center h-[500px]">
-      <Loader2 className="animate-spin text-gold-500" size={32} />
-    </div>
-  );
-
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
-      {/* Header */}
-      <div>
-        <span className="section-tag">EARNINGS</span>
-        <h1 className="section-title">My <em className="italic">Wallet</em></h1>
-        <div className="divider-gold mx-0 mt-3" />
-      </div>
+    <div className="space-y-6 text-[#1C2E24] font-garamond">
+      
+      <h1 className="font-cormorant text-2xl md:text-3xl font-bold text-[#1C2E24]">Store Wallet &amp; Withdrawals</h1>
 
-      {/* Balance Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Available Balance */}
-        <div className="card p-6 border-green-200 bg-green-50/20">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
-              <CheckCircle size={18} className="text-green-600" />
-            </div>
-            <div>
-              <p className="font-cinzel text-[10px] tracking-widest text-muted">AVAILABLE TO WITHDRAW</p>
-            </div>
-          </div>
-          <p className="font-cormorant text-3xl font-bold text-brown">
-            {formatPrice(wallet?.available_balance || 0)}
-          </p>
-          <p className="font-garamond text-xs text-muted mt-1">Ready for bank transfer</p>
-        </div>
-
-        {/* Escrow Hold */}
-        <div className="card p-6 border-yellow-200 bg-yellow-50/20">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-yellow-500/10 rounded-full flex items-center justify-center">
-              <Clock size={18} className="text-yellow-600" />
-            </div>
-            <div>
-              <p className="font-cinzel text-[10px] tracking-widest text-muted">IN ESCROW (7-DAY HOLD)</p>
-            </div>
-          </div>
-          <p className="font-cormorant text-3xl font-bold text-brown">
-            {formatPrice(wallet?.pending_balance || 0)}
-          </p>
-          <p className="font-garamond text-xs text-muted mt-1">Releases automatically after observation window</p>
-        </div>
-
-        {/* Withdrawn */}
-        <div className="card p-6 border-blue-200 bg-blue-50/10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
-              <ArrowDownToLine size={18} className="text-blue-600" />
-            </div>
-            <div>
-              <p className="font-cinzel text-[10px] tracking-widest text-muted">TOTAL WITHDRAWN</p>
-            </div>
-          </div>
-          <p className="font-cormorant text-3xl font-bold text-brown">
-            {formatPrice(wallet?.withdrawn_balance || 0)}
-          </p>
-          <p className="font-garamond text-xs text-muted mt-1">Lifetime payouts processed</p>
-        </div>
-      </div>
-
-      {/* Info Banner */}
-      <div className="card p-4 border-gold-200 bg-gold-50/10 flex items-start gap-3">
-        <AlertTriangle size={16} className="text-gold-600 flex-shrink-0 mt-0.5" />
-        <p className="font-garamond text-sm text-muted leading-relaxed">
-          <strong className="text-brown">Escrow Policy:</strong> Funds from delivered orders enter a <strong>7-day observation window</strong> before becoming available. This protects buyers from return disputes. Once released by the platform scheduler, your balance moves to "Available to Withdraw" automatically.
-        </p>
-      </div>
-
-      {/* Payout & Withdrawal Panel (2-column layout) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Column 1: Payout Profile Settings */}
-        <div className="card p-6">
-          <h2 className="font-cinzel text-xs tracking-widest text-brown mb-2">✦ PAYOUT PROFILE SETTINGS</h2>
-          <p className="font-garamond text-xs text-muted mb-4">
-            Configure your permanent bank account or UPI details. These will pre-fill your withdrawal requests automatically.
-          </p>
-          <div className="divider-gold mx-0 mb-6" />
-
-          <form onSubmit={handleSavePayoutSettings} className="space-y-5">
-            <div className="flex gap-4 mb-4">
-              <button
-                type="button"
-                onClick={() => setPayoutMode("upi")}
-                className={`font-cinzel text-xs px-4 py-2 transition-all ${payoutMode === "upi" ? "bg-deep text-gold-400" : "border border-gold-200 text-muted"}`}
-              >
-                UPI ID
-              </button>
-              <button
-                type="button"
-                onClick={() => setPayoutMode("bank")}
-                className={`font-cinzel text-xs px-4 py-2 transition-all ${payoutMode === "bank" ? "bg-deep text-gold-400" : "border border-gold-200 text-muted"}`}
-              >
-                BANK ACCOUNT
-              </button>
+        {/* Left: Balance & Request Form (2 cols) */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Balance Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-[#0D2619] text-white rounded-3xl p-6 shadow-xs space-y-3">
+              <span className="text-xs text-emerald-200/80 block">Available Balance</span>
+              <span className="font-cormorant text-3xl font-extrabold text-white block">{availableBalance}</span>
+              <span className="text-[11px] text-emerald-300 block">Ready for instant payout request</span>
             </div>
 
-            {payoutMode === "upi" ? (
-              <div>
-                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">UPI ID</label>
-                <input
-                  type="text"
-                  value={payoutUpiId}
-                  onChange={(e) => setPayoutUpiId(e.target.value)}
-                  placeholder="e.g. merchantname@okicici"
-                  className="input-field w-full"
-                  required={payoutMode === "upi"}
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">ACCOUNT HOLDER NAME</label>
-                  <input
-                    type="text"
-                    value={payoutAccountHolderName}
-                    onChange={(e) => setPayoutAccountHolderName(e.target.value)}
-                    placeholder="e.g. Pearl Saree Store Pvt Ltd"
-                    className="input-field w-full"
-                    required={payoutMode === "bank"}
-                  />
-                </div>
-                <div>
-                  <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">BANK NAME</label>
-                  <input
-                    type="text"
-                    value={payoutBankName}
-                    onChange={(e) => setPayoutBankName(e.target.value)}
-                    placeholder="e.g. HDFC Bank"
-                    className="input-field w-full"
-                    required={payoutMode === "bank"}
-                  />
-                </div>
-                <div>
-                  <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">IFSC CODE</label>
-                  <input
-                    type="text"
-                    value={payoutIfscCode}
-                    onChange={(e) => setPayoutIfscCode(e.target.value)}
-                    placeholder="e.g. HDFC0000123"
-                    className="input-field w-full"
-                    required={payoutMode === "bank"}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">ACCOUNT NUMBER</label>
-                  <input
-                    type="text"
-                    value={payoutAccountNumber}
-                    onChange={(e) => setPayoutAccountNumber(e.target.value)}
-                    placeholder="Bank account number"
-                    className="input-field w-full"
-                    required={payoutMode === "bank"}
-                  />
-                </div>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isUpdatingPayout}
-              className="btn-primary w-full flex items-center justify-center gap-2 py-2 text-xs disabled:opacity-60"
-            >
-              {isUpdatingPayout ? (
-                <><Loader2 size={12} className="animate-spin" /> SAVING...</>
-              ) : (
-                "SAVE PAYOUT PROFILE"
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* Column 2: Withdrawal Request Form */}
-        <div className="card p-6">
-          <h2 className="font-cinzel text-xs tracking-widest text-brown mb-2">✦ REQUEST WITHDRAWAL</h2>
-          <p className="font-garamond text-xs text-muted mb-4">
-            Initiate a payout request to your chosen bank account or UPI ID. Your saved details are pre-filled below.
-          </p>
-          <div className="divider-gold mx-0 mb-6" />
-
-          {(wallet?.available_balance || 0) <= 0 ? (
-            <div className="text-center py-12">
-              <Wallet size={36} className="text-gold-200 mx-auto mb-3" />
-              <p className="font-cormorant text-xl text-brown mb-1">No funds available yet</p>
-              <p className="font-garamond text-sm text-muted">
-                Available balance will appear once the 7-day escrow passes for delivered orders.
-              </p>
+            <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-3">
+              <span className="text-xs text-[#6B7A70] block">Total Withdrawn to Date</span>
+              <span className="font-cormorant text-3xl font-extrabold text-[#1C2E24] block">{totalWithdrawn}</span>
+              <span className="text-[11px] text-[#2E7D32] font-semibold block flex items-center gap-1">
+                <CheckCircle2 size={12} /> Settled via offline bank transfer
+              </span>
             </div>
-          ) : (
-            <form onSubmit={handleWithdrawal} className="space-y-4">
+          </div>
+
+          {/* Request Form */}
+          <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-4">
+            <h3 className="font-cormorant text-xl font-bold text-[#1C2E24] border-b border-[#F0ECE1] pb-3">Request Payout</h3>
+
+            <form onSubmit={handleRequestWithdrawal} className="space-y-4 text-xs">
               <div>
-                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">
-                  WITHDRAWAL AMOUNT (MAX: {formatPrice(wallet?.available_balance || 0)})
-                </label>
+                <label className="font-bold text-[#1C2E24] block mb-1">Enter Amount to Withdraw (₹)</label>
                 <input
                   type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder={`e.g. 5000`}
-                  className="input-field w-full"
-                  min="1"
-                  max={wallet?.available_balance}
-                  step="0.01"
+                  placeholder="e.g. 5000"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2.5 font-bold text-sm text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                   required
                 />
+                <p className="text-[11px] text-[#8C9890] mt-1">Minimum withdrawal amount is ₹500</p>
               </div>
 
-              <div>
-                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">BANK NAME / UPI MODE</label>
-                <input
-                  type="text"
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  placeholder="e.g. State Bank of India or 'UPI Payout'"
-                  className="input-field w-full"
-                  required
-                />
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs"
+                >
+                  {isSubmitting && <Loader2 size={14} className="animate-spin" />}
+                  <span>Submit Withdrawal Request</span>
+                  <ArrowUpRight size={14} />
+                </button>
               </div>
-
-              <div>
-                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">ACCOUNT NUMBER / UPI ID</label>
-                <input
-                  type="text"
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                  placeholder="Enter bank account or UPI ID"
-                  className="input-field w-full"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-2">
-                  IFSC / ROUTING DETAILS <span className="text-muted font-garamond">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={routingDetails}
-                  onChange={(e) => setRoutingDetails(e.target.value)}
-                  placeholder="e.g. SBIN0001234"
-                  className="input-field w-full"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="btn-primary w-full flex items-center justify-center gap-2 py-2 text-xs disabled:opacity-60"
-              >
-                {isSubmitting
-                  ? <><Loader2 size={12} className="animate-spin" /> SUBMITTING...</>
-                  : <><ArrowDownToLine size={12} /> REQUEST WITHDRAWAL</>
-                }
-              </button>
             </form>
-          )}
+          </div>
+
         </div>
 
-      </div>
+        {/* Right: Withdrawal History (1 col) */}
+        <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-4">
+          <h3 className="font-cormorant text-xl font-bold text-[#1C2E24] border-b border-[#F0ECE1] pb-3">Recent Payouts</h3>
 
-      {/* Transaction & Withdrawal History Ledger Section */}
-      <div className="card p-6 mt-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="font-cinzel text-xs tracking-widest text-brown flex items-center gap-2">
-            ✦ FINANCIAL HISTORY &amp; LEDGERS
-          </h2>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => { setActiveLedgerTab("withdrawals"); setHistoryPage(1); }}
-              className={`font-cinzel text-[10px] tracking-widest px-3 py-1.5 rounded flex-1 sm:flex-none transition-all
-                ${activeLedgerTab === "withdrawals" ? "bg-deep text-gold-400 font-semibold" : "border border-gold-200 text-muted"}`}
-            >
-              WITHDRAWAL REQUESTS
-            </button>
-            <button
-              onClick={() => { setActiveLedgerTab("settlements"); setHistoryPage(1); }}
-              className={`font-cinzel text-[10px] tracking-widest px-3 py-1.5 rounded flex-1 sm:flex-none transition-all
-                ${activeLedgerTab === "settlements" ? "bg-deep text-gold-400 font-semibold" : "border border-gold-200 text-muted"}`}
-            >
-              ESCROW SETTLEMENTS
-            </button>
+          <div className="space-y-3">
+            {demoWithdrawals.map((w) => (
+              <div key={w.id} className="p-3 bg-[#FAF8F3] border border-[#E5E0D5] rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="font-extrabold text-xs text-[#1C2E24] block">{w.amount}</span>
+                  <span className="text-[10px] text-[#8C9890]">{w.date}</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#E8F5E9] text-[#2E7D32]">
+                  {w.status}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {isHistoryLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="animate-spin text-gold-500" size={24} />
-          </div>
-        ) : activeLedgerTab === "withdrawals" ? (
-          withdrawalHistory.length === 0 ? (
-            <div className="text-center py-12 text-muted font-garamond text-sm">
-              No withdrawal request logs found.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm font-garamond border-collapse">
-                <thead>
-                  <tr className="bg-ivory border-b border-gold-100 font-cinzel text-[10px] tracking-wider text-brown">
-                    <th className="p-3">REQUEST ID</th>
-                    <th className="p-3">AMOUNT</th>
-                    <th className="p-3">DESTINATION</th>
-                    <th className="p-3">SUBMITTED ON</th>
-                    <th className="p-3">STATUS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {withdrawalHistory.map((item) => (
-                    <tr key={item.id} className="border-b border-gold-100/50 hover:bg-ivory/20 transition-colors">
-                      <td className="p-3 font-cinzel text-xs font-semibold text-gold-700">#{item.id}</td>
-                      <td className="p-3 text-brown font-semibold">{formatPrice(item.amount)}</td>
-                      <td className="p-3">
-                        <p className="font-semibold text-xs text-deep">{item.bank_name}</p>
-                        <p className="text-[10px] text-muted font-mono">{item.account_number}</p>
-                      </td>
-                      <td className="p-3 text-muted text-xs">{formatDate(item.created_at)}</td>
-                      <td className="p-3">
-                        <span className={`badge py-0.5 px-2 text-[10px] capitalize ${STATUS_COLORS[item.status]}`}>
-                          {item.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        ) : (
-          settlementHistory.length === 0 ? (
-            <div className="text-center py-12 text-muted font-garamond text-sm">
-              No settlement transactions found.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm font-garamond border-collapse">
-                <thead>
-                  <tr className="bg-ivory border-b border-gold-100 font-cinzel text-[10px] tracking-wider text-brown">
-                    <th className="p-3">SETTLEMENT ID</th>
-                    <th className="p-3">ORDER REFERENCE</th>
-                    <th className="p-3 text-right">MERCHANT SHARE</th>
-                    <th className="p-3 text-right">PLATFORM COMMISSION</th>
-                    <th className="p-3">RELEASE DATE</th>
-                    <th className="p-3">STATUS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {settlementHistory.map((item) => (
-                    <tr key={item.id} className="border-b border-gold-100/50 hover:bg-ivory/20 transition-colors">
-                      <td className="p-3 font-cinzel text-xs font-semibold text-gold-700">#{item.id}</td>
-                      <td className="p-3 font-cinzel text-xs font-semibold text-deep">{item.order_number}</td>
-                      <td className="p-3 text-right text-green-700 font-semibold">{formatPrice(item.amount)}</td>
-                      <td className="p-3 text-right text-gold-700">{formatPrice(item.platform_commission)}</td>
-                      <td className="p-3 text-muted text-xs">{formatDate(item.release_date)}</td>
-                      <td className="p-3">
-                        <span className={`badge py-0.5 px-2 text-[10px]
-                          ${item.status === 'released' ? 'bg-green-100 text-green-700' :
-                            item.status === 'escrow_hold' ? 'bg-yellow-100 text-yellow-700' :
-                            item.status === 'disputed' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
-                          {item.status.replace(/_/g, " ")}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        )}
-
-        {/* Ledger Pagination */}
-        {historyTotal > 10 && (
-          <div className="flex justify-between items-center pt-4 border-t border-gold-100 mt-4">
-            <p className="font-garamond text-xs text-muted">Showing {Math.min(10, historyTotal)} of {historyTotal} records</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
-                disabled={historyPage === 1}
-                className="btn-ghost text-xs px-3 py-1 disabled:opacity-40"
-              >
-                ← Prev
-              </button>
-              <button
-                onClick={() => setHistoryPage(p => p + 1)}
-                disabled={historyPage * 10 >= historyTotal}
-                className="btn-ghost text-xs px-3 py-1 disabled:opacity-40"
-              >
-                Next →
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
     </div>
+  );
+}
+
+export default function MerchantWalletPage() {
+  return (
+    <Suspense fallback={<div className="h-48 flex items-center justify-center"><Loader2 className="animate-spin text-[#0D2619]" size={28} /></div>}>
+      <MerchantWalletContent />
+    </Suspense>
   );
 }

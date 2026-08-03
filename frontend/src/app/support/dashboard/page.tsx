@@ -100,34 +100,18 @@ export default function SupportDashboardPage() {
     }
     setIsImpersonating(true);
     try {
-      const { data } = await supportApi.impersonate({
-        target_user_id: selectedUser.id,
-        reason: impersonateReason,
+      const { data } = await supportApi.impersonate({ target_user_id: selectedUser.id, reason: impersonateReason.trim() });
+      setActiveSession({
+        token: data.impersonation_token,
+        auditLogId: data.audit_log_id,
+        user: data.target_user,
       });
 
-      // Save support agent's original token & role to restore later
-      const originalToken = Cookies.get("access_token");
-      const originalRole = Cookies.get("user_role");
-      if (originalToken) {
-        Cookies.set("impersonator_original_token", originalToken, { expires: 1, sameSite: "Lax" });
-        if (originalRole) {
-          Cookies.set("impersonator_original_role", originalRole, { expires: 1, sameSite: "Lax" });
-        }
-      }
-      Cookies.set("impersonator_audit_log_id", String(data.audit_log_id), { expires: 1, sameSite: "Lax" });
+      Cookies.set("impersonation_token", data.impersonation_token, { expires: 1 / 24 });
+      Cookies.set("impersonation_audit_id", String(data.audit_log_id), { expires: 1 / 24 });
+      Cookies.set("impersonation_target_name", data.target_user.full_name, { expires: 1 / 24 });
 
-      // Apply impersonated user credentials
-      Cookies.set("access_token", data.impersonation_token, { expires: 1, sameSite: "Lax" });
-      Cookies.set("user_role", selectedUser.role, { expires: 1, sameSite: "Lax" });
-
-      // Update auth store user
-      useAuthStore.getState().setUser(selectedUser);
-
-      toast.success(`Impersonation session started for ${selectedUser.full_name}`);
-      setImpersonateReason("");
-      
-      // Redirect to home page where they can act as the customer
-      window.location.href = "/";
+      toast.success(`Impersonation active for ${data.target_user.full_name}. You can view the store from their perspective.`);
     } catch (err) {
       toast.error(getApiError(err));
     } finally {
@@ -135,33 +119,10 @@ export default function SupportDashboardPage() {
     }
   };
 
-  const handleEndImpersonation = async () => {
-    if (!activeSession) return;
-    try {
-      await supportApi.endImpersonation(activeSession.auditLogId);
-      setActiveSession(null);
-      toast.success("Impersonation session ended and logged");
-    } catch (err) {
-      toast.error(getApiError(err));
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!selectedUser) return;
-    const newPassword = prompt("Enter new password for this user (min 8 chars):");
-    if (!newPassword || newPassword.length < 8) { toast.error("Password too short"); return; }
-    try {
-      await supportApi.resetPassword(selectedUser.id, { new_password: newPassword });
-      toast.success("Password reset successfully");
-    } catch (err) {
-      toast.error(getApiError(err));
-    }
-  };
-
   const loadAuditLogs = async () => {
     setIsLoadingAudit(true);
     try {
-      const { data } = await supportApi.auditLogs({ page: 1, page_size: 50 });
+      const { data } = await supportApi.auditLogs();
       setAuditLogs(data.items);
     } catch (err) {
       toast.error(getApiError(err));
@@ -170,80 +131,18 @@ export default function SupportDashboardPage() {
     }
   };
 
-  // Support tickets API loads
   const loadTickets = async () => {
     setIsLoadingTickets(true);
     try {
-      const params: Record<string, string> = {};
+      const params: any = {};
       if (ticketStatusFilter) params.status = ticketStatusFilter;
       if (ticketPriorityFilter) params.priority = ticketPriorityFilter;
-      
       const { data } = await supportApi.getAllTickets(params);
-      setTickets(data.items || []);
+      setTickets(data);
     } catch (err) {
-      toast.error("Failed to load tickets");
+      toast.error(getApiError(err));
     } finally {
       setIsLoadingTickets(false);
-    }
-  };
-
-  const handleSelectTicket = async (ticket: any) => {
-    setSelectedTicket(ticket);
-    setTicketStatusUpdate(ticket.status);
-    setAgentReplyMsg("");
-    
-    // Fetch associated customer details and order list for support context
-    try {
-      const { data } = await supportApi.userOrders(ticket.user_id);
-      setTicketOrders(data.items || []);
-    } catch {
-      setTicketOrders([]);
-    }
-    
-    setTimeout(() => {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
-
-  const handleAgentReply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTicket || !agentReplyMsg.trim()) return;
-
-    setIsSendingReply(true);
-    try {
-      const { data } = await supportApi.agentReplyToTicket(selectedTicket.id, {
-        message: agentReplyMsg.trim(),
-        status: ticketStatusUpdate
-      });
-      setSelectedTicket(data);
-      setAgentReplyMsg("");
-      toast.success("Reply sent successfully!");
-      
-      // Refresh ticket list in queue
-      loadTickets();
-      
-      setTimeout(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    } catch (err) {
-      toast.error(getApiError(err));
-    } finally {
-      setIsSendingReply(false);
-    }
-  };
-
-  const handleUpdateTicketStatusOnly = async (newStatus: string) => {
-    if (!selectedTicket) return;
-    try {
-      const { data } = await supportApi.updateTicketStatus(selectedTicket.id, {
-        status: newStatus
-      });
-      setSelectedTicket(data);
-      setTicketStatusUpdate(newStatus);
-      toast.success(`Ticket status marked as ${newStatus}`);
-      loadTickets();
-    } catch (err) {
-      toast.error(getApiError(err));
     }
   };
 
@@ -252,78 +151,111 @@ export default function SupportDashboardPage() {
     if (tab === "tickets") loadTickets();
   }, [tab, ticketStatusFilter, ticketPriorityFilter]);
 
-  const categoryLabels: Record<string, string> = {
-    order_help: "Order Help",
-    payment: "Payment Issue",
-    refund: "Return & Refund",
-    general_inquiry: "General Inquiry"
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "open": return "bg-green-50 text-green-700 border-green-200";
-      case "in_progress": return "bg-amber-50 text-amber-700 border-amber-200";
-      case "resolved": return "bg-gray-50 text-gray-600 border-gray-200";
-      default: return "bg-gray-50 text-gray-600 border-gray-200";
+  const handleSelectTicket = async (ticket: any) => {
+    setSelectedTicket(ticket);
+    setTicketStatusUpdate(ticket.status);
+    if (ticket.user_id) {
+      try {
+        const { data } = await supportApi.userOrders(ticket.user_id);
+        setTicketOrders(data.items);
+      } catch {
+        setTicketOrders([]);
+      }
     }
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case "high": return "bg-red-50 text-red-700 border-red-200";
-      case "medium": return "bg-amber-50 text-amber-700 border-amber-200";
-      case "low": return "bg-gray-50 text-gray-600 border-gray-200";
-      default: return "bg-gray-50 text-gray-600 border-gray-200";
+  const handleSendTicketReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTicket || !agentReplyMsg.trim()) return;
+    setIsSendingReply(true);
+    try {
+      const payload: any = { message: agentReplyMsg.trim() };
+      if (ticketStatusUpdate && ticketStatusUpdate !== selectedTicket.status) {
+        payload.status = ticketStatusUpdate;
+      }
+      const { data } = await supportApi.agentReplyToTicket(selectedTicket.id, payload);
+      toast.success("Reply submitted successfully");
+      setSelectedTicket(data);
+      setAgentReplyMsg("");
+      loadTickets();
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsSendingReply(false);
     }
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-[#4A0F0F] text-[#E8D5B0] border-r border-[#C9973E]/20">
-      <div className="p-5 border-b border-[#FAF6EE]/10 flex flex-col gap-1">
-        <p className="font-cinzel text-sm tracking-[0.25em] text-[#C9973E] font-bold">RATNAMAYURI</p>
-        <p className="font-garamond text-[9px] tracking-widest text-[#FAF6EE]/60 uppercase">SUPPORT DASHBOARD</p>
+    <div className="flex flex-col h-full bg-[#0D2619] text-emerald-100 font-garamond">
+      <div className="p-6 border-b border-emerald-800/40">
+        <p className="font-cormorant font-bold text-lg tracking-widest text-white">RATNAMAYURI</p>
+        <p className="text-[10px] font-semibold tracking-widest text-emerald-400 mt-0.5 uppercase">SUPPORT DASHBOARD</p>
       </div>
+
       <nav className="flex-1 p-3 space-y-1">
-        <button onClick={() => { setTab("tickets"); setMobileOpen(false); }}
-          className={`w-full flex items-center gap-2.5 px-4 py-3 text-left font-cinzel text-xs tracking-wider transition-colors
-            ${tab === "tickets" ? "bg-[#FAF6EE] text-[#4A0F0F] font-bold" : "hover:bg-[#5A1212]"}`}>
-          <MessageSquare size={14} className={tab === "tickets" ? "text-[#4A0F0F]" : "text-[#C9973E]"} /> SUPPORT TICKETS
+        <button
+          onClick={() => { setTab("tickets"); setMobileOpen(false); }}
+          className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-bold transition-all rounded-xl ${
+            tab === "tickets" ? "bg-[#19402B] text-white shadow-2xs" : "text-emerald-200/80 hover:bg-[#19402B]/50 hover:text-white"
+          }`}
+        >
+          <span className="flex items-center gap-2.5">
+            <MessageSquare size={15} /> Support Tickets
+          </span>
+          {tickets.filter((t) => t.status === "open").length > 0 && (
+            <span className="bg-amber-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full">
+              {tickets.filter((t) => t.status === "open").length}
+            </span>
+          )}
         </button>
-        <button onClick={() => { setTab("lookup"); setMobileOpen(false); }}
-          className={`w-full flex items-center gap-2.5 px-4 py-3 text-left font-cinzel text-xs tracking-wider transition-colors
-            ${tab === "lookup" ? "bg-[#FAF6EE] text-[#4A0F0F] font-bold" : "hover:bg-[#5A1212]"}`}>
-          <Search size={14} className={tab === "lookup" ? "text-[#4A0F0F]" : "text-[#C9973E]"} /> USER LOOKUP
+
+        <button
+          onClick={() => { setTab("lookup"); setMobileOpen(false); }}
+          className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-bold transition-all rounded-xl ${
+            tab === "lookup" ? "bg-[#19402B] text-white shadow-2xs" : "text-emerald-200/80 hover:bg-[#19402B]/50 hover:text-white"
+          }`}
+        >
+          <Search size={15} /> User Lookup
         </button>
-        <button onClick={() => { setTab("audit"); setMobileOpen(false); }}
-          className={`w-full flex items-center gap-2.5 px-4 py-3 text-left font-cinzel text-xs tracking-wider transition-colors
-            ${tab === "audit" ? "bg-[#FAF6EE] text-[#4A0F0F] font-bold" : "hover:bg-[#5A1212]"}`}>
-          <FileText size={14} className={tab === "audit" ? "text-[#4A0F0F]" : "text-[#C9973E]"} /> AUDIT LOGS
+
+        <button
+          onClick={() => { setTab("audit"); setMobileOpen(false); }}
+          className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-bold transition-all rounded-xl ${
+            tab === "audit" ? "bg-[#19402B] text-white shadow-2xs" : "text-emerald-200/80 hover:bg-[#19402B]/50 hover:text-white"
+          }`}
+        >
+          <FileText size={15} /> Audit Logs
         </button>
       </nav>
-      <div className="p-3 border-t border-[#FAF6EE]/10">
-        <button onClick={() => { useAuthStore.getState().logout(); router.push("/auth/login"); }}
-          className="w-full flex items-center gap-2.5 px-4 py-3 text-left font-cinzel text-xs tracking-wider text-red-400 hover:text-red-300 hover:bg-red-950/20 transition-colors">
-          <LogOut size={14} /> SIGN OUT
+
+      <div className="p-3 border-t border-emerald-800/40">
+        <button
+          onClick={() => { useAuthStore.getState().logout(); router.push("/auth/login"); }}
+          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-bold text-red-300 hover:bg-red-950/40 rounded-xl transition-all"
+        >
+          <LogOut size={15} /> Sign Out
         </button>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#FAF6EE]">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[#FAF8F3] font-garamond text-[#1C2E24]">
       {/* Mobile Top Bar */}
-      <header className="lg:hidden flex items-center justify-between p-4 bg-[#4A0F0F] text-[#E8D5B0] border-b border-[#C9973E]/20">
+      <header className="lg:hidden flex items-center justify-between p-4 bg-[#0D2619] border-b border-emerald-800/40">
         <div className="flex flex-col">
-          <p className="font-cinzel text-xs tracking-[0.2em] text-[#C9973E]">RATNAMAYURI</p>
-          <p className="font-garamond text-[9px] tracking-widest text-[#FAF6EE]/60 uppercase">SUPPORT DASHBOARD</p>
+          <p className="font-cormorant font-bold text-base tracking-widest text-white">RATNAMAYURI</p>
+          <p className="text-[9px] font-semibold tracking-widest text-emerald-400 mt-0.5 uppercase">SUPPORT DASHBOARD</p>
         </div>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-[#C9973E] hover:text-[#FAF6EE] p-1">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-white p-1">
           {mobileOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-56 flex-col flex-shrink-0 min-h-screen">
+      <aside className="hidden lg:flex w-60 bg-[#0D2619] flex-col flex-shrink-0 min-h-screen border-r border-emerald-800/40">
         {sidebarContent}
       </aside>
 
@@ -331,9 +263,9 @@ export default function SupportDashboardPage() {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <aside className="relative flex flex-col w-64 max-w-xs h-full z-10 animate-slide-in">
-            <div className="absolute top-4 right-4">
-              <button onClick={() => setMobileOpen(false)} className="text-[#C9973E] hover:text-[#FAF6EE] p-1">
+          <aside className="relative flex flex-col w-64 max-w-xs bg-[#0D2619] shadow-2xl h-full z-10 animate-slide-in">
+            <div className="absolute top-4 right-4 z-20">
+              <button onClick={() => setMobileOpen(false)} className="text-white p-1">
                 <X size={20} />
               </button>
             </div>
@@ -343,24 +275,24 @@ export default function SupportDashboardPage() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-grow p-5 sm:p-8 overflow-auto">
+      <main className="flex-grow p-4 md:p-8 overflow-auto space-y-6">
         
         {/* ── TICKETS TAB ── */}
         {tab === "tickets" && (
-          <div>
-            <div className="mb-6">
-              <span className="text-[10px] font-bold tracking-widest text-[#C9973E] uppercase">Tickets Queue</span>
-              <h1 className="font-cormorant text-2xl sm:text-3xl text-[#4A0F0F] font-bold mt-0.5">Support Requests</h1>
+          <div className="space-y-6">
+            <div>
+              <h1 className="font-cormorant text-2xl md:text-3xl font-bold text-[#1C2E24]">Support Requests &amp; Queue</h1>
+              <p className="text-xs text-[#8C9890] mt-0.5">Manage customer inquiries and ticket communications</p>
             </div>
 
-            {/* Filter bar */}
-            <div className="bg-white border border-[#E8D5B0] rounded-sm p-4 mb-6 flex flex-wrap gap-4 items-center">
+            {/* Filter Bar */}
+            <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs flex flex-wrap gap-4 items-center">
               <div>
-                <label className="block text-[9px] font-bold text-[#9A7070] uppercase mb-1 tracking-wider">Status</label>
+                <label className="block text-xs font-bold text-[#1C2E24] mb-1">Status</label>
                 <select
                   value={ticketStatusFilter}
                   onChange={(e) => setTicketStatusFilter(e.target.value)}
-                  className="bg-[#FAF6EE] border border-[#E8D5B0] text-xs text-[#4A0F0F] px-3 py-1.5 focus:outline-none focus:border-[#C9973E] rounded-sm font-garamond"
+                  className="bg-[#FAF8F3] border border-[#E5E0D5] text-xs font-semibold text-[#1C2E24] px-3 py-2 rounded-xl focus:outline-none focus:border-[#0D2619]"
                 >
                   <option value="">All Statuses</option>
                   <option value="open">Open</option>
@@ -370,452 +302,331 @@ export default function SupportDashboardPage() {
               </div>
 
               <div>
-                <label className="block text-[9px] font-bold text-[#9A7070] uppercase mb-1 tracking-wider">Priority</label>
+                <label className="block text-xs font-bold text-[#1C2E24] mb-1">Priority</label>
                 <select
                   value={ticketPriorityFilter}
                   onChange={(e) => setTicketPriorityFilter(e.target.value)}
-                  className="bg-[#FAF6EE] border border-[#E8D5B0] text-xs text-[#4A0F0F] px-3 py-1.5 focus:outline-none focus:border-[#C9973E] rounded-sm font-garamond"
+                  className="bg-[#FAF8F3] border border-[#E5E0D5] text-xs font-semibold text-[#1C2E24] px-3 py-2 rounded-xl focus:outline-none focus:border-[#0D2619]"
                 >
                   <option value="">All Priorities</option>
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
                 </select>
               </div>
-
-              <button
-                onClick={() => { setTicketStatusFilter(""); setTicketPriorityFilter(""); }}
-                className="bg-[#FAF6EE] hover:bg-white text-xs border border-[#E8D5B0] text-[#7A5C5C] px-4 py-1.5 rounded-sm font-bold tracking-widest mt-4"
-              >
-                RESET
-              </button>
             </div>
 
-            {isLoadingTickets ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3">
-                <Loader2 className="animate-spin text-[#C9973E]" size={28} />
-                <p className="font-cinzel text-[10px] tracking-widest text-[#7A5C5C]">LOAD TICKETS QUEUE...</p>
-              </div>
-            ) : (
-              <div className="grid lg:grid-cols-3 gap-6 items-start">
-                
-                {/* Tickets list */}
-                <div className="lg:col-span-1 space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                  {tickets.length === 0 ? (
-                    <div className="bg-white border border-[#E8D5B0] p-6 text-center rounded-sm">
-                      <AlertCircle className="w-8 h-8 text-[#C9973E] mx-auto mb-2" />
-                      <p className="text-xs text-[#7A5C5C] font-semibold font-garamond">No support tickets found</p>
-                    </div>
-                  ) : (
-                    tickets.map((t) => (
-                      <button
+            {/* Tickets Grid / Detail View */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Tickets List (1 col) */}
+              <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-4">
+                <h3 className="font-cormorant text-xl font-bold text-[#1C2E24] border-b border-[#F0ECE1] pb-3">Active Queue</h3>
+                {isLoadingTickets ? (
+                  <div className="py-12 text-center">
+                    <Loader2 className="animate-spin text-[#0D2619] mx-auto" size={24} />
+                  </div>
+                ) : tickets.length === 0 ? (
+                  <div className="py-12 text-center text-xs text-[#8C9890]">No support tickets found</div>
+                ) : (
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                    {tickets.map((t) => (
+                      <div
                         key={t.id}
                         onClick={() => handleSelectTicket(t)}
-                        className={`w-full text-left bg-white border hover:border-[#C9973E] hover:shadow-sm transition-all duration-200 p-4 rounded-sm block
-                          ${selectedTicket?.id === t.id ? "border-[#C9973E] bg-[#FAF0E4]" : "border-[#E8D5B0]"}`}
+                        className={`p-4 border rounded-2xl cursor-pointer transition-all ${
+                          selectedTicket?.id === t.id
+                            ? "bg-[#0D2619] text-white border-[#0D2619]"
+                            : "bg-[#FAF8F3] border-[#E5E0D5] hover:border-[#0D2619]"
+                        }`}
                       >
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <span className="font-cinzel text-[10px] text-[#C9973E] font-bold">TICKET #{t.id}</span>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 border rounded-full ${getStatusBadge(t.status)}`}>
-                            {t.status.replace(/_/g, " ")}
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-[11px] font-bold font-mono">#{t.ticket_number}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                            t.status === "open" ? "bg-amber-100 text-amber-800" : t.status === "in_progress" ? "bg-blue-100 text-blue-800" : "bg-emerald-100 text-emerald-800"
+                          }`}>
+                            {t.status}
                           </span>
                         </div>
-                        <p className="font-garamond text-xs font-bold text-[#4A0F0F] line-clamp-1">{t.subject}</p>
-                        <div className="flex items-center justify-between text-[10px] text-[#9A7070] mt-2 border-t border-[#FAF6EE] pt-2">
-                          <span className="capitalize">{t.priority} Priority</span>
-                          <span>{formatDate(t.updated_at)}</span>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-
-                {/* Selected Ticket details panel */}
-                <div className="lg:col-span-2">
-                  {selectedTicket ? (
-                    <div className="grid md:grid-cols-3 gap-6 items-start">
-                      
-                      {/* Conversations & Actions */}
-                      <div className="md:col-span-2 bg-white border border-[#E8D5B0] rounded-sm shadow-sm flex flex-col h-[600px]">
-                        {/* Conversation header */}
-                        <div className="bg-[#FAF6EE] border-b border-[#E8D5B0] px-5 py-4 flex items-center justify-between">
-                          <div>
-                            <span className="font-cinzel text-[10px] text-[#C9973E] font-bold">SUBJECT</span>
-                            <p className="text-xs font-bold text-[#4A0F0F]">{selectedTicket.subject}</p>
-                          </div>
-                          <div>
-                            <select
-                              value={ticketStatusUpdate}
-                              onChange={(e) => handleUpdateTicketStatusOnly(e.target.value)}
-                              className="bg-white border border-[#E8D5B0] text-[10px] font-bold text-[#4A0F0F] px-2 py-1 rounded-sm font-garamond"
-                            >
-                              <option value="open">Open</option>
-                              <option value="in_progress">In Progress</option>
-                              <option value="resolved">Resolved</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Thread */}
-                        <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                          {selectedTicket.replies.map((reply: any, index: number) => {
-                            const isAgent = ["support", "admin"].includes(reply.sender_role);
-                            return (
-                              <div
-                                key={reply._id || index}
-                                className={`flex flex-col max-w-[90%] ${
-                                  isAgent ? "ml-auto items-end" : "mr-auto items-start"
-                                }`}
-                              >
-                                <span className="text-[9px] text-[#9A7070] font-bold mb-0.5 px-1 flex items-center gap-1">
-                                  {isAgent ? (
-                                    <>
-                                      <span>You ({reply.sender_name})</span>
-                                      <span className="bg-[#4A0F0F] text-[#FAF6EE] text-[8px] font-black px-1 rounded-sm uppercase">Agent</span>
-                                    </>
-                                  ) : (
-                                    <span>{reply.sender_name} ({reply.sender_role})</span>
-                                  )}
-                                  <span className="font-normal text-[#B09090] text-[8px]">
-                                    {formatDateTime(reply.created_at)}
-                                  </span>
-                                </span>
-
-                                <div
-                                  className={`p-3 rounded-md text-xs font-garamond leading-relaxed whitespace-pre-wrap ${
-                                    isAgent
-                                      ? "bg-[#4A0F0F] text-[#FAF6EE] border border-[#5A1212]"
-                                      : "bg-[#FAF6EE] text-[#4A0F0F] border border-[#E8D5B0]"
-                                  }`}
-                                >
-                                  {reply.message}
-                                </div>
-                              </div>
-                            );
-                          })}
-                          <div ref={chatEndRef} />
-                        </div>
-
-                        {/* Reply box */}
-                        <form onSubmit={handleAgentReply} className="border-t border-[#E8D5B0] p-4 bg-[#FAF6EE] flex gap-2 items-end">
-                          <textarea
-                            rows={2}
-                            value={agentReplyMsg}
-                            onChange={(e) => setAgentReplyMsg(e.target.value)}
-                            placeholder="Type a support response message to customer..."
-                            className="flex-1 bg-white border border-[#E8D5B0] text-xs text-[#4A0F0F] p-3 focus:outline-none focus:border-[#C9973E] rounded-sm font-garamond resize-none font-medium"
-                          />
-                          <button
-                            type="submit"
-                            disabled={isSendingReply || !agentReplyMsg.trim()}
-                            className="bg-[#4A0F0F] text-[#FAF6EE] border border-[#C9973E] p-3 hover:bg-[#6B1A1A] transition-colors rounded-sm shadow-sm flex items-center justify-center disabled:opacity-40 flex-shrink-0"
-                          >
-                            {isSendingReply ? (
-                              <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                              <Send size={16} />
-                            )}
-                          </button>
-                        </form>
+                        <p className="font-bold text-xs truncate mb-1">{t.subject}</p>
+                        <p className="text-[11px] opacity-80 truncate">{t.customer_name || t.email}</p>
                       </div>
-
-                      {/* Right contextual info panels */}
-                      <div className="space-y-4">
-                        {/* Ticket metadata */}
-                        <div className="bg-white border border-[#E8D5B0] rounded-sm p-4 shadow-sm text-xs">
-                          <h3 className="font-cinzel text-[10px] tracking-widest text-[#9A7070] font-bold uppercase mb-2">Ticket Info</h3>
-                          <div className="space-y-1 bg-[#FAF6EE] p-2.5 rounded-sm">
-                            <p className="text-[10px] font-bold text-[#7A5C5C] uppercase">Category</p>
-                            <p className="text-xs font-semibold text-[#4A0F0F]">{categoryLabels[selectedTicket.category] || selectedTicket.category}</p>
-                            <p className="text-[10px] font-bold text-[#7A5C5C] uppercase mt-2">Priority</p>
-                            <span className={`inline-flex px-2 py-0.5 border rounded-full text-[9px] font-bold mt-0.5 ${getPriorityBadge(selectedTicket.priority)}`}>
-                              {selectedTicket.priority.toUpperCase()}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Customer contextual orders */}
-                        <div className="bg-white border border-[#E8D5B0] rounded-sm p-4 shadow-sm text-xs">
-                          <h3 className="font-cinzel text-[10px] tracking-widest text-[#9A7070] font-bold uppercase mb-2">Customer Orders</h3>
-                          {ticketOrders.length === 0 ? (
-                            <p className="text-xs text-[#7A5C5C] font-semibold italic">No order history found</p>
-                          ) : (
-                            <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
-                              {ticketOrders.map((ord) => (
-                                <div key={ord.id} className="border-b border-[#FAF6EE] pb-2 last:border-0 last:pb-0">
-                                  <div className="flex justify-between items-center font-semibold text-[#4A0F0F]">
-                                    <span>#{ord.order_number}</span>
-                                    <span>₹{ord.total_amount.toLocaleString("en-IN")}</span>
-                                  </div>
-                                  <div className="flex justify-between text-[10px] text-[#9A7070] mt-0.5">
-                                    <span>{formatDate(ord.created_at)}</span>
-                                    <span className="capitalize text-amber-700">{ord.status.replace(/_/g, " ")}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                    </div>
-                  ) : (
-                    <div className="bg-white border border-[#E8D5B0] p-12 text-center rounded-sm max-w-sm mx-auto shadow-sm">
-                      <MessageSquare className="w-10 h-10 text-[#C9973E] mx-auto mb-3" />
-                      <h3 className="font-cinzel text-xs tracking-widest text-[#4A0F0F] font-bold uppercase mb-1">
-                        Select a Ticket
-                      </h3>
-                      <p className="text-xs text-[#7A5C5C] font-garamond">
-                        Click on a customer ticket card from the queue list to start responding and resolving their issues.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* Ticket Details & Chat (2 cols) */}
+              <div className="lg:col-span-2 bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs min-h-[500px] flex flex-col justify-between">
+                {selectedTicket ? (
+                  <div className="space-y-6 flex-1 flex flex-col justify-between">
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#F0ECE1] pb-4 gap-2">
+                        <div>
+                          <span className="text-xs font-mono font-bold text-[#0D2619]">#{selectedTicket.ticket_number}</span>
+                          <h2 className="font-cormorant text-2xl font-bold text-[#1C2E24]">{selectedTicket.subject}</h2>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={ticketStatusUpdate}
+                            onChange={(e) => setTicketStatusUpdate(e.target.value)}
+                            className="bg-[#FAF8F3] border border-[#E5E0D5] text-xs font-semibold text-[#1C2E24] px-3 py-1.5 rounded-xl focus:outline-none focus:border-[#0D2619]"
+                          >
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Messages Flow */}
+                      <div className="space-y-3 max-h-[350px] overflow-y-auto p-4 bg-[#FAF8F3] border border-[#E5E0D5] rounded-2xl">
+                        <div className="bg-white p-4 rounded-xl border border-[#E5E0D5]">
+                          <p className="text-xs font-bold text-[#1C2E24] mb-1">{selectedTicket.customer_name || selectedTicket.email}</p>
+                          <p className="text-xs text-[#556B5D] leading-relaxed">{selectedTicket.description}</p>
+                          <span className="text-[10px] text-[#8C9890] mt-2 block">{formatDateTime(selectedTicket.created_at)}</span>
+                        </div>
+
+                        {selectedTicket.messages?.map((m: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className={`p-4 rounded-xl border ${
+                              m.sender_role === "support" || m.sender_role === "admin"
+                                ? "bg-[#0D2619] text-white border-[#0D2619] ml-8"
+                                : "bg-white text-[#1C2E24] border-[#E5E0D5] mr-8"
+                            }`}
+                          >
+                            <p className="text-xs font-bold mb-1">{m.sender_name || m.sender_role}</p>
+                            <p className="text-xs leading-relaxed opacity-90">{m.message}</p>
+                            <span className="text-[10px] opacity-70 mt-2 block">{formatDateTime(m.created_at)}</span>
+                          </div>
+                        ))}
+                        <div ref={chatEndRef} />
+                      </div>
+                    </div>
+
+                    {/* Agent Reply Box */}
+                    <form onSubmit={handleSendTicketReply} className="space-y-3 pt-4 border-t border-[#F0ECE1]">
+                      <textarea
+                        value={agentReplyMsg}
+                        onChange={(e) => setAgentReplyMsg(e.target.value)}
+                        placeholder="Type agent response message..."
+                        rows={3}
+                        className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl p-3 text-xs text-[#1C2E24] focus:outline-none focus:border-[#0D2619] resize-none"
+                      />
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          disabled={isSendingReply || !agentReplyMsg.trim()}
+                          className="inline-flex items-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+                        >
+                          {isSendingReply ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                          <span>Submit Ticket Reply</span>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="py-24 text-center text-xs text-[#8C9890]">
+                    Select a support ticket from the active queue to view details and reply.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ── Lookup Tab ── */}
+        {/* ── LOOKUP TAB ── */}
         {tab === "lookup" && (
-          <div>
-            <div className="mb-6">
-              <span className="text-[10px] font-bold tracking-widest text-[#C9973E] uppercase">SUPPORT TOOLS</span>
-              <h1 className="font-cormorant text-2xl sm:text-3xl text-[#4A0F0F] font-bold mt-0.5">User Lookup</h1>
+          <div className="space-y-6">
+            <div>
+              <h1 className="font-cormorant text-2xl md:text-3xl font-bold text-[#1C2E24]">Customer Lookup &amp; Impersonation</h1>
+              <p className="text-xs text-[#8C9890] mt-0.5">Search user profiles and manage support sessions</p>
             </div>
 
-            {/* Search form */}
-            <div className="bg-white border border-[#E8D5B0] rounded-sm p-6 mb-6 shadow-sm">
-              <h2 className="font-cinzel text-xs tracking-widest text-[#9A7070] mb-4">FIND A USER</h2>
-              <form onSubmit={handleSearch} className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  {([
-                    { value: "account_number", label: "Account #", icon: Hash },
-                    { value: "email",           label: "Email",      icon: Mail },
-                    { value: "name",            label: "Name",       icon: UserCheck },
-                  ] as const).map(({ value, label, icon: Icon }) => (
-                    <button key={value} type="button"
-                      onClick={() => setSearchType(value)}
-                      className={`flex items-center gap-2 font-cinzel text-xs tracking-wide px-4 py-2 transition-all rounded-sm
-                        ${searchType === value ? "bg-[#4A0F0F] text-[#E8D5B0] font-bold" : "border border-[#E8D5B0] text-[#7A5C5C] hover:border-[#C9973E]"}`}>
-                      <Icon size={12} /> {label}
-                    </button>
-                  ))}
+            {/* Search Controls */}
+            <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs">
+              <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 items-end">
+                <div>
+                  <label className="block text-xs font-bold text-[#1C2E24] mb-1">Search By</label>
+                  <select
+                    value={searchType}
+                    onChange={(e) => setSearchType(e.target.value as any)}
+                    className="bg-[#FAF8F3] border border-[#E5E0D5] text-xs font-semibold text-[#1C2E24] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#0D2619]"
+                  >
+                    <option value="email">Email Address</option>
+                    <option value="account_number">Account Number</option>
+                    <option value="name">Customer Name</option>
+                  </select>
                 </div>
-                <div className="flex gap-3">
+
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-bold text-[#1C2E24] mb-1">Search Term</label>
                   <input
+                    type="text"
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
-                    placeholder={
-                      searchType === "account_number" ? "e.g. RM1234567890" :
-                      searchType === "email" ? "user@example.com" : "Full or partial name"
-                    }
-                    className="w-full bg-[#FAF6EE] border border-[#E8D5B0] text-xs text-[#4A0F0F] p-3 focus:outline-none focus:border-[#C9973E] rounded-sm font-garamond flex-1"
+                    placeholder="Enter customer email, account number, or name..."
+                    className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2.5 text-xs font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
+                    required
                   />
-                  <button type="submit" disabled={isSearching || !searchValue.trim()}
-                    className="bg-[#4A0F0F] text-[#FAF6EE] border border-[#C9973E] text-xs font-bold tracking-widest py-3 px-6 hover:bg-[#6B1A1A] transition-colors rounded-sm flex items-center gap-2">
-                    {isSearching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-                    SEARCH
-                  </button>
                 </div>
+
+                <button
+                  type="submit"
+                  disabled={isSearching}
+                  className="inline-flex items-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+                >
+                  {isSearching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+                  <span>Search User</span>
+                </button>
               </form>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Search results */}
-              {results.length > 0 && (
-                <div>
-                  <h2 className="font-cinzel text-xs tracking-widest text-[#7A5C5C] font-bold uppercase mb-3">
-                    RESULTS ({results.length})
-                  </h2>
-                  <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
-                    {results.map((user) => (
-                      <button key={user.id} onClick={() => handleSelectUser(user)}
-                        className={`w-full text-left bg-white border hover:border-[#C9973E] hover:shadow-sm p-4 transition-all rounded-sm block
-                          ${selectedUser?.id === user.id ? "border-[#C9973E] bg-[#FAF0E4]" : "border-[#E8D5B0]"}`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-garamond text-xs font-bold text-[#4A0F0F]">{user.full_name}</p>
-                            <p className="font-garamond text-xs text-[#9A7070] mt-0.5">{user.email}</p>
-                            <div className="flex items-center gap-3 mt-2 flex-wrap">
-                              <span className="font-cinzel text-[10px] text-[#C9973E] font-bold">{user.account_number}</span>
-                              <span className={`text-[9px] font-bold tracking-wider px-2 py-0.5 border rounded-full capitalize
-                                ${user.role === "customer" ? "bg-gray-100 text-gray-700" : "bg-purple-100 text-purple-700"}`}>
-                                {user.role}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-right flex-shrink-0 text-xs">
-                            <span className={`font-cinzel text-[10px] font-bold uppercase ${user.is_active ? "text-green-600" : "text-red-500"}`}>
-                              {user.is_active ? "Active" : "Inactive"}
-                            </span>
-                            <p className="font-garamond text-[10px] text-[#9A7070] mt-1">{formatDate(user.created_at)}</p>
-                          </div>
-                        </div>
-                      </button>
+            {/* Results Grid */}
+            {results.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Results List (1 col) */}
+                <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-4">
+                  <h3 className="font-cormorant text-xl font-bold text-[#1C2E24] border-b border-[#F0ECE1] pb-3">Matching Users</h3>
+                  <div className="space-y-3">
+                    {results.map((u) => (
+                      <div
+                        key={u.id}
+                        onClick={() => handleSelectUser(u)}
+                        className={`p-4 border rounded-2xl cursor-pointer transition-all ${
+                          selectedUser?.id === u.id
+                            ? "bg-[#0D2619] text-white border-[#0D2619]"
+                            : "bg-[#FAF8F3] border-[#E5E0D5] hover:border-[#0D2619]"
+                        }`}
+                      >
+                        <p className="font-bold text-xs">{u.full_name}</p>
+                        <p className="text-[11px] opacity-80">{u.email}</p>
+                        <span className="text-[10px] uppercase font-bold opacity-60 mt-1 block">Role: {u.role}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* Selected user detail panel */}
-              {selectedUser && (
-                <div>
-                  <h2 className="font-cinzel text-xs tracking-widest text-[#7A5C5C] font-bold uppercase mb-3">USER DETAILS</h2>
-                  <div className="bg-white border border-[#E8D5B0] rounded-sm p-5 mb-4 shadow-sm">
-                    <div className="flex items-center justify-between mb-4 border-b border-[#FAF6EE] pb-3 gap-3">
-                      <div>
-                        <p className="font-cormorant text-xl font-bold text-[#4A0F0F]">{selectedUser.full_name}</p>
-                        <p className="font-garamond text-xs text-[#9A7070] mt-0.5">{selectedUser.email}</p>
+                {/* User Details & Impersonation (2 cols) */}
+                <div className="md:col-span-2 bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-6">
+                  {selectedUser ? (
+                    <div className="space-y-6">
+                      <div className="border-b border-[#F0ECE1] pb-4">
+                        <h2 className="font-cormorant text-2xl font-bold text-[#1C2E24]">{selectedUser.full_name}</h2>
+                        <p className="text-xs text-[#8C9890]">{selectedUser.email} • ID: #{selectedUser.id}</p>
                       </div>
-                      <div className="w-10 h-10 border border-[#C9973E] rounded-full bg-[#FAF6EE] flex items-center justify-center font-cinzel text-[#4A0F0F] text-sm flex-shrink-0">
-                        {selectedUser.full_name[0]}
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
-                      {[
-                        { label: "Account #", value: selectedUser.account_number },
-                        { label: "Role",      value: selectedUser.role },
-                        { label: "Status",    value: selectedUser.is_active ? "Active" : "Inactive" },
-                        { label: "Verified",  value: selectedUser.is_verified ? "Yes" : "No" },
-                        { label: "Phone",     value: selectedUser.phone || "—" },
-                        { label: "Joined",    value: formatDate(selectedUser.created_at) },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="bg-[#FAF6EE] p-2.5 rounded-sm">
-                          <p className="text-[9px] font-bold text-[#9A7070] uppercase tracking-wider mb-0.5">{label}</p>
-                          <p className="font-garamond text-xs font-semibold text-[#4A0F0F] capitalize">{value}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="space-y-3 border-t border-[#FAF6EE] pt-4">
-                      <button onClick={handleResetPassword}
-                        className="w-full bg-[#FAF6EE] hover:bg-white text-xs border border-[#E8D5B0] text-[#7A5C5C] font-bold py-2 rounded-sm shadow-sm transition-colors uppercase">
-                        🔑 RESET PASSWORD
-                      </button>
-
-                      {!activeSession && (
-                        <div className="space-y-2">
+                      {/* Impersonation Form */}
+                      <div className="bg-[#FAF8F3] border border-[#E5E0D5] p-4 rounded-2xl space-y-3">
+                        <h4 className="text-xs font-bold text-[#1C2E24] flex items-center gap-1.5">
+                          <UserCheck size={16} className="text-[#0D2619]" /> Support Impersonation Session
+                        </h4>
+                        <p className="text-xs text-[#556B5D]">
+                          Enter an audit reason to initiate a secure read-only support session.
+                        </p>
+                        <div className="flex gap-3">
                           <input
+                            type="text"
                             value={impersonateReason}
                             onChange={(e) => setImpersonateReason(e.target.value)}
-                            placeholder="Reason for impersonation (required)"
-                            className="w-full bg-[#FAF6EE] border border-[#E8D5B0] text-xs text-[#4A0F0F] p-3 focus:outline-none focus:border-[#C9973E] rounded-sm font-garamond"
+                            placeholder="Reason for impersonation (e.g. Order #123 investigation)..."
+                            className="flex-1 bg-white border border-[#E5E0D5] rounded-xl px-4 py-2 text-xs font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                           />
-                          <button onClick={handleImpersonate}
+                          <button
+                            type="button"
+                            onClick={handleImpersonate}
                             disabled={isImpersonating || !impersonateReason.trim()}
-                            className="w-full bg-[#4A0F0F] text-[#FAF6EE] border border-[#C9973E] text-xs font-bold tracking-widest py-3.5 hover:bg-[#6B1A1A] transition-colors rounded-sm flex items-center justify-center gap-2 disabled:opacity-50">
-                            {isImpersonating
-                              ? <Loader2 size={12} className="animate-spin" />
-                              : <Eye size={12} />}
-                            START IMPERSONATION SESSION
+                            className="inline-flex items-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+                          >
+                            {isImpersonating ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
+                            <span>Start Session</span>
                           </button>
                         </div>
-                      )}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* User's orders */}
-                  <h3 className="font-cinzel text-xs tracking-widest text-[#7A5C5C] font-bold uppercase mb-2">ORDER HISTORY</h3>
-                  {isLoadingUser ? (
-                    <div className="flex items-center justify-center h-24">
-                      <Loader2 className="animate-spin text-[#C9973E]" size={20} />
-                    </div>
-                  ) : userOrders.length === 0 ? (
-                    <div className="bg-white border border-[#E8D5B0] p-6 text-center rounded-sm">
-                      <p className="font-garamond text-xs text-[#9A7070] italic">No orders found</p>
+                      {/* Customer Orders */}
+                      <div className="space-y-3">
+                        <h4 className="font-cormorant text-xl font-bold text-[#1C2E24]">Recent Customer Orders</h4>
+                        {isLoadingUser ? (
+                          <div className="py-8 text-center"><Loader2 className="animate-spin text-[#0D2619] mx-auto" size={20} /></div>
+                        ) : userOrders.length === 0 ? (
+                          <div className="text-xs text-[#8C9890]">No orders logged for this user</div>
+                        ) : (
+                          <div className="space-y-2">
+                            {userOrders.map((o) => (
+                              <div key={o.id} className="p-3 bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl flex justify-between items-center text-xs">
+                                <div>
+                                  <span className="font-bold text-[#1C2E24]">Order #{o.id}</span>
+                                  <span className="text-[#8C9890] block text-[10px]">{formatDate(o.created_at)}</span>
+                                </div>
+                                <span className="font-bold text-[#2E7D32]">₹{o.total_amount}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                      {userOrders.map((order) => (
-                        <div key={order.id} className="bg-white border border-[#E8D5B0] p-3.5 rounded-sm flex items-center justify-between gap-4">
-                          <div>
-                            <p className="font-cinzel text-xs text-[#4A0F0F] font-bold">#{order.order_number}</p>
-                            <p className="font-garamond text-[10px] text-[#9A7070] mt-0.5">{formatDate(order.created_at)}</p>
-                          </div>
-                          <div className="text-right text-xs">
-                            <p className="font-cinzel text-xs text-[#4A0F0F] font-bold">₹{order.total_amount.toLocaleString("en-IN")}</p>
-                            <p className={`font-cinzel text-[9px] font-bold uppercase mt-0.5
-                              ${order.status === "delivered" ? "text-green-600" :
-                                order.status === "cancelled" ? "text-red-500" : "text-yellow-600"}`}>
-                              {order.status.replace(/_/g, " ")}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="py-24 text-center text-xs text-[#8C9890]">
+                      Select a user from search results to view profile and initiate support session.
                     </div>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* ── AUDIT LOGS TAB ── */}
         {tab === "audit" && (
-          <div>
-            <div className="mb-6">
-              <span className="text-[10px] font-bold tracking-widest text-[#C9973E] uppercase">SECURITY</span>
-              <h1 className="font-cormorant text-2xl sm:text-3xl text-[#4A0F0F] font-bold mt-0.5">Audit Logs</h1>
+          <div className="space-y-6">
+            <div>
+              <h1 className="font-cormorant text-2xl md:text-3xl font-bold text-[#1C2E24]">Support Audit Logs</h1>
+              <p className="text-xs text-[#8C9890] mt-0.5">Immutable record of all agent support actions and impersonations</p>
             </div>
 
-            {isLoadingAudit ? (
-              <div className="flex items-center justify-center h-48">
-                <Loader2 className="animate-spin text-[#C9973E]" size={28} />
-              </div>
-            ) : (
-              <div className="bg-white border border-[#E8D5B0] rounded-sm overflow-hidden shadow-sm">
+            <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs">
+              {isLoadingAudit ? (
+                <div className="py-16 text-center"><Loader2 className="animate-spin text-[#0D2619] mx-auto" size={28} /></div>
+              ) : auditLogs.length === 0 ? (
+                <div className="py-16 text-center text-xs text-[#8C9890]">No audit logs recorded yet</div>
+              ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead className="bg-[#FAF6EE] text-[9px] font-bold uppercase tracking-wider text-[#9A7070] border-b border-[#E8D5B0] text-left">
-                      <tr>
-                        <th className="p-4 border-r border-[#FAF6EE]">Action</th>
-                        <th className="p-4 border-r border-[#FAF6EE]">Performed By</th>
-                        <th className="p-4 border-r border-[#FAF6EE]">Target User</th>
-                        <th className="p-4 border-r border-[#FAF6EE]">Description</th>
-                        <th className="p-4 border-r border-[#FAF6EE]">IP Address</th>
-                        <th className="p-4">Date &amp; Time</th>
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-[#F0ECE1] text-[#7A6E5D] font-bold uppercase tracking-wider text-[11px]">
+                        <th className="pb-3 px-3">Log ID</th>
+                        <th className="pb-3 px-3">Agent</th>
+                        <th className="pb-3 px-3">Target User</th>
+                        <th className="pb-3 px-3">Action</th>
+                        <th className="pb-3 px-3">Reason</th>
+                        <th className="pb-3 px-3">Timestamp</th>
                       </tr>
                     </thead>
-                    <tbody className="text-xs text-[#4A0F0F] font-medium font-garamond divide-y divide-[#FAF6EE]">
-                      {auditLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-[#FAF6EE]/30 transition-colors">
-                          <td className="p-4">
-                            <span className={`inline-flex px-2 py-0.5 border rounded-full text-[9px] font-bold uppercase
-                              ${log.action.includes("impersonation") ? "bg-orange-50 text-orange-700 border-orange-200" :
-                                log.action.includes("reset") ? "bg-red-50 text-red-700 border-red-200" :
-                                "bg-blue-50 text-blue-700 border-blue-200"}`}>
-                              {log.action.replace(/_/g, " ")}
+                    <tbody className="divide-y divide-[#F5F2EA]">
+                      {auditLogs.map((log: any) => (
+                        <tr key={log.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
+                          <td className="py-3 px-3 font-mono font-bold text-[#8C9890]">#{log.id}</td>
+                          <td className="py-3 px-3 font-bold text-[#1C2E24]">Agent #{log.support_user_id || log.user_id}</td>
+                          <td className="py-3 px-3 text-[#556B5D]">User #{log.target_user_id}</td>
+                          <td className="py-3 px-3">
+                            <span className="bg-[#E3F2FD] text-[#1565C0] font-bold text-[10px] px-2 py-0.5 rounded-md">
+                              {log.action}
                             </span>
                           </td>
-                          <td className="p-4 text-[#7A5C5C]">User #{log.performed_by}</td>
-                          <td className="p-4 text-[#7A5C5C]">
-                            {log.target_user_id ? `User #${log.target_user_id}` : "—"}
-                          </td>
-                          <td className="p-4 text-[#7A5C5C] max-w-xs truncate">
-                            {log.description || "—"}
-                          </td>
-                          <td className="p-4 text-[#7A5C5C]">{log.ip_address || "—"}</td>
-                          <td className="p-4 text-[#9A7070]">{formatDateTime(log.created_at)}</td>
+                          <td className="py-3 px-3 text-[#556B5D] max-w-xs truncate">{log.reason || "N/A"}</td>
+                          <td className="py-3 px-3 text-[#8C9890]">{formatDateTime(log.created_at)}</td>
                         </tr>
                       ))}
-                      {auditLogs.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="p-8 text-center text-[#9A7070] italic">
-                            No audit logs found
-                          </td>
-                        </tr>
-                      )}
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
+
       </main>
     </div>
   );

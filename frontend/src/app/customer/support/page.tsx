@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Loader2, MessageSquare, AlertCircle, Plus, Send, Calendar } from "lucide-react";
+import {
+  Loader2, MessageSquare, AlertCircle, Plus, Send,
+  Calendar, ChevronLeft, HelpCircle, ArrowRight
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { supportApi, orderApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -38,11 +41,11 @@ export default function CustomerSupportPage() {
       setLoading(true);
       const [ticketsRes, ordersRes] = await Promise.all([
         supportApi.getMyTickets(),
-        orderApi.list()
+        orderApi.list(),
       ]);
-      setTickets(ticketsRes.data);
+      setTickets(ticketsRes.data || []);
       setOrders(ordersRes.data.items || []);
-    } catch (err) {
+    } catch {
       toast.error("Failed to load support dashboard");
     } finally {
       setLoading(false);
@@ -63,14 +66,13 @@ export default function CustomerSupportPage() {
         category,
         priority,
         message: message.trim(),
-        order_id: selectedOrderId ? Number(selectedOrderId) : undefined
+        order_id: selectedOrderId ? Number(selectedOrderId) : undefined,
       };
 
       const { data } = await supportApi.createTicket(payload);
       toast.success("Support ticket created successfully!");
-      setTickets(prev => [data, ...prev]);
-      
-      // Reset form
+      setTickets((prev) => [data, ...prev]);
+
       setSubject("");
       setCategory("general_inquiry");
       setPriority("medium");
@@ -84,21 +86,16 @@ export default function CustomerSupportPage() {
     }
   };
 
-  const getStatusClass = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case "open": return "bg-green-100 text-green-800 border-green-200";
-      case "in_progress": return "bg-amber-100 text-amber-800 border-amber-200";
-      case "resolved": return "bg-gray-100 text-gray-800 border-gray-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const getPriorityClass = (priority: string) => {
-    switch (priority) {
-      case "high": return "text-red-600 bg-red-50";
-      case "medium": return "text-amber-600 bg-amber-50";
-      case "low": return "text-gray-500 bg-gray-50";
-      default: return "text-gray-500 bg-gray-50";
+      case "open":
+        return "bg-[#E8F5E9] text-[#2E7D32] border-[#C8E6C9]";
+      case "in_progress":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      case "resolved":
+        return "bg-gray-100 text-gray-700 border-gray-200";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
@@ -106,66 +103,102 @@ export default function CustomerSupportPage() {
     order_help: "Order Help",
     payment: "Payment Issue",
     refund: "Return & Refund",
-    general_inquiry: "General Inquiry"
+    general_inquiry: "General Inquiry",
   };
 
   return (
-    <div className="bg-[#FAF6EE] min-h-screen">
-      <main className="max-w-5xl w-full mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[#E8D5B0] pb-6 mb-8 gap-4">
-          <div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#C9973E]">Help &amp; Resolution Centre</span>
-            <h1 className="font-cormorant text-3xl md:text-4xl text-[#4A0F0F] font-bold mt-1">Customer Support</h1>
-            <p className="text-xs text-[#7A5C5C] mt-1 font-garamond">
-              Get assistance with your orders, payments, refunds, and collections.
-            </p>
-          </div>
+    <div className="min-h-screen bg-[#FAF8F3] text-[#1C2E24] font-garamond">
 
+      {/* ── Mobile Top Bar ── */}
+      <div className="md:hidden sticky top-0 z-40 bg-[#FAF8F3] border-b border-[#E5E0D5] shadow-xs">
+        <div className="flex items-center justify-between px-4 py-3.5">
+          <button
+            onClick={() => router.back()}
+            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#F0ECE5] transition-colors"
+            aria-label="Go back"
+          >
+            <ChevronLeft size={22} className="text-[#1C2E24]" />
+          </button>
+          <h1 className="font-cormorant text-[20px] font-bold tracking-wide text-[#1C2E24]">
+            Help &amp; Support
+          </h1>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="flex items-center justify-center gap-2 bg-[#4A0F0F] text-[#FAF6EE] border border-[#C9973E] text-xs font-bold tracking-widest py-3 px-5 hover:bg-[#6B1A1A] transition-colors rounded-sm shadow-sm"
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#0D2619] text-white shadow-xs"
+            aria-label="New ticket"
           >
-            {showCreateForm ? <MessageSquare size={14} /> : <Plus size={14} />}
-            {showCreateForm ? "VIEW MY TICKETS" : "NEW SUPPORT REQUEST"}
+            <Plus size={18} />
           </button>
         </div>
+      </div>
 
+      {/* ── Desktop Header ── */}
+      <div className="hidden md:block max-w-5xl mx-auto px-6 pt-6 pb-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[#F0ECE1] pb-4 mb-4 gap-4">
+          <div>
+            <span className="text-[10px] font-bold tracking-widest text-[#0D2619] bg-[#E8F5E9] border border-[#C8E6C9] px-2.5 py-1 rounded-md uppercase inline-block mb-1">
+              HELP &amp; RESOLUTION CENTRE
+            </span>
+            <h1 className="font-cormorant text-3xl font-bold text-[#1C2E24]">Customer Support</h1>
+            <p className="text-xs text-[#8C9890] mt-0.5">
+              Get assistance with your orders, payments, refunds, and collections
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white text-xs font-bold px-5 py-3 rounded-xl transition-all shadow-xs"
+          >
+            {showCreateForm ? <MessageSquare size={14} /> : <Plus size={14} />}
+            <span>{showCreateForm ? "VIEW MY TICKETS" : "NEW SUPPORT REQUEST"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Main Content Area ── */}
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-4 md:py-6">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="animate-spin text-[#C9973E]" size={36} />
-            <p className="font-cinzel text-xs tracking-widest text-[#7A5C5C]">LOAD HELP CENTRE...</p>
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="animate-spin text-[#0D2619]" size={32} />
           </div>
         ) : showCreateForm ? (
-          /* Create Form */
-          <div className="max-w-2xl mx-auto bg-white border border-[#E8D5B0] rounded-sm p-6 shadow-sm">
-            <h2 className="font-cinzel text-sm tracking-widest text-[#4A0F0F] border-b border-[#FAF6EE] pb-3 mb-5 uppercase">
-              Submit Support Ticket
-            </h2>
+          /* Create Ticket Form */
+          <div className="max-w-2xl mx-auto bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
+              <h2 className="font-cormorant text-xl font-bold text-[#1C2E24]">
+                Submit Support Ticket
+              </h2>
+              <button
+                onClick={() => setShowCreateForm(false)}
+                className="text-xs font-bold text-[#8C9890] hover:text-[#1C2E24]"
+              >
+                Cancel
+              </button>
+            </div>
+
             <form onSubmit={handleCreateTicket} className="space-y-4">
               <div>
-                <label className="block text-[11px] uppercase font-bold text-[#7A5C5C] tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-[#1C2E24] mb-1">
                   Subject *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Summarise your issue..."
+                  placeholder="Summarize your issue..."
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full bg-[#FAF6EE] border border-[#E8D5B0] text-xs text-[#4A0F0F] p-3 focus:outline-none focus:border-[#C9973E] rounded-sm font-garamond"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-3.5 py-2.5 text-xs font-bold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase font-bold text-[#7A5C5C] tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-[#1C2E24] mb-1">
                     Category *
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-[#FAF6EE] border border-[#E8D5B0] text-xs text-[#4A0F0F] p-3 focus:outline-none focus:border-[#C9973E] rounded-sm font-garamond"
+                    className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-3.5 py-2.5 text-xs font-bold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                   >
                     <option value="general_inquiry">General Inquiry</option>
                     <option value="order_help">Order Help</option>
@@ -175,13 +208,13 @@ export default function CustomerSupportPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase font-bold text-[#7A5C5C] tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-[#1C2E24] mb-1">
                     Priority
                   </label>
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
-                    className="w-full bg-[#FAF6EE] border border-[#E8D5B0] text-xs text-[#4A0F0F] p-3 focus:outline-none focus:border-[#C9973E] rounded-sm font-garamond"
+                    className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-3.5 py-2.5 text-xs font-bold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                   >
                     <option value="low">Low Priority</option>
                     <option value="medium">Medium Priority</option>
@@ -191,119 +224,108 @@ export default function CustomerSupportPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] uppercase font-bold text-[#7A5C5C] tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-[#1C2E24] mb-1">
                   Link to Order (Optional)
                 </label>
                 <select
                   value={selectedOrderId}
                   onChange={(e) => setSelectedOrderId(e.target.value)}
-                  className="w-full bg-[#FAF6EE] border border-[#E8D5B0] text-xs text-[#4A0F0F] p-3 focus:outline-none focus:border-[#C9973E] rounded-sm font-garamond"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-3.5 py-2.5 text-xs font-bold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                 >
                   <option value="">-- No Linked Order --</option>
                   {orders.map((order) => (
                     <option key={order.id} value={order.id}>
-                      Order #{order.order_number} ({formatDate(order.created_at)}) - ₹{order.total_amount.toLocaleString("en-IN")}
+                      Order #{order.order_number} ({formatDate(order.created_at)})
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-[11px] uppercase font-bold text-[#7A5C5C] tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-[#1C2E24] mb-1">
                   Details / Description *
                 </label>
                 <textarea
                   required
-                  rows={6}
-                  placeholder="Provide all relevant details to help us assist you faster..."
+                  rows={5}
+                  placeholder="Provide all relevant details..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="w-full bg-[#FAF6EE] border border-[#E8D5B0] text-xs text-[#4A0F0F] p-3 focus:outline-none focus:border-[#C9973E] rounded-sm font-garamond resize-none"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl p-3 text-xs font-garamond text-[#1C2E24] focus:outline-none focus:border-[#0D2619] resize-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 bg-[#4A0F0F] text-[#FAF6EE] border border-[#C9973E] text-xs font-bold tracking-widest py-3 hover:bg-[#6B1A1A] transition-colors rounded-sm shadow-sm disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white font-bold text-xs py-3.5 rounded-xl transition-all shadow-xs disabled:opacity-50"
               >
-                {submitting ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Send size={14} />
-                )}
-                SUBMIT SUPPORT REQUEST
+                {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                <span>SUBMIT SUPPORT REQUEST</span>
               </button>
             </form>
           </div>
         ) : (
           /* Tickets List */
-          <div>
+          <div className="space-y-4">
             {tickets.length === 0 ? (
-              <div className="bg-white border border-[#E8D5B0] rounded-sm p-12 text-center max-w-md mx-auto shadow-sm">
-                <AlertCircle className="w-12 h-12 text-[#C9973E] mx-auto mb-4" />
-                <h3 className="font-cinzel text-sm tracking-widest text-[#4A0F0F] font-bold uppercase mb-2">
-                  No Support Requests
-                </h3>
-                <p className="text-xs text-[#7A5C5C] font-garamond mb-6">
-                  You do not have any open or previous support tickets with us.
-                </p>
+              <div className="bg-white border border-[#E5E0D5] rounded-3xl p-12 text-center shadow-xs space-y-4 max-w-lg mx-auto my-8">
+                <div className="w-16 h-16 bg-[#FAF8F3] rounded-full flex items-center justify-center mx-auto text-[#8C9890]">
+                  <HelpCircle size={28} />
+                </div>
+                <h2 className="font-cormorant text-2xl font-bold text-[#1C2E24]">No Support Requests</h2>
+                <p className="text-xs text-[#8C9890]">You do not have any open or previous support tickets.</p>
                 <button
                   onClick={() => setShowCreateForm(true)}
-                  className="bg-[#4A0F0F] text-[#FAF6EE] border border-[#C9973E] text-[10px] font-bold tracking-widest py-2.5 px-6 hover:bg-[#6B1A1A] transition-colors rounded-sm"
+                  className="inline-flex items-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white px-6 py-3 rounded-xl text-xs font-bold transition-all shadow-xs"
                 >
-                  NEW SUPPORT REQUEST
+                  <Plus size={14} />
+                  <span>NEW SUPPORT REQUEST</span>
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
-                <h2 className="font-cinzel text-xs tracking-widest text-[#7A5C5C] font-bold uppercase mb-2">
-                  Active Tickets &amp; Requests ({tickets.length})
+              <div className="space-y-3">
+                <h2 className="font-cormorant text-xl font-bold text-[#1C2E24] mb-2">
+                  Active Tickets ({tickets.length})
                 </h2>
-                <div className="grid gap-3">
-                  {tickets.map((t) => (
-                    <Link
-                      key={t.id}
-                      href={`/customer/support/${t.id}`}
-                      className="block bg-white border border-[#E8D5B0] hover:border-[#C9973E] hover:shadow-md transition-all duration-200 p-5 rounded-sm"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-cinzel text-xs text-[#C9973E] font-bold">
-                              TICKET #{t.id}
-                            </span>
-                            <span className="text-xs text-[#7A5C5C] font-semibold bg-[#FAF6EE] border border-[#E8D5B0] px-2 py-0.5 rounded-sm">
-                              {categoryLabels[t.category] || t.category}
-                            </span>
-                            <span className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 border rounded-full ${getStatusClass(t.status)}`}>
-                              {t.status.replace(/_/g, " ")}
-                            </span>
-                          </div>
-                          <p className="font-garamond text-sm text-[#4A0F0F] font-bold">
-                            {t.subject}
-                          </p>
+                {tickets.map((t) => (
+                  <Link
+                    key={t.id}
+                    href={`/customer/support/${t.id}`}
+                    className="block bg-white border border-[#E5E0D5] hover:border-[#0D2619] rounded-2xl p-4 md:p-5 shadow-xs transition-all group"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-garamond text-xs font-bold text-[#0D2619]">
+                            TICKET #{t.id}
+                          </span>
+                          <span className="text-[10px] text-[#556B5D] font-bold bg-[#FAF8F3] border border-[#E5E0D5] px-2 py-0.5 rounded-md">
+                            {categoryLabels[t.category] || t.category}
+                          </span>
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 border rounded-md ${getStatusBadge(t.status)}`}>
+                            {t.status.replace(/_/g, " ")}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-4 text-left sm:text-right flex-shrink-0 text-xs text-[#7A5C5C]">
-                          <div>
-                            <span className={`inline-flex items-center justify-center text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${getPriorityClass(t.priority)}`}>
-                              {t.priority} priority
-                            </span>
-                            <p className="flex items-center gap-1 mt-1 text-[11px] font-medium">
-                              <Calendar size={12} className="text-[#C9973E]" />
-                              Updated: {formatDate(t.updated_at)}
-                            </p>
-                          </div>
-                        </div>
+                        <p className="font-garamond text-sm font-bold text-[#1C2E24]">
+                          {t.subject}
+                        </p>
                       </div>
-                    </Link>
-                  ))}
-                </div>
+                      <div className="flex items-center justify-between sm:justify-end gap-3 text-xs text-[#8C9890]">
+                        <span className="flex items-center gap-1 text-[11px]">
+                          <Calendar size={12} className="text-[#0D2619]" />
+                          {formatDate(t.updated_at)}
+                        </span>
+                        <ArrowRight size={14} className="text-[#8C9890] group-hover:text-[#0D2619] transition-colors" />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
               </div>
             )}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

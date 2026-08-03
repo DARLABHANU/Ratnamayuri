@@ -85,7 +85,7 @@ export default function LoginPage() {
       });
 
       toast.success("Successfully authenticated with Google!");
-      router.push(ROLE_REDIRECTS[tokenData.role as UserRole] || "/");
+      window.location.href = ROLE_REDIRECTS[tokenData.role as UserRole] || "/";
     } catch (err: any) {
       const apiErr = getApiError(err) || "Google authentication failed. Please try again.";
       setErrorMsg(apiErr);
@@ -125,8 +125,9 @@ export default function LoginPage() {
           user_id: tokenData.user_id,
         });
 
+        const redirectPath = ROLE_REDIRECTS[tokenData.role as UserRole] || "/";
         toast.success("Successfully signed in!");
-        router.push(ROLE_REDIRECTS[tokenData.role as UserRole] || "/");
+        window.location.href = redirectPath;
       }
     } catch (err: any) {
       const apiErr = getApiError(err) || "Invalid credentials. Please verify and try again.";
@@ -164,7 +165,7 @@ export default function LoginPage() {
       });
 
       toast.success("Email verified and account signed in!");
-      router.push(ROLE_REDIRECTS[tokenData.role as UserRole] || "/");
+      window.location.href = ROLE_REDIRECTS[tokenData.role as UserRole] || "/";
     } catch (err: any) {
       const apiErr = getApiError(err) || "Invalid OTP code. Please try again.";
       setErrorMsg(apiErr);
@@ -198,7 +199,7 @@ export default function LoginPage() {
           {
             theme: "outline",
             size: "large",
-            width: 320,
+            width: 280,
             text: "continue_with",
             shape: "rectangular",
             logo_alignment: "left"
@@ -226,64 +227,68 @@ export default function LoginPage() {
   }, []);
 
   return (
-    <div className="animate-fade-up">
+    <div className="space-y-6 text-[#1C2E24] font-garamond w-full">
       {step === "login" ? (
         <>
-          <div className="mb-6 text-center">
-            <span className="section-tag flex items-center justify-center gap-1">
-              <Sparkles size={10} className="text-gold-500 animate-pulse" />
-              WELCOME TO RATNAMAYURI
-              <Sparkles size={10} className="text-gold-500 animate-pulse" />
+          <div className="mb-5 text-center">
+            <span className="text-[10px] font-bold tracking-widest text-[#0D2619] bg-[#E8F5E9] border border-[#C8E6C9] px-2.5 py-1 rounded-md uppercase inline-flex items-center gap-1">
+              <Sparkles size={10} className="text-[#2E7D32] animate-pulse" />
+              AUTHENTICATION PORTAL
             </span>
-            <h2 className="font-cormorant text-3xl font-light text-brown mt-1">Sign In</h2>
-            <p className="font-garamond text-sm text-muted mt-2 max-w-sm mx-auto">
-              Access your personal account or dashboard. Sign in using your email or Google account.
+            <h2 className="font-cormorant text-2xl sm:text-3xl font-bold text-[#1C2E24] mt-2">Sign In</h2>
+            <p className="text-xs text-[#8C9890] mt-1 leading-relaxed">
+              Access your account or dashboard using your credentials.
             </p>
           </div>
 
-          <form onSubmit={handleCredentialsLogin} className="space-y-4 max-w-sm mx-auto">
+          <form onSubmit={handleCredentialsLogin} className="space-y-4 w-full">
             <div>
-              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+              <label className="text-xs font-bold text-[#1C2E24] block mb-1">
                 EMAIL ADDRESS
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890] w-4 h-4" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="font-cinzel text-xs tracking-widest text-muted block mb-1">
+              <label className="text-xs font-bold text-[#1C2E24] block mb-1">
                 PASSWORD
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500 w-4 h-4" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890] w-4 h-4" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="input-field bg-white text-gray-800 pl-10 w-full"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl pl-10 pr-4 py-2.5 text-xs font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                   required
                 />
+              </div>
+              <div className="flex justify-end mt-1.5">
+                <Link href="/auth/forgot-password" className="text-xs font-bold text-[#0D2619] hover:underline">
+                  Forgot Password?
+                </Link>
               </div>
             </div>
 
             {errorMsg && (
-              <p className="text-red-500 text-xs font-garamond text-center">{errorMsg}</p>
+              <p className="text-red-500 text-xs font-semibold text-center">{errorMsg}</p>
             )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-primary w-full flex items-center justify-center gap-2 py-3 mt-4"
+              className="w-full inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white py-3 rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50 mt-2"
             >
               {isLoading && <Loader2 size={14} className="animate-spin" />}
               SIGN IN
@@ -291,52 +296,51 @@ export default function LoginPage() {
           </form>
 
           {/* Divider */}
-          <div className="relative flex py-5 items-center max-w-sm mx-auto">
-            <div className="flex-grow border-t border-gold-200"></div>
-            <span className="flex-shrink mx-4 text-xs font-cinzel text-muted tracking-wider">OR</span>
-            <div className="flex-grow border-t border-gold-200"></div>
+          <div className="relative flex py-3 items-center w-full">
+            <div className="flex-grow border-t border-[#F0ECE1]"></div>
+            <span className="flex-shrink mx-4 text-xs font-bold text-[#8C9890] tracking-wider">OR</span>
+            <div className="flex-grow border-t border-[#F0ECE1]"></div>
           </div>
 
           {/* Google Sign-in */}
-          <div className="flex flex-col items-center justify-center py-2 mb-6 min-h-[60px]">
+          <div className="flex flex-col items-center justify-center py-1 mb-2 min-h-[50px]">
             {isLoading ? (
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 size={24} className="animate-spin text-gold-500" />
-                <p className="font-garamond text-xs text-muted">Securing session...</p>
+              <div className="flex items-center gap-2">
+                <Loader2 size={18} className="animate-spin text-[#0D2619]" />
+                <p className="text-xs text-[#8C9890]">Securing session...</p>
               </div>
             ) : (
-              <div id="google-signin-button" className="transition-all hover:scale-[1.02] active:scale-[0.98] duration-300" />
+              <div id="google-signin-button" className="transition-all hover:scale-[1.02] active:scale-[0.98] duration-300 max-w-full overflow-hidden" />
             )}
           </div>
 
           {/* Customer Signup Redirect */}
-          <p className="text-center font-garamond text-sm text-muted mt-4">
-            Don't have an account?{" "}
-            <Link href="/auth/signup" className="text-gold-600 underline font-semibold hover:text-gold-500 transition-colors">
+          <p className="text-center text-xs text-[#8C9890]">
+            Don&apos;t have an account?{" "}
+            <Link href="/auth/signup" className="text-[#0D2619] font-bold hover:underline">
               Sign Up
             </Link>
           </p>
         </>
       ) : (
-        <div className="max-w-sm mx-auto">
-          <div className="mb-6">
+        <div className="w-full">
+          <div className="mb-5">
             <button
               type="button"
               onClick={handleBackToLogin}
-              className="flex items-center gap-1 text-gold-600 hover:text-gold-500 font-cinzel text-xs tracking-wider mb-4"
+              className="flex items-center gap-1 text-[#0D2619] font-bold text-xs mb-3 hover:underline"
             >
               <ChevronLeft size={16} />
-              EDIT LOGIN DETAILS
+              Edit Login Details
             </button>
-            <span className="section-tag">VERIFICATION REQUIRED</span>
-            <h2 className="font-cormorant text-3xl font-light text-brown">Enter Code</h2>
-            <p className="font-garamond text-sm text-muted mt-2">
-              Please enter the 6-digit verification code sent to your email <strong className="text-brown">{email}</strong>.
+            <h2 className="font-cormorant text-2xl font-bold text-[#1C2E24]">Enter Code</h2>
+            <p className="text-xs text-[#8C9890] mt-1">
+              Please enter the 6-digit verification code sent to <strong className="text-[#1C2E24]">{email}</strong>.
             </p>
           </div>
 
-          <form onSubmit={handleVerifyOtp} className="space-y-6">
-            <div className="flex gap-3 justify-center" onPaste={handleOtpPaste}>
+          <form onSubmit={handleVerifyOtp} className="space-y-5 w-full">
+            <div className="flex gap-1.5 sm:gap-2 justify-between" onPaste={handleOtpPaste}>
               {otpCode.map((digit, i) => (
                 <input
                   key={i}
@@ -347,32 +351,29 @@ export default function LoginPage() {
                   value={digit}
                   onChange={(e) => handleOtpChange(i, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                  className={`w-12 h-14 text-center text-2xl font-cinzel border-2 bg-white
-                    focus:outline-none transition-all rounded-md
-                    ${digit ? "border-gold-500 text-brown font-bold" : "border-gold-200 text-muted"}
-                    focus:border-gold-500`}
+                  className="w-10 sm:w-11 h-11 sm:h-12 text-center text-base sm:text-lg font-bold bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl text-[#1C2E24] focus:outline-none focus:border-[#0D2619] focus:bg-white transition-all shadow-xs"
                   required
                 />
               ))}
             </div>
 
             {errorMsg && (
-              <p className="text-red-500 text-xs text-center font-garamond">{errorMsg}</p>
+              <p className="text-red-500 text-xs text-center font-semibold">{errorMsg}</p>
             )}
 
-            <button type="submit" disabled={isLoading || otpCode.join("").length < 6} className="btn-primary w-full flex items-center justify-center gap-2 py-3">
+            <button type="submit" disabled={isLoading || otpCode.join("").length < 6} className="w-full inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white py-3 rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50">
               {isLoading && <Loader2 size={14} className="animate-spin" />}
-              VERIFY & SIGN IN
+              VERIFY &amp; SIGN IN
             </button>
           </form>
         </div>
       )}
 
-      {/* Safety warning */}
-      <div className="bg-emerald-50 border border-emerald-100 p-3 rounded mt-8 flex items-start gap-2.5 max-w-sm mx-auto shadow-sm">
-        <ShieldCheck className="text-emerald-600 flex-shrink-0 mt-0.5" size={16} />
-        <p className="text-[10px] text-emerald-800 leading-normal font-sans">
-          Ratnamayuri uses cryptographic security. Authentication sessions are securely synced with JWT authorization keys.
+      {/* Security Badge */}
+      <div className="bg-[#E8F5E9] border border-[#C8E6C9] p-3 rounded-2xl flex items-center gap-2.5 w-full">
+        <ShieldCheck className="text-[#2E7D32] flex-shrink-0" size={16} />
+        <p className="text-[11px] text-[#2E7D32] font-semibold leading-normal">
+          Ratnamayuri Security System. Encrypted SSL sessions.
         </p>
       </div>
     </div>

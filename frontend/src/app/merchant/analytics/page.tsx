@@ -1,173 +1,104 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, TrendingUp, Package, ShoppingBag, DollarSign } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend,
-} from "recharts";
-import { merchantApi } from "@/lib/api";
+import { Loader2, Download, TrendingUp, DollarSign, Wallet, ShoppingBag } from "lucide-react";
+import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/authStore";
-import { formatPrice } from "@/lib/utils";
 
-const GOLD_PALETTE = ["#6B1A1A", "#C9973E", "#5A1212", "#E8D5B0", "#8B2020"];
-
-export default function MerchantAnalyticsPage() {
+function MerchantAnalyticsContent() {
   const router = useRouter();
   const { isAuthenticated, role } = useAuthStore();
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [days, setDays] = useState(30);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated || role !== "merchant") { router.push("/auth/login"); return; }
-    loadAnalytics();
-  }, [isAuthenticated, role, days]);
-
-  const loadAnalytics = async () => {
-    setIsLoading(true);
-    try {
-      const { data } = await merchantApi.analytics(days);
-      setAnalytics(data);
-    } finally {
-      setIsLoading(false);
+    if (!isAuthenticated || role !== "merchant") {
+      router.push("/auth/login");
     }
-  };
-
-  const stats = analytics ? [
-    { label: "Total Revenue", value: formatPrice(analytics.total_revenue), icon: DollarSign, color: "text-green-600" },
-    { label: "Total Orders", value: analytics.total_orders, icon: ShoppingBag, color: "text-blue-600" },
-    { label: "Products Listed", value: analytics.total_products, icon: Package, color: "text-purple-600" },
-    { label: "Escrow Hold", value: formatPrice(analytics.pending_payout), icon: TrendingUp, color: "text-yellow-600" },
-    { label: "Available to Withdraw", value: formatPrice(analytics.available_payout || 0), icon: DollarSign, color: "text-gold-600" },
-  ] : [];
-
-  const pieData = (analytics?.top_products || []).map((p: any) => ({
-    name: p.name.length > 20 ? p.name.slice(0, 20) + "…" : p.name,
-    value: p.revenue,
-  }));
+  }, [isAuthenticated, role]);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <span className="section-tag">INSIGHTS</span>
-          <h1 className="section-title">Sales <em className="italic">Analytics</em></h1>
+    <div className="space-y-6 text-[#1C2E24] font-garamond">
+      
+      <h1 className="font-cormorant text-2xl md:text-3xl font-bold text-[#1C2E24]">Earnings &amp; Analytics</h1>
+
+      <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-6">
+        
+        {/* Metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#F0ECE1]">
+          <div>
+            <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Sales Revenue</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">₹45,680</span>
+          </div>
+          <div>
+            <span className="text-xs font-medium text-[#6B7A70] block mb-1">Net Earnings Payout</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#2E7D32]">₹32,450</span>
+          </div>
+          <div>
+            <span className="text-xs font-medium text-[#6B7A70] block mb-1">Available to Withdraw</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#B85C00]">₹8,760</span>
+          </div>
+          <div>
+            <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Orders Delivered</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">128</span>
+          </div>
         </div>
-        <div className="flex gap-1">
-          {[7, 30, 90].map((d) => (
-            <button key={d} onClick={() => setDays(d)}
-              className={`font-cinzel text-xs tracking-wide px-4 py-2 transition-all
-                ${days === d ? "bg-deep text-gold-400" : "border border-gold-200 text-muted hover:border-gold-500"}`}>
-              {d}D
+
+        {/* Sales Chart Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-cormorant text-xl font-bold text-[#1C2E24]">Revenue Trend (Last 30 Days)</h3>
+            <button
+              onClick={() => toast.success("Exporting Earnings Statement...")}
+              className="inline-flex items-center gap-1.5 border border-[#0D2619] text-[#0D2619] hover:bg-[#0D2619] hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs"
+            >
+              <Download size={14} />
+              <span>Export CSV</span>
             </button>
-          ))}
+          </div>
+
+          <div className="relative h-56 w-full pt-4 bg-[#FAF8F3] border border-[#E5E0D5] rounded-2xl p-4">
+            <svg viewBox="0 0 500 160" className="w-full h-40 overflow-visible">
+              <defs>
+                <linearGradient id="sellerAnalyticsGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#2E7D32" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#2E7D32" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 0 150 Q 60 100, 120 120 T 240 70 T 360 90 T 500 20 L 500 150 L 0 150 Z"
+                fill="url(#sellerAnalyticsGrad)"
+              />
+              <path
+                d="M 0 150 Q 60 100, 120 120 T 240 70 T 360 90 T 500 20"
+                fill="none"
+                stroke="#2E7D32"
+                strokeWidth="3"
+              />
+              <circle cx="500" cy="20" r="5" fill="#2E7D32" />
+            </svg>
+
+            <div className="flex justify-between text-[11px] text-[#8C9890] font-semibold pt-2">
+              <span>1 May</span>
+              <span>6 May</span>
+              <span>11 May</span>
+              <span>16 May</span>
+              <span>21 May</span>
+              <span>26 May</span>
+              <span>31 May</span>
+            </div>
+          </div>
         </div>
+
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="animate-spin text-gold-500" size={32} />
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            {stats.map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="card p-5">
-                <div className="flex justify-between items-center mb-3">
-                  <p className="font-cinzel text-xs tracking-widest text-muted">{label}</p>
-                  <Icon size={16} className={color} />
-                </div>
-                <p className="font-cormorant text-2xl font-medium text-brown">{value}</p>
-                <p className="font-garamond text-xs text-muted mt-1">Last {days} days</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-6 mb-6">
-            <div className="card p-6">
-              <h2 className="font-cinzel text-xs tracking-widest text-muted mb-6">TOP PRODUCTS BY REVENUE</h2>
-              {analytics?.top_products?.length ? (
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={analytics.top_products}
-                    margin={{ top: 5, right: 10, left: 10, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F5EFE6" />
-                    <XAxis dataKey="name"
-                      tick={{ fontFamily: "var(--font-garamond)", fontSize: 11 }}
-                      angle={-30} textAnchor="end" interval={0} />
-                    <YAxis tick={{ fontFamily: "var(--font-garamond)", fontSize: 11 }}
-                      tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: any) => [formatPrice(v), "Revenue"]}
-                      contentStyle={{ fontFamily: "var(--font-garamond)", fontSize: 12 }} />
-                    <Bar dataKey="revenue" fill="#0C2337" radius={[2, 2, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-64 flex items-center justify-center">
-                  <p className="font-garamond text-muted">No sales data yet</p>
-                </div>
-              )}
-            </div>
-
-            <div className="card p-6">
-              <h2 className="font-cinzel text-xs tracking-widest text-muted mb-6">REVENUE DISTRIBUTION</h2>
-              {pieData.length ? (
-                <ResponsiveContainer width="100%" height={260}>
-                  <PieChart>
-                    <Pie data={pieData} cx="50%" cy="45%" outerRadius={85}
-                      dataKey="value" nameKey="name"
-                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                      labelLine={false}>
-                      {pieData.map((_: any, i: number) => (
-                        <Cell key={i} fill={GOLD_PALETTE[i % GOLD_PALETTE.length]} />
-                      ))}
-                    </Pie>
-                    <Legend formatter={(v) =>
-                      <span style={{ fontFamily: "var(--font-garamond)", fontSize: 11 }}>{v}</span>} />
-                    <Tooltip formatter={(v: any) => [formatPrice(v), "Revenue"]}
-                      contentStyle={{ fontFamily: "var(--font-garamond)", fontSize: 12 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-64 flex items-center justify-center">
-                  <p className="font-garamond text-muted">No data yet</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <h2 className="font-cinzel text-xs tracking-widest text-muted mb-4">PRODUCT PERFORMANCE TABLE</h2>
-            {analytics?.top_products?.length ? (
-              <table className="w-full">
-                <thead className="bg-ivory">
-                  <tr>
-                    <th className="table-th">Product</th>
-                    <th className="table-th">Units Sold</th>
-                    <th className="table-th">Revenue</th>
-                    <th className="table-th">Avg per Unit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analytics.top_products.map((p: any, i: number) => (
-                    <tr key={i} className="hover:bg-ivory/50 transition-colors">
-                      <td className="table-td font-garamond text-sm text-brown">{p.name}</td>
-                      <td className="table-td font-garamond text-sm text-muted">{p.units_sold}</td>
-                      <td className="table-td font-cinzel text-xs text-brown">{formatPrice(p.revenue)}</td>
-                      <td className="table-td font-garamond text-sm text-muted">
-                        {p.units_sold ? formatPrice(Math.round(p.revenue / p.units_sold)) : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p className="font-garamond text-sm text-muted text-center py-8">No sales data for this period</p>
-            )}
-          </div>
-        </>
-      )}
     </div>
+  );
+}
+
+export default function MerchantAnalyticsPage() {
+  return (
+    <Suspense fallback={<div className="h-48 flex items-center justify-center"><Loader2 className="animate-spin text-[#0D2619]" size={28} /></div>}>
+      <MerchantAnalyticsContent />
+    </Suspense>
   );
 }

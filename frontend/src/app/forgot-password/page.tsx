@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { KeyRound, Mail, ShieldAlert, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { Mail, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 import { authApi } from "@/lib/api";
 import toast from "react-hot-toast";
 import { getApiError } from "@/lib/utils";
@@ -68,58 +68,48 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center px-4 py-16 bg-ivory/10">
-      <div className="card max-w-md w-full p-8 border border-gold-200 bg-white/95 shadow-xl animate-fade-up relative overflow-hidden">
-        {/* Subtle decorative gold line */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gold-300 via-gold-600 to-gold-300" />
-
+    <div className="min-h-[75vh] flex items-center justify-center px-4 py-16 bg-[#FAF8F3] font-garamond text-[#1C2E24]">
+      <div className="bg-white max-w-md w-full p-8 border border-[#E5E0D5] rounded-3xl shadow-xs relative overflow-hidden">
         {step === 1 && (
           <form onSubmit={handleRequestOTP} className="space-y-6">
             <div className="text-center space-y-2">
-              <span className="font-cinzel text-[10px] tracking-widest text-gold-600 block">PASSWORD RECOVERY</span>
-              <h1 className="font-cormorant text-3xl text-brown italic">Recover Account</h1>
-              <p className="font-garamond text-sm text-muted max-w-xs mx-auto">
+              <span className="text-[10px] font-bold tracking-widest text-[#0D2619] bg-[#E8F5E9] border border-[#C8E6C9] px-2.5 py-1 rounded-md uppercase inline-block">
+                PASSWORD RECOVERY
+              </span>
+              <h1 className="font-cormorant text-3xl font-bold text-[#1C2E24]">Recover Account</h1>
+              <p className="text-xs text-[#8C9890] max-w-xs mx-auto leading-relaxed">
                 Enter your registered email below, and we will send you a verification code to reset your password.
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 text-xs">
               <div>
-                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-1">EMAIL ADDRESS</label>
+                <label className="font-bold text-[#1C2E24] block mb-1">EMAIL ADDRESS</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500" size={16} />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890]" size={16} />
                   <input
                     type="email"
                     required
                     placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="input-field pl-10 py-2.5 font-garamond text-sm"
+                    className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl pl-10 pr-4 py-2.5 font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                   />
                 </div>
               </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white py-3 rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+              >
+                {isLoading ? <Loader2 size={14} className="animate-spin" /> : "SEND RECOVERY CODE"}
+              </button>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-primary w-full flex items-center justify-center gap-2 py-3 font-cinzel text-xs tracking-widest"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 size={14} className="animate-spin text-white" /> SENDING VERIFICATION...
-                </>
-              ) : (
-                "REQUEST RESET CODE"
-              )}
-            </button>
-
-            <div className="text-center">
-              <Link
-                href="/auth/login"
-                className="font-cinzel text-[10px] tracking-widest text-muted hover:text-brown transition-colors inline-flex items-center gap-1.5"
-              >
-                <ArrowLeft size={10} /> BACK TO LOGIN
+            <div className="text-center pt-2">
+              <Link href="/auth/login" className="inline-flex items-center gap-1 text-xs font-bold text-[#0D2619] hover:underline">
+                <ArrowLeft size={14} /> Back to Sign In
               </Link>
             </div>
           </form>
@@ -128,108 +118,91 @@ export default function ForgotPasswordPage() {
         {step === 2 && (
           <form onSubmit={handleResetPassword} className="space-y-6">
             <div className="text-center space-y-2">
-              <span className="font-cinzel text-[10px] tracking-widest text-gold-600 block">SECURITY VERIFICATION</span>
-              <h1 className="font-cormorant text-3xl text-brown italic">Set New Password</h1>
-              <p className="font-garamond text-xs text-muted max-w-xs mx-auto">
-                We sent a 6-digit recovery code to <strong className="text-brown">{email}</strong>. Enter the code and set your new password below.
+              <span className="text-[10px] font-bold tracking-widest text-[#0D2619] bg-[#E8F5E9] border border-[#C8E6C9] px-2.5 py-1 rounded-md uppercase inline-block">
+                VERIFICATION CODE
+              </span>
+              <h1 className="font-cormorant text-3xl font-bold text-[#1C2E24]">Set New Password</h1>
+              <p className="text-xs text-[#8C9890] max-w-xs mx-auto leading-relaxed">
+                We sent a 6-digit recovery code to <strong className="text-[#1C2E24]">{email}</strong>.
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 text-xs">
               <div>
-                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-1">VERIFICATION CODE</label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-500" size={16} />
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    placeholder="Enter 6-digit OTP"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    className="input-field pl-10 py-2.5 font-mono text-center tracking-widest text-sm"
-                  />
-                </div>
+                <label className="font-bold text-[#1C2E24] block mb-1">VERIFICATION CODE (6 DIGITS)</label>
+                <input
+                  type="text"
+                  required
+                  maxLength={6}
+                  placeholder="123456"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2.5 font-mono text-center text-base font-bold tracking-widest text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
+                />
               </div>
 
               <div>
-                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-1">NEW PASSWORD</label>
+                <label className="font-bold text-[#1C2E24] block mb-1">NEW PASSWORD</label>
                 <input
                   type="password"
                   required
-                  placeholder="Min 6 characters"
+                  placeholder="••••••••"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="input-field py-2.5 font-garamond text-sm"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2.5 font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                 />
               </div>
 
               <div>
-                <label className="font-cinzel text-[10px] tracking-widest text-muted block mb-1">CONFIRM PASSWORD</label>
+                <label className="font-bold text-[#1C2E24] block mb-1">CONFIRM NEW PASSWORD</label>
                 <input
                   type="password"
                   required
-                  placeholder="Re-type your password"
+                  placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input-field py-2.5 font-garamond text-sm"
+                  className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2.5 font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                 />
               </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white py-3 rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50"
+              >
+                {isLoading ? <Loader2 size={14} className="animate-spin" /> : "RESET & SAVE PASSWORD"}
+              </button>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-primary w-full flex items-center justify-center gap-2 py-3 font-cinzel text-xs tracking-widest"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 size={14} className="animate-spin text-white" /> UPDATING PASSWORD...
-                </>
-              ) : (
-                "RESET PASSWORD"
-              )}
-            </button>
-
-            <div className="flex items-center justify-between pt-2">
+            <div className="text-center pt-2">
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="font-cinzel text-[10px] tracking-widest text-muted hover:text-brown transition-colors inline-flex items-center gap-1.5"
+                className="inline-flex items-center gap-1 text-xs font-bold text-[#8C9890] hover:text-[#1C2E24]"
               >
-                <ArrowLeft size={10} /> CHANGE EMAIL
-              </button>
-
-              <button
-                type="button"
-                onClick={handleRequestOTP}
-                className="font-cinzel text-[10px] tracking-widest text-gold-600 hover:text-gold-800 transition-colors"
-              >
-                RESEND OTP
+                <ArrowLeft size={14} /> Change Email
               </button>
             </div>
           </form>
         )}
 
         {step === 3 && (
-          <div className="space-y-6 text-center py-4">
-            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto text-green-500 animate-bounce">
+          <div className="text-center space-y-6 py-4">
+            <div className="w-16 h-16 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full flex items-center justify-center mx-auto text-[#2E7D32]">
               <CheckCircle2 size={36} />
             </div>
-
             <div className="space-y-2">
-              <span className="font-cinzel text-[10px] tracking-widest text-green-600 block">SUCCESSFUL</span>
-              <h1 className="font-cormorant text-3xl text-brown italic">Password Updated</h1>
-              <p className="font-garamond text-sm text-muted max-w-xs mx-auto">
-                Your password has been changed successfully. You can now securely log in to your account with your new credentials.
+              <h1 className="font-cormorant text-3xl font-bold text-[#1C2E24]">Password Reset!</h1>
+              <p className="text-xs text-[#8C9890] max-w-xs mx-auto leading-relaxed">
+                Your account password has been updated successfully. You can now sign in using your new credentials.
               </p>
             </div>
 
             <Link
               href="/auth/login"
-              className="btn-primary w-full py-3 block font-cinzel text-xs tracking-widest text-center"
+              className="w-full inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white py-3 rounded-xl text-xs font-bold transition-all shadow-xs block"
             >
-              LOG IN NOW
+              PROCEED TO SIGN IN
             </Link>
           </div>
         )}

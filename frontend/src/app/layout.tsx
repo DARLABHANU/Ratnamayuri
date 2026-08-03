@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Outfit, Plus_Jakarta_Sans } from "next/font/google";
+import { Playfair_Display, Outfit, Plus_Jakarta_Sans, Alex_Brush } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { Sparkles, Clock } from "lucide-react";
 import "./globals.css";
 import AuthInitializer from "@/components/AuthInitializer";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import BottomNav from "@/components/layout/BottomNav";
 
 const cormorant = Playfair_Display({
   subsets: ["latin"],
@@ -24,6 +25,12 @@ const garamond = Plus_Jakarta_Sans({
   weight: ["300", "400", "500", "600", "700"],
   style: ["normal", "italic"],
   variable: "--font-garamond",
+});
+
+const scriptFont = Alex_Brush({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-script",
 });
 
 export const metadata: Metadata = {
@@ -50,8 +57,8 @@ const MAINTENANCE_MODE = false;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${cinzel.variable} ${garamond.variable}`}>
-      <body className="bg-cream font-garamond text-brown antialiased">
+    <html lang="en" className={`${cormorant.variable} ${cinzel.variable} ${garamond.variable} ${scriptFont.variable}`}>
+      <body className="bg-[#FAF8F3] font-garamond text-[#1C2E24] antialiased">
         <ImpersonationBanner />
         {!MAINTENANCE_MODE && <AuthInitializer />}
         <Toaster
@@ -137,6 +144,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : (
           children
         )}
+        <BottomNav />
       </body>
     </html>
   );

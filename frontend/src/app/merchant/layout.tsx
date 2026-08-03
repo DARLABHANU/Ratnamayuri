@@ -3,17 +3,47 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, ShoppingBag, BarChart2, User, LogOut, Store, Wallet, Menu, X, BookOpen } from "lucide-react";
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingBag,
+  CircleDollarSign,
+  Wallet,
+  Users,
+  Star,
+  Tag,
+  Store,
+  Settings,
+  HelpCircle,
+  Search,
+  Bell,
+  ExternalLink,
+  ChevronDown,
+  Menu,
+  X,
+  LogOut
+} from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
-import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: string | number;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: "/merchant/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/merchant/products", label: "Products", icon: Package },
-  { href: "/merchant/orders", label: "Orders", icon: ShoppingBag },
-  { href: "/merchant/analytics", label: "Analytics", icon: BarChart2 },
-  { href: "/merchant/wallet", label: "Wallet", icon: Wallet },
-  { href: "/merchant/instructions", label: "User Manual", icon: BookOpen },
+  { href: "/merchant/orders", label: "Orders", icon: ShoppingBag, badge: 8 },
+  { href: "/merchant/analytics", label: "Earnings", icon: CircleDollarSign },
+  { href: "/merchant/wallet", label: "Withdraw", icon: Wallet },
+  { href: "/merchant/customers", label: "Customers", icon: Users },
+  { href: "/merchant/reviews", label: "Reviews", icon: Star },
+  { href: "/merchant/coupons", label: "Coupons", icon: Tag },
+  { href: "/merchant/profile", label: "Store Profile", icon: Store },
+  { href: "/merchant/settings", label: "Settings", icon: Settings },
+  { href: "/merchant/support", label: "Support", icon: HelpCircle },
 ];
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
@@ -22,91 +52,173 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
   const { logout, user } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleLogout = () => { logout(); router.push("/auth/login"); };
-
   const sidebarContent = (
-    <div className="flex flex-col h-full">
-      <div className="p-6 border-b border-white/10">
-        <Link href="/" className="block" onClick={() => setMobileOpen(false)}>
-          <p className="font-cinzel text-sm tracking-[0.3em] text-gold-300">RATNAMAYURI</p>
-          <p className="font-garamond text-xs tracking-widest text-gold-600 mt-0.5">MERCHANT PORTAL</p>
-        </Link>
-      </div>
+    <div className="flex flex-col h-full bg-[#0D2619] text-emerald-100 p-4 font-garamond justify-between">
+      
+      <div className="space-y-4 overflow-y-auto pr-1">
+        {/* Top Store Logo */}
+        <div className="flex items-center gap-3 px-2 py-2 border-b border-emerald-900/50">
+          <div className="w-8 h-8 rounded-full bg-[#143323] border border-gold-400/40 flex items-center justify-center text-gold-400">
+            ✦
+          </div>
+          <div>
+            <span className="font-cormorant text-lg font-bold text-white tracking-wide block leading-none">Ratnamayuri</span>
+            <span className="text-[10px] text-emerald-300 font-semibold tracking-wider uppercase">Seller Panel</span>
+          </div>
+        </div>
 
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gold-500/20 flex items-center justify-center">
-            <Store size={16} className="text-gold-400" />
-          </div>
-          <div className="min-w-0">
-            <p className="font-cinzel text-xs text-gold-300 truncate">{user?.full_name || "Merchant"}</p>
-            <p className="font-garamond text-xs text-gold-600 truncate">{user?.email}</p>
-          </div>
+        {/* Nav Items */}
+        <div className="space-y-1">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== "/merchant/dashboard" && pathname.startsWith(item.href));
+
+            if (isActive) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white text-[#0D2619] font-bold text-xs shadow-sm transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon size={16} className="text-[#0D2619]" />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-extrabold flex items-center justify-center">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            }
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between px-4 py-2.5 rounded-xl text-emerald-100/80 hover:bg-white/10 hover:text-white text-xs font-medium transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Icon size={16} className="text-emerald-300/80" />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge && (
+                  <span className="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-extrabold flex items-center justify-center">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
-      <nav className="flex-1 p-3 space-y-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href} onClick={() => setMobileOpen(false)}
-            className={cn("sidebar-link rounded-sm", pathname === href && "active")}>
-            <Icon size={15} />
-            {label}
-          </Link>
-        ))}
-      </nav>
-
-      <div className="p-3 border-t border-white/10 space-y-1">
-        <Link href="/merchant/profile" onClick={() => setMobileOpen(false)}
-          className={cn("sidebar-link rounded-sm", pathname === "/merchant/profile" && "active")}>
-          <User size={15} /> Profile
-        </Link>
-        <button onClick={handleLogout} className="sidebar-link rounded-sm w-full text-red-400 hover:text-red-300 hover:bg-red-900/20">
-          <LogOut size={15} /> Sign Out
+      {/* Logout */}
+      <div className="pt-4 border-t border-emerald-900/50">
+        <button
+          onClick={() => {
+            logout();
+            router.push("/auth/login");
+          }}
+          className="w-full flex items-center gap-3 px-4 py-2 text-emerald-300 hover:text-red-400 text-xs font-semibold transition-colors"
+        >
+          <LogOut size={15} />
+          <span>Sign Out</span>
         </button>
       </div>
+
     </div>
   );
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Mobile Top Bar */}
-      <header className="lg:hidden flex items-center justify-between p-4 bg-deep sidebar-bg border-b border-white/10">
-        <div className="flex flex-col">
-          <p className="font-cinzel text-xs tracking-[0.2em] text-gold-300">RATNAMAYURI</p>
-          <p className="font-garamond text-[9px] tracking-widest text-gold-600 mt-0.5">MERCHANT PORTAL</p>
-        </div>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-gold-300 hover:text-cream p-1">
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </header>
-
+    <div className="min-h-screen bg-[#F4F6F4] text-[#1C2E24] font-garamond flex flex-col lg:flex-row">
+      
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-60 bg-deep sidebar-bg flex-col flex-shrink-0 min-h-screen">
+      <aside className="hidden lg:block w-60 flex-shrink-0 min-h-screen border-r border-emerald-950 bg-[#0D2619]">
         {sidebarContent}
       </aside>
 
-      {/* Mobile Drawer Overlay */}
+      {/* Mobile Drawer */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden">
-          {/* Backdrop */}
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          
-          {/* Drawer Panel */}
-          <aside className="relative flex flex-col w-64 max-w-xs bg-deep sidebar-bg shadow-2xl h-full z-10 animate-slide-in">
-            <div className="absolute top-4 right-4">
-              <button onClick={() => setMobileOpen(false)} className="text-gold-300 hover:text-cream p-1">
-                <X size={20} />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs lg:hidden" onClick={() => setMobileOpen(false)}>
+          <div className="w-64 bg-[#0D2619] h-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
             {sidebarContent}
-          </aside>
+          </div>
         </div>
       )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 bg-cream dashboard-bg overflow-auto min-h-0">
-        <div className="p-4 md:p-8">{children}</div>
-      </main>
+      {/* Main Content Area + Top Header */}
+      <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* Header Bar */}
+        <header className="bg-white border-b border-[#E5E0D5] px-6 py-3 flex items-center justify-between gap-4 sticky top-0 z-30 shadow-2xs">
+          
+          {/* Left: Mobile Menu Toggle + Search */}
+          <div className="flex items-center gap-3 flex-1 max-w-md">
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden text-[#1C2E24] p-1">
+              <Menu size={22} />
+            </button>
+
+            <div className="relative w-full">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890]" />
+              <input
+                type="text"
+                placeholder="Search anything..."
+                className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-full pl-9 pr-4 py-1.5 text-xs font-garamond text-[#1C2E24] placeholder-[#8C9890] focus:outline-none focus:border-[#0D2619]"
+              />
+            </div>
+          </div>
+
+          {/* Right Controls: Notifications + Seller Avatar + View Store */}
+          <div className="flex items-center gap-4">
+            
+            {/* Bell notification */}
+            <div className="relative cursor-pointer text-[#1C2E24] hover:text-[#0D2619]">
+              <Bell size={18} />
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-extrabold flex items-center justify-center">
+                3
+              </span>
+            </div>
+
+            {/* Seller profile pill */}
+            <div className="flex items-center gap-2 pl-2 border-l border-[#F0ECE1]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={(user as any)?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop"}
+                alt="Seller Avatar"
+                className="w-8 h-8 rounded-full object-cover border border-[#E5E0D5]"
+              />
+              <div className="hidden sm:block text-left">
+                <p className="text-xs font-bold text-[#1C2E24] leading-none">{user?.full_name?.split(" ")[0] || "Megathavi"}</p>
+                <p className="text-[10px] text-[#8C9890] flex items-center gap-0.5">
+                  Seller <ChevronDown size={10} />
+                </p>
+              </div>
+            </div>
+
+            {/* View Store button */}
+            <button
+              onClick={() => router.push("/")}
+              className="hidden md:inline-flex items-center gap-1.5 bg-[#0D2619] hover:bg-[#19402B] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs"
+            >
+              <span>View Store</span>
+              <ExternalLink size={13} />
+            </button>
+
+          </div>
+
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
+          {children}
+        </main>
+
+      </div>
+
     </div>
   );
 }

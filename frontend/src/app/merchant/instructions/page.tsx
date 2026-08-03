@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { 
-  BookOpen, HelpCircle, Key, LineChart, Package, 
-  Truck, Wallet, AlertCircle, Store 
+  Key, LineChart, Package, 
+  Truck, Wallet, AlertCircle 
 } from "lucide-react";
 
 const SECTIONS = [
@@ -22,35 +21,35 @@ function ScreenshotBox({ src, alt, placeholderText }: { src: string; alt: string
 
   if (hasError) {
     return (
-      <div className="border border-dashed border-gold-300 bg-gold-50/10 p-12 text-center rounded">
-        <p className="font-cinzel text-xs tracking-wider text-gold-700 uppercase font-semibold">{placeholderText}</p>
-        <p className="font-garamond text-xs text-muted mt-1.5 italic">
-          (To show your screenshot here automatically, save your image file as <span className="font-mono bg-gold-100/50 px-1 py-0.5 border border-gold-200/50 text-gold-800 text-[10px] rounded">public{src}</span>)
+      <div className="border border-dashed border-[#E5E0D5] bg-[#FAF8F3] p-8 text-center rounded-2xl">
+        <p className="font-bold text-xs text-[#0D2619] uppercase">{placeholderText}</p>
+        <p className="text-xs text-[#8C9890] mt-1.5 italic">
+          (Save image as <span className="font-mono bg-white px-1.5 py-0.5 border border-[#E5E0D5] text-[#0D2619] text-[10px] rounded">public{src}</span>)
         </p>
       </div>
     );
   }
 
   return (
-    <div className="border border-gold-200 overflow-hidden rounded shadow-sm bg-ivory relative min-h-[100px]">
+    <div className="border border-[#E5E0D5] overflow-hidden rounded-2xl shadow-xs bg-white relative min-h-[100px]">
       <img
         src={src}
         alt={alt}
         onLoad={() => setLoaded(true)}
         onError={() => setHasError(true)}
-        className={`w-full h-auto object-cover border-b border-gold-100 transition-opacity duration-300 ${
+        className={`w-full h-auto object-cover border-b border-[#F0ECE1] transition-opacity duration-300 ${
           loaded ? "opacity-100" : "opacity-0 absolute"
         }`}
       />
       {!loaded && (
-        <div className="p-12 text-center">
-          <div className="w-5 h-5 border-2 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-          <p className="font-garamond text-xs text-muted">Loading screenshot...</p>
+        <div className="p-8 text-center">
+          <div className="w-5 h-5 border-2 border-[#0D2619] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-xs text-[#8C9890]">Loading screenshot...</p>
         </div>
       )}
       {loaded && (
-        <div className="p-3 bg-white">
-          <p className="font-garamond text-xs text-muted italic text-center">{alt}</p>
+        <div className="p-3 bg-[#FAF8F3]">
+          <p className="text-xs text-[#6B7A70] italic text-center">{alt}</p>
         </div>
       )}
     </div>
@@ -58,36 +57,34 @@ function ScreenshotBox({ src, alt, placeholderText }: { src: string; alt: string
 }
 
 export default function MerchantInstructionsPage() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState("login");
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="space-y-6 text-[#1C2E24] font-garamond">
       {/* Page Header */}
       <div>
-        <span className="section-tag">HELP & SUPPORT</span>
-        <h1 className="section-title">Merchant <em className="italic">Operations Manual</em></h1>
-        <p className="font-garamond text-xs md:text-sm text-muted mt-1 max-w-2xl leading-relaxed">
+        <h1 className="font-cormorant text-2xl md:text-3xl font-bold text-[#1C2E24]">Merchant Operations Manual</h1>
+        <p className="text-xs md:text-sm text-[#6B7A70] mt-1 max-w-2xl leading-relaxed">
           Operational guide and step-by-step documentation for merchants. Review portal usage instructions below.
         </p>
-        <div className="divider-gold mx-0 mt-3" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
         {/* Navigation Sidebar List */}
-        <div className="md:col-span-1 space-y-1 bg-white/50 border border-gold-200/50 p-2 rounded">
+        <div className="md:col-span-1 space-y-1 bg-white border border-[#E5E0D5] p-2 rounded-3xl shadow-xs">
           {SECTIONS.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-2.5 px-4 py-3 text-left font-cinzel text-xs tracking-wider transition-all rounded-sm
-                  ${activeTab === tab.id 
-                    ? "bg-deep text-gold-400 font-semibold shadow-sm" 
-                    : "text-brown hover:bg-gold-50/50 hover:text-gold-700"}`}
+                className={`w-full flex items-center gap-2.5 px-4 py-3 text-left text-xs font-bold transition-all rounded-2xl ${
+                  activeTab === tab.id 
+                    ? "bg-[#0D2619] text-white shadow-2xs" 
+                    : "text-[#556B5D] hover:bg-[#FAF8F3] hover:text-[#1C2E24]"
+                }`}
               >
-                <Icon size={14} className={activeTab === tab.id ? "text-gold-400" : "text-gold-600"} />
+                <Icon size={15} className={activeTab === tab.id ? "text-white" : "text-[#0D2619]"} />
                 <span className="truncate">{tab.label}</span>
               </button>
             );
@@ -95,234 +92,143 @@ export default function MerchantInstructionsPage() {
         </div>
 
         {/* Content Details Area */}
-        <div className="md:col-span-3 card p-6 bg-white border-gold-200/60 shadow-sm animate-fade-in min-h-[500px]">
+        <div className="md:col-span-3 bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs min-h-[500px]">
           {activeTab === "login" && (
             <div className="space-y-6">
-              <div>
-                <h2 className="font-cinzel text-sm tracking-widest text-brown border-b border-gold-100 pb-2 uppercase flex items-center gap-2">
-                  <Key size={16} className="text-gold-600" /> Portal Access &amp; Authentication
+              <div className="border-b border-[#F0ECE1] pb-3">
+                <h2 className="font-cormorant text-xl font-bold text-[#1C2E24] flex items-center gap-2">
+                  <Key size={18} className="text-[#0D2619]" /> Portal Access & Authentication
                 </h2>
-                <p className="font-garamond text-sm text-muted mt-3 leading-relaxed">
-                  Authentication is required to log in to your merchant console. Ensure you use the seller dashboard account details.
-                </p>
+                <p className="text-xs text-[#8C9890] mt-1">Credentials and account security for merchant access</p>
               </div>
 
-              <div className="space-y-3 font-garamond text-sm text-deep">
-                <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold">Step-by-Step Log In:</h3>
-                <ol className="list-decimal list-inside space-y-2 pl-1 leading-relaxed">
-                  <li>Visit the portal login URL: <span className="font-mono text-xs bg-gold-50/80 px-1.5 py-0.5 border border-gold-100/50 text-gold-800 rounded">https://ratnamayuri.me/auth/login</span></li>
-                  <li>Enter your registered seller email address (e.g., <span className="font-medium text-brown">appzonix@gmail.com</span>).</li>
-                  <li>Type your secure merchant password credentials.</li>
-                  <li>Click on the <span className="font-semibold text-brown">"SIGN IN"</span> button.</li>
-                  <li>The platform will automatically verify details and direct you to `/merchant/dashboard`.</li>
-                </ol>
+              <div className="space-y-3 text-xs leading-relaxed text-[#556B5D]">
+                <p>To access the merchant dashboard, log in with your assigned seller account credentials:</p>
+                <div className="bg-[#FAF8F3] p-4 border border-[#E5E0D5] rounded-2xl font-mono text-xs text-[#0D2619] space-y-1">
+                  <div><strong>Email:</strong> mitesir345@copawoke.com</div>
+                  <div><strong>Password:</strong> Bhanuusr@786</div>
+                </div>
               </div>
 
               <ScreenshotBox 
-                src="/images/login_page.png"
-                alt="Figure 1.1: Portal Access Sign-In Interface"
-                placeholderText="[login_page_screenshot]"
+                src="/images/merchant/merchant-login.png" 
+                alt="Merchant Login Screen" 
+                placeholderText="Screenshot 1: Seller Authentication Form"
               />
             </div>
           )}
 
           {activeTab === "dashboard" && (
             <div className="space-y-6">
-              <div>
-                <h2 className="font-cinzel text-sm tracking-widest text-brown border-b border-gold-100 pb-2 uppercase flex items-center gap-2">
-                  <LineChart size={16} className="text-gold-600" /> Business Overview &amp; Analytics
+              <div className="border-b border-[#F0ECE1] pb-3">
+                <h2 className="font-cormorant text-xl font-bold text-[#1C2E24] flex items-center gap-2">
+                  <LineChart size={18} className="text-[#0D2619]" /> Business Overview & Analytics
                 </h2>
-                <p className="font-garamond text-sm text-muted mt-3 leading-relaxed">
-                  The dashboard gives you a high-level summary of your storefront's health, inventory volumes, sales aggregates, and payment schedules.
-                </p>
+                <p className="text-xs text-[#8C9890] mt-1">Understanding store revenue and orders analytics</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {[
-                  { label: "TOTAL SALES", desc: "Gross product revenue generated by your store listings since registration." },
-                  { label: "ORDERS COUNT", desc: "Total customer order packages containing one or more of your items." },
-                  { label: "WALLET BALANCE", desc: "Real-time earnings summary showing funds currently held vs. ready to withdraw." },
-                  { label: "COMMISSION RATE", desc: "The platform's operating fee percentage deduction configured for your store." }
+                  { label: "Total Sales", desc: "Gross revenue generated by customer orders" },
+                  { label: "Total Orders", desc: "Count of all placed customer orders" },
+                  { label: "Total Earnings", desc: "Net revenue after platform margin deduction" },
+                  { label: "Available Balance", desc: "Funds ready for withdrawal request" }
                 ].map((item, idx) => (
-                  <div key={idx} className="bg-ivory/40 p-4 border border-gold-100 rounded">
-                    <p className="font-cinzel text-[10px] tracking-wider text-gold-700 font-semibold mb-1">{item.label}</p>
-                    <p className="font-garamond text-xs text-muted leading-relaxed">{item.desc}</p>
+                  <div key={idx} className="bg-[#FAF8F3] p-4 border border-[#E5E0D5] rounded-2xl">
+                    <span className="font-bold text-[#1C2E24] block">{item.label}</span>
+                    <span className="text-[#8C9890] text-[11px] mt-0.5 block">{item.desc}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="space-y-3 font-garamond text-sm text-deep">
-                <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold uppercase">Operational Steps:</h3>
-                <ol className="list-decimal list-inside space-y-2 pl-1 leading-relaxed">
-                  <li><strong>Review Performance Indicators:</strong> Check your gross sales metrics and overall incoming orders count at the top dashboard cards.</li>
-                  <li><strong>Monitor Wallet Balances:</strong> Track your current pending escrow balances against available withdrawable limits.</li>
-                  <li><strong>Act on Low Stock Alerts:</strong> Check the low-stock alert warnings to identify which products need active inventory replenishments.</li>
-                </ol>
-              </div>
-
               <ScreenshotBox 
-                src="/images/dashboard.png"
-                alt="Figure 2.1: Merchant Performance Dashboard"
-                placeholderText="[merchant_dashboard_screenshot]"
+                src="/images/merchant/merchant-dashboard.png" 
+                alt="Seller Dashboard Overview" 
+                placeholderText="Screenshot 2: Seller Dashboard Analytics Cards"
               />
             </div>
           )}
 
           {activeTab === "profile" && (
             <div className="space-y-6">
-              <div>
-                <h2 className="font-cinzel text-sm tracking-widest text-brown border-b border-gold-100 pb-2 uppercase flex items-center gap-2">
-                  <AlertCircle size={16} className="text-gold-600" /> Store Profile Setup (Mandatory)
+              <div className="border-b border-[#F0ECE1] pb-3">
+                <h2 className="font-cormorant text-xl font-bold text-[#1C2E24] flex items-center gap-2">
+                  <AlertCircle size={18} className="text-[#0D2619]" /> Store Profile Setup (Mandatory)
                 </h2>
-                <p className="font-garamond text-sm text-muted mt-3 leading-relaxed">
-                  To protect our catalog credibility, <strong>merchants must first create and set up their Store Profile details</strong> before they can add or manage products.
-                </p>
+                <p className="text-xs text-[#8C9890] mt-1">Configuring business and bank payout details</p>
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 p-4 text-xs font-garamond rounded space-y-1.5">
-                <p className="font-cinzel font-semibold text-amber-800 tracking-wider">⚠️ MANDATORY PROFILE STAGE</p>
-                <p className="text-amber-700 leading-relaxed">
-                  If you attempt to view or add products before saving your profile, the catalog tab will lock automatically. You will see a profile requirement notification directing you to fill out your details.
-                </p>
-              </div>
-
-              <div className="space-y-3 font-garamond text-sm text-deep">
-                <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold uppercase">Operational Steps:</h3>
-                <ol className="list-decimal list-inside space-y-2 pl-1 leading-relaxed">
-                  <li><strong>Access Profile Panel:</strong> Click on the "Store Profile" tab on the sidebar.</li>
-                  <li><strong>Enter Store Details:</strong> Fill out your Store Name (which will display on products), a brief brand description, and your GSTIN number.</li>
-                  <li><strong>Provide Settlement Bank Details:</strong> Input bank name, beneficiary name, account number, and your IFSC transit code.</li>
-                  <li><strong>Save &amp; Unlock:</strong> Click the "Save Profile" button. This registers your merchant info in the database and unlocks the Product Catalog.</li>
-                </ol>
-              </div>
+              <p className="text-xs text-[#556B5D] leading-relaxed">
+                Before listing products, complete your Store Profile with Business Name, Description, GSTIN, Bank Account Number, and IFSC Code.
+              </p>
 
               <ScreenshotBox 
-                src="/images/profile.png"
-                alt="Figure 3.1: Store Profile Settings panel"
-                placeholderText="[merchant_profile_screenshot]"
+                src="/images/merchant/merchant-profile.png" 
+                alt="Store Profile Settings" 
+                placeholderText="Screenshot 3: Merchant Profile Configuration Form"
               />
             </div>
           )}
 
           {activeTab === "products" && (
             <div className="space-y-6">
-              <div>
-                <h2 className="font-cinzel text-sm tracking-widest text-brown border-b border-gold-100 pb-2 uppercase flex items-center gap-2">
-                  <Package size={16} className="text-gold-600" /> Catalog &amp; Product Management
+              <div className="border-b border-[#F0ECE1] pb-3">
+                <h2 className="font-cormorant text-xl font-bold text-[#1C2E24] flex items-center gap-2">
+                  <Package size={18} className="text-[#0D2619]" /> Catalog & Product Management
                 </h2>
-                <p className="font-garamond text-sm text-muted mt-3 leading-relaxed">
-                  Manage inventory levels, specify product categorization, weights, Compare Prices (strike-through discounts), and stock alerts.
-                </p>
+                <p className="text-xs text-[#8C9890] mt-1">Adding single products or bulk uploading catalog CSVs</p>
               </div>
 
-              <div className="space-y-3 font-garamond text-sm text-deep">
-                <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold uppercase">Operational Steps:</h3>
-                <ol className="list-decimal list-inside space-y-2.5 pl-1 leading-relaxed">
-                  <li><strong>Access Products Catalog:</strong> Click on the "Products" tab on the dashboard sidebar menu.</li>
-                  <li><strong>Click Add Product:</strong> Click the "Add Product" action button in the upper right. This opens the product creation forms.</li>
-                  <li><strong>Enter Product Details:</strong> Fill in the title, detailed description, weight, category, price, and compare-price (strike-through discount) fields.</li>
-                  <li><strong>Define Stock Balances:</strong> Input current stock levels and set low-stock alert thresholds.</li>
-                  <li><strong>Upload Visual Images:</strong> Drag and drop or browse to upload up to 5 multi-angle items photos (Image 1: Hero Showcase, Image 2: Reverse side, Image 3: Weaving/fabric zoom, Image 4: Mannequin styling, Image 5: Model closeups). Use the "X" button on image previews to delete/reorder them.</li>
-                  <li><strong>Save &amp; Publish:</strong> Click the "Save Product" button to launch the product catalog live in the store.</li>
-                </ol>
-              </div>
+              <p className="text-xs text-[#556B5D] leading-relaxed">
+                Manage products, set prices, stock levels, and upload up to 5 multi-angle slideshow images per item.
+              </p>
 
               <ScreenshotBox 
-                src="/images/products_list.png"
-                alt="Figure 4.1: Product Catalogue List View"
-                placeholderText="[merchant_products_list_screenshot]"
-              />
-
-              <ScreenshotBox 
-                src="/images/add_product_form.png"
-                alt="Figure 4.2: Add Product Specification Form"
-                placeholderText="[merchant_add_product_form_screenshot]"
+                src="/images/merchant/merchant-products.png" 
+                alt="Products Management View" 
+                placeholderText="Screenshot 4: Products Catalog List & Add Modal"
               />
             </div>
           )}
 
           {activeTab === "logistics" && (
             <div className="space-y-6">
-              <div>
-                <h2 className="font-cinzel text-sm tracking-widest text-brown border-b border-gold-100 pb-2 uppercase flex items-center gap-2">
-                  <Truck size={16} className="text-gold-600" /> Logistics &amp; Fulfillment Workflow
+              <div className="border-b border-[#F0ECE1] pb-3">
+                <h2 className="font-cormorant text-xl font-bold text-[#1C2E24] flex items-center gap-2">
+                  <Truck size={18} className="text-[#0D2619]" /> Logistics & Fulfillment Workflow
                 </h2>
-                <p className="font-garamond text-sm text-muted mt-3 leading-relaxed">
-                  Sellers handle logistics step-by-step directly from their console. Follow this operations path for every order:
-                </p>
+                <p className="text-xs text-[#8C9890] mt-1">Processing incoming customer orders</p>
               </div>
 
-              <div className="relative border-l border-gold-200 ml-3 pl-6 space-y-6">
-                {[
-                  { title: "1. Confirm Order", desc: "Click 'CONFIRM PAYMENT & ORDER' to accept payment and confirm stock availability." },
-                  { title: "2. Pack & Prepare", desc: "Wrap the items and click 'START PACKING / PROCESS' to set the order in processing stage." },
-                  { title: "3. Handover & Ship", desc: "Specify Courier (Delhivery, Blue Dart, etc.) and enter the AWB Tracking ID to generate shipment logistics." },
-                  { title: "4. Active Location GPS Updates", desc: "Once shipped, use the 'UPDATE TRACKING' and 'UPDATE GPS LOCATION' utilities to post current hubs/cities (e.g. 'Guntur Central Hub', 'Out for Delivery'). This updates the customer's tracking timeline in real-time." },
-                  { title: "5. Out For Delivery", desc: "Mark the package 'DISPATCH OUT FOR DELIVERY' when the courier agent starts final mile routing." },
-                  { title: "6. Mark Delivered", desc: "Select 'CONFIRM DELIVERY SUCCESS' to close logistics. This triggers the 7-day payment escrow hold window." }
-                ].map((step, idx) => (
-                  <div key={idx} className="relative">
-                    <div className="absolute -left-9 top-1 w-5 h-5 bg-deep border border-gold-400 rounded-full flex items-center justify-center text-[10px] text-gold-400 font-cinzel font-bold">
-                      {idx + 1}
-                    </div>
-                    <h4 className="font-cinzel text-xs font-semibold text-brown">{step.title}</h4>
-                    <p className="font-garamond text-xs text-muted mt-0.5 leading-relaxed">{step.desc}</p>
-                  </div>
-                ))}
-              </div>
+              <p className="text-xs text-[#556B5D] leading-relaxed">
+                Review new orders, update status (Processing, Shipped, Delivered), and manage customer fulfillment.
+              </p>
 
               <ScreenshotBox 
-                src="/images/orders_list.png"
-                alt="Figure 5.1: Incoming Orders Fulfillment Panel"
-                placeholderText="[merchant_orders_list_screenshot]"
-              />
-
-              <ScreenshotBox 
-                src="/images/order_shipment_details.png"
-                alt="Figure 5.2: Shipping & Carrier Handover"
-                placeholderText="[merchant_order_shipment_details_screenshot]"
-              />
-
-              <ScreenshotBox 
-                src="/images/order_gps_update.png"
-                alt="Figure 5.3: GPS Location & Logistics Updates"
-                placeholderText="[merchant_order_gps_update_screenshot]"
+                src="/images/merchant/merchant-orders.png" 
+                alt="Store Orders Management" 
+                placeholderText="Screenshot 5: Orders Management Table"
               />
             </div>
           )}
 
           {activeTab === "wallet" && (
             <div className="space-y-6">
-              <div>
-                <h2 className="font-cinzel text-sm tracking-widest text-brown border-b border-gold-100 pb-2 uppercase flex items-center gap-2">
-                  <Wallet size={16} className="text-gold-600" /> Wallet Earnings &amp; Payout Withdrawals
+              <div className="border-b border-[#F0ECE1] pb-3">
+                <h2 className="font-cormorant text-xl font-bold text-[#1C2E24] flex items-center gap-2">
+                  <Wallet size={18} className="text-[#0D2619]" /> Wallet Earnings & Payout Withdrawals
                 </h2>
-                <p className="font-garamond text-sm text-muted mt-3 leading-relaxed">
-                  Manage withdrawal requests, configure target settlement details, and monitor buyer protection holding schedules.
-                </p>
+                <p className="text-xs text-[#8C9890] mt-1">Requesting bank transfer payouts</p>
               </div>
 
-              <div className="space-y-3 font-garamond text-sm text-deep">
-                <h3 className="font-cinzel text-xs tracking-wider text-gold-700 font-semibold uppercase">Escrow Observation Window:</h3>
-                <p className="leading-relaxed text-xs text-muted">
-                  Revenues from successfully delivered order items enter a <strong>7-day escrow hold</strong>. This protects the marketplace from dispute resolutions. Once released by the server, the balance moves to "Available to Withdraw" automatically.
-                </p>
-              </div>
-
-              <div className="space-y-3 font-garamond text-sm text-deep">
-                <h3 className="font-cinzel text-xs tracking-wider text-brown font-semibold uppercase">Operational Steps:</h3>
-                <ol className="list-decimal list-inside space-y-2 pl-1 leading-relaxed">
-                  <li><strong>Check Available Balance:</strong> Ensure you have funds available for withdrawal in your wallet summary.</li>
-                  <li><strong>Select Payout Destination:</strong> Input your target Bank Account Details or UPI ID under the Payout Settings card.</li>
-                  <li><strong>Request Withdrawal Amount:</strong> Navigate to the Payout Request widget, input the withdrawal amount, and submit.</li>
-                  <li><strong>Wait for Admin Processing:</strong> Platform admins will verify and release the funds to your account within 24 to 48 hours.</li>
-                </ol>
-              </div>
+              <p className="text-xs text-[#556B5D] leading-relaxed">
+                Track available balance and submit withdrawal requests. Payouts are transferred directly to your registered bank account.
+              </p>
 
               <ScreenshotBox 
-                src="/images/wallet.png"
-                alt="Figure 6.1: Wallet Balance & Payout Settings"
-                placeholderText="[merchant_wallet_screenshot]"
+                src="/images/merchant/merchant-wallet.png" 
+                alt="Wallet Payout Requests" 
+                placeholderText="Screenshot 6: Wallet Payout Request Interface"
               />
             </div>
           )}

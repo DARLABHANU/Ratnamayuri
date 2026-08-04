@@ -6,6 +6,7 @@ const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
 const Commission = require('../models/Commission');
 const MerchantProfile = require('../models/MerchantProfile');
+const Notification = require('../models/Notification');
 const { getCurrentUser, requireMerchantOrAdmin } = require('../middleware/auth');
 const { generateOrderNumber } = require('../utils/helpers');
 const { sendOrderConfirmationEmail } = require('../services/email');
@@ -338,6 +339,16 @@ orderRouter.post('/', async (req, res, next) => {
       });
 
       await orderItem.save();
+
+      // Notify the merchant
+      const notification = new Notification({
+        recipient_id: item.product.merchant_id,
+        type: 'order',
+        title: 'New Order Received!',
+        message: `You received an order for ${item.quantity}x ${item.product.name}.`,
+        related_id: order.id
+      });
+      await notification.save().catch(err => console.error('Failed to save notification', err));
 
       // Reduce stock quantity and increase total sold
       await Product.updateOne(

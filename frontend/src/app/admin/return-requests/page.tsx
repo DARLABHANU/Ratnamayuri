@@ -13,58 +13,16 @@ function ReturnRequestsContent() {
   const { isAuthenticated, role } = useAuthStore();
 
   const [requests, setRequests] = useState<any[]>([]);
-  const [totalDisputes, setTotalDisputes] = useState(14);
-  const [pendingReview, setPendingReview] = useState(3);
-  const [approvedReturns, setApprovedReturns] = useState(9);
-  const [rejectedDisputes, setRejectedDisputes] = useState(2);
+  const [totalDisputes, setTotalDisputes] = useState(0);
+  const [pendingReview, setPendingReview] = useState(0);
+  const [approvedReturns, setApprovedReturns] = useState(0);
+  const [rejectedDisputes, setRejectedDisputes] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [actionId, setActionId] = useState<number | null>(null);
-
-  const demoDisputes = [
-    {
-      id: 1,
-      order_number: "ORD12560",
-      customer_name: "Anita Singh",
-      store_name: "Sowmya Collections",
-      reason: "Size mismatch on Bangle Set",
-      amount: "₹999",
-      status: "Pending",
-      date: "30 May, 2025"
-    },
-    {
-      id: 2,
-      order_number: "ORD12558",
-      customer_name: "Meena Patel",
-      store_name: "Lakshmi Jewels",
-      reason: "Color slightly different than picture",
-      amount: "₹1,299",
-      status: "Approved",
-      date: "29 May, 2025"
-    },
-    {
-      id: 3,
-      order_number: "ORD12555",
-      customer_name: "Rahul Rao",
-      store_name: "Heritage Handmades",
-      reason: "Defective clasp on chain",
-      amount: "₹699",
-      status: "Approved",
-      date: "28 May, 2025"
-    },
-    {
-      id: 4,
-      order_number: "ORD12550",
-      customer_name: "Suresh Kumar",
-      store_name: "Divine Ornaments",
-      reason: "User requested cancellation after shipping",
-      amount: "₹399",
-      status: "Rejected",
-      date: "25 May, 2025"
-    }
-  ];
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
@@ -78,8 +36,24 @@ function ReturnRequestsContent() {
     setIsLoading(true);
     try {
       const { data } = await adminApi.returnRequests({ page, page_size: 20 });
-      if (data && data.items && data.items.length > 0) {
+      if (data && data.items) {
         setRequests(data.items);
+        setTotalDisputes(data.total);
+        setTotalPages(data.pages || 1);
+        
+        let pending = 0;
+        let approved = 0;
+        let rejected = 0;
+        
+        data.items.forEach((r: any) => {
+          if (r.status === "pending") pending++;
+          else if (r.status === "approved") approved++;
+          else if (r.status === "rejected") rejected++;
+        });
+        
+        setPendingReview(pending);
+        setApprovedReturns(approved);
+        setRejectedDisputes(rejected);
       } else {
         setRequests([]);
       }
@@ -103,18 +77,22 @@ function ReturnRequestsContent() {
     }
   };
 
-  const displayList = requests.length > 0
-    ? requests.map((r) => ({
-        id: r.id,
-        order_number: `#ORD${r.order_id}`,
-        customer_name: r.user?.full_name || "Customer",
-        store_name: r.product?.merchant?.business_name || "Store",
-        reason: r.reason || "Dispute request",
-        amount: formatPrice(r.refund_amount || 999),
-        status: r.status === "approved" ? "Approved" : r.status === "rejected" ? "Rejected" : "Pending",
-        date: formatDate(r.created_at || "2025-05-30T10:00:00Z")
-      }))
-    : demoDisputes;
+  const displayList = requests
+    .filter(r => 
+      String(r.order_id).includes(search) || 
+      (r.user?.full_name || "").toLowerCase().includes(search.toLowerCase()) || 
+      (r.product?.merchant?.business_name || "").toLowerCase().includes(search.toLowerCase())
+    )
+    .map((r) => ({
+      id: r.id,
+      order_number: `#ORD${r.order_id}`,
+      customer_name: r.user?.full_name || "Customer",
+      store_name: r.product?.merchant?.business_name || "Store",
+      reason: r.reason || "Dispute request",
+      amount: formatPrice(r.refund_amount || 0),
+      status: r.status === "approved" ? "Approved" : r.status === "rejected" ? "Rejected" : "Pending",
+      date: formatDate(r.created_at || new Date().toISOString())
+    }));
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
@@ -178,52 +156,72 @@ function ReturnRequestsContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F5F2EA]">
-                {displayList.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
-                    <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{item.order_number}</td>
-                    <td className="py-3.5 px-3 font-bold text-[#1C2E24]">{item.customer_name}</td>
-                    <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{item.store_name}</td>
-                    <td className="py-3.5 px-3 text-[#556B5D] max-w-xs">{item.reason}</td>
-                    <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{item.amount}</td>
-                    <td className="py-3.5 px-3">
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md inline-block ${
-                        item.status === "Approved" 
-                          ? "bg-[#E8F5E9] text-[#2E7D32]" 
-                          : item.status === "Pending" 
-                          ? "bg-amber-100 text-amber-800" 
-                          : "bg-red-50 text-red-700"
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 text-right">
-                      {item.status === "Pending" ? (
-                        <button
-                          onClick={() => handleApproveReturn(item.id)}
-                          disabled={actionId === item.id}
-                          className="bg-[#0D2619] text-white px-3 py-1 rounded-lg text-[11px] font-bold hover:bg-[#19402B] transition-colors"
-                        >
-                          {actionId === item.id ? <Loader2 size={12} className="animate-spin" /> : "Approve Refund"}
-                        </button>
-                      ) : (
-                        <span className="text-xs text-[#8C9890] font-medium">Processed</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {displayList.length === 0 ? (
+                  <tr><td colSpan={7} className="py-8 text-center text-[#8C9890]">No return requests found.</td></tr>
+                ) : (
+                  displayList.map((item) => (
+                    <tr key={item.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
+                      <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{item.order_number}</td>
+                      <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{item.customer_name}</td>
+                      <td className="py-3.5 px-3 text-[#556B5D] font-bold">{item.store_name}</td>
+                      <td className="py-3.5 px-3">
+                        <span className="text-[11px] text-[#556B5D] bg-[#F5F2EA] px-2 py-1 rounded line-clamp-1 max-w-[200px]" title={item.reason}>
+                          {item.reason}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{item.amount}</td>
+                      <td className="py-3.5 px-3">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md inline-flex items-center gap-1 ${
+                          item.status === "Approved" ? "bg-[#E8F5E9] text-[#2E7D32]" : 
+                          item.status === "Rejected" ? "bg-red-50 text-red-700" :
+                          "bg-amber-100 text-amber-800"
+                        }`}>
+                          {item.status === "Approved" ? <CheckCircle size={10} /> : item.status === "Rejected" ? <XCircle size={10} /> : <HelpCircle size={10} />}
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {item.status === "Pending" && (
+                            <>
+                              <button
+                                onClick={() => handleApproveReturn(item.id)}
+                                disabled={actionId === item.id}
+                                className="bg-[#0D2619] hover:bg-[#19402B] text-white px-2 py-1 rounded text-[10px] font-bold transition-colors disabled:opacity-50"
+                              >
+                                {actionId === item.id ? <Loader2 size={12} className="animate-spin" /> : "Approve"}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           )}
         </div>
 
         {/* ── 4. Pagination ── */}
-        <div className="flex items-center justify-center gap-1.5 pt-4 border-t border-[#F0ECE1]">
-          <button onClick={() => setPage(1)} className="w-7 h-7 rounded-lg bg-[#0D2619] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-            1
-          </button>
-          <button onClick={() => setPage(2)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            2
-          </button>
+        <div className="flex items-center justify-between pt-4 border-t border-[#F0ECE1]">
+          <span className="text-[11px] text-[#8C9890] font-medium">Page {page} of {totalPages}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page >= totalPages}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
 
       </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Loader2, Search, Download, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { orderApi } from "@/lib/api";
@@ -14,50 +15,15 @@ function MerchantOrdersContent() {
   const { isAuthenticated, role } = useAuthStore();
 
   const [orders, setOrders] = useState<Order[]>([]);
-  const [totalOrders, setTotalOrders] = useState(128);
-  const [deliveredCount, setDeliveredCount] = useState(84);
-  const [shippedCount, setShippedCount] = useState(26);
-  const [processingCount, setProcessingCount] = useState(18);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [deliveredCount, setDeliveredCount] = useState(0);
+  const [shippedCount, setShippedCount] = useState(0);
+  const [processingCount, setProcessingCount] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-
-  const demoOrders = [
-    {
-      id: 256,
-      order_number: "BNC256",
-      customer_name: "Priya Sharma",
-      price: 899,
-      status: "Delivered",
-      date: "May 20, 2025"
-    },
-    {
-      id: 255,
-      order_number: "BNC255",
-      customer_name: "Sneha Reddy",
-      price: 999,
-      status: "Shipped",
-      date: "May 19, 2025"
-    },
-    {
-      id: 254,
-      order_number: "BNC254",
-      customer_name: "Anjali Rao",
-      price: 1299,
-      status: "Processing",
-      date: "May 19, 2025"
-    },
-    {
-      id: 253,
-      order_number: "BNC253",
-      customer_name: "Kavitha M",
-      price: 399,
-      status: "Delivered",
-      date: "May 18, 2025"
-    }
-  ];
 
   useEffect(() => {
     if (!isAuthenticated || role !== "merchant") {
@@ -73,7 +39,7 @@ function MerchantOrdersContent() {
       const { data } = await orderApi.merchantOrders({ page, page_size: 20, status: filter || undefined });
       if (data && data.items && data.items.length > 0) {
         setOrders(data.items);
-        setTotalOrders(data.total > 0 ? data.total : 128);
+        setTotalOrders(data.total || data.items.length);
       } else {
         setOrders([]);
       }
@@ -84,16 +50,14 @@ function MerchantOrdersContent() {
     }
   };
 
-  const displayList = orders.length > 0
-    ? orders.map((o) => ({
-        id: o.id,
-        order_number: o.order_number || `BNC${o.id}`,
-        customer_name: (o as any).shipping_address?.full_name || (o as any).user?.full_name || "Customer",
-        price: o.total_amount,
-        status: o.status,
-        date: formatDate(o.created_at || "2025-05-20T10:00:00Z")
-      }))
-    : demoOrders;
+  const displayList = orders.map((o) => ({
+    id: o.id,
+    order_number: o.order_number || `BNC${o.id}`,
+    customer_name: (o as any).shipping_address?.full_name || (o as any).user?.full_name || "Customer",
+    price: o.total_amount,
+    status: o.status,
+    date: formatDate(o.created_at || new Date().toISOString())
+  }));
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -176,28 +140,30 @@ function MerchantOrdersContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F5F2EA]">
-                {displayList.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
-                    <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">#{item.order_number}</td>
-                    <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{item.customer_name}</td>
-                    <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{typeof item.price === "number" ? formatPrice(item.price) : item.price}</td>
-                    <td className="py-3.5 px-3">
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md capitalize inline-block ${getStatusBadge(item.status)}`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 text-[#556B5D] font-medium">{item.date}</td>
-                    <td className="py-3.5 px-3 text-right">
-                      <button
-                        onClick={() => toast.success(`Viewing Order #${item.order_number}`)}
-                        className="p-1 text-[#6B7A70] hover:text-[#0D2619] transition-colors"
-                        title="View Details"
-                      >
-                        <Eye size={15} />
-                      </button>
-                    </td>
+                {displayList.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-[#8C9890]">No orders found</td>
                   </tr>
-                ))}
+                ) : (
+                  displayList.map((item) => (
+                    <tr key={item.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
+                      <td className="py-3.5 px-3 font-bold text-[#1C2E24]">{item.order_number}</td>
+                      <td className="py-3.5 px-3 font-medium text-[#1C2E24]">{item.customer_name}</td>
+                      <td className="py-3.5 px-3 font-extrabold text-[#2E7D32]">{formatPrice(item.price)}</td>
+                      <td className="py-3.5 px-3">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md inline-block ${getStatusBadge(item.status)}`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-[#556B5D] font-medium">{item.date}</td>
+                      <td className="py-3.5 px-3 text-right">
+                        <Link href={`/merchant/orders/${item.id}`} className="p-1 text-[#6B7A70] hover:text-[#0D2619] transition-colors inline-block">
+                          <Eye size={15} />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           )}

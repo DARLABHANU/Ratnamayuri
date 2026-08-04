@@ -46,6 +46,9 @@ export default function MerchantProductsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [inactiveCount, setInactiveCount] = useState(0);
+  const [outOfStockCount, setOutOfStockCount] = useState(0);
   const [hasProfile, setHasProfile] = useState<boolean>(true);
 
   // Bulk Product Upload states & helpers
@@ -90,8 +93,20 @@ export default function MerchantProductsPage() {
   const loadProducts = async () => {
     try {
       const res = await productApi.myProducts({ page, page_size: 15 });
-      setProducts(res.data.items);
+      const items: Product[] = res.data.items;
+      setProducts(items);
       setTotal(res.data.total);
+      
+      // Calculate stats based on fetched items
+      let active = 0, inactive = 0, outOfStock = 0;
+      items.forEach(p => {
+        if (p.is_active) active++; else inactive++;
+        if (p.stock_quantity <= p.low_stock_threshold) outOfStock++;
+      });
+      setActiveCount(active);
+      setInactiveCount(inactive);
+      setOutOfStockCount(outOfStock);
+      
     } catch (err) {
       toast.error(getApiError(err));
     } finally {
@@ -327,19 +342,19 @@ export default function MerchantProductsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#F0ECE1]">
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Products</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{total > 0 ? total : 2458}</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{total}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Active Products</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#2E7D32]">2,301</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#2E7D32]">{activeCount}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Inactive Products</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#6B7A70]">157</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#6B7A70]">{inactiveCount}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Out of Stock</span>
-            <span className="font-cormorant text-3xl font-extrabold text-red-600">89</span>
+            <span className="font-cormorant text-3xl font-extrabold text-red-600">{outOfStockCount}</span>
           </div>
         </div>
 
@@ -457,6 +472,38 @@ export default function MerchantProductsPage() {
                   <div className="sm:col-span-2">
                     <label className="font-bold text-[#1C2E24] block mb-1">Tags / Material / Craft (comma separated)</label>
                     <input {...register("tags")} className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2.5 font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]" placeholder="e.g. Silk, Kanchipuram, Temple Gold, Kundan, Bridal, Cotton" />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="font-bold text-[#1C2E24] block mb-1">Product Images (up to 5)</label>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleFileUpload}
+                      disabled={isUploading || (watch("images")?.split(",")?.filter(Boolean)?.length || 0) >= 5}
+                      className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2 text-xs font-semibold text-[#1C2E24] focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0D2619] file:text-white hover:file:bg-[#19402B]" 
+                    />
+                    {isUploading && <p className="text-xs text-[#8C9890] mt-1 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Uploading image...</p>}
+                    
+                    {/* Display uploaded images thumbnails */}
+                    <div className="flex flex-wrap gap-3 mt-3">
+                      {watch("images")?.split(",").map(s => s.trim()).filter(Boolean).map((imgUrl, idx) => (
+                        <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-[#E5E0D5] shadow-xs">
+                          <img src={imgUrl} alt={`Uploaded ${idx}`} className="w-full h-full object-cover" />
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const imgs = watch("images")?.split(",").map(s => s.trim()).filter(Boolean) || [];
+                              imgs.splice(idx, 1);
+                              setValue("images", imgs.join(", "));
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-6">

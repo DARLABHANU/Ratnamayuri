@@ -116,8 +116,10 @@ export default function CustomerProfilePage() {
   const onProfileSubmit = async (data: ProfileForm) => {
     setIsSaving(true);
     try {
-      await authApi.me();
-      toast.success("Profile updated!");
+      await authApi.updateProfile({ full_name: data.full_name, phone: data.phone || undefined });
+      toast.success("Profile updated successfully!");
+      const r = await authApi.me();
+      setUser(r.data);
       setTab("main");
     } catch (err) {
       toast.error(getApiError(err));
@@ -175,7 +177,7 @@ export default function CustomerProfilePage() {
   };
 
   // User display name
-  const userName = user?.full_name ? user.full_name.split(" ")[0] : "Sneha";
+  const userName = user?.full_name ? user.full_name.split(" ")[0] : "there";
 
   return (
     <div className="min-h-screen bg-white md:bg-[#FAF8F3] text-[#1C2E24] font-garamond">

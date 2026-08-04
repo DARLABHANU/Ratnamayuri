@@ -26,47 +26,9 @@ function MerchantDashboardContent() {
   
   const [analytics, setAnalytics] = useState<any>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Demo fallback matching reference screenshot
-  const demoOrders = [
-    {
-      id: 256,
-      order_number: "BNC256",
-      name: "Gold Plated Chain",
-      date: "May 20, 2025",
-      price: "₹899",
-      status: "Delivered",
-      image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=150&auto=format&fit=crop"
-    },
-    {
-      id: 255,
-      order_number: "BNC255",
-      name: "Kundan Bangles Set",
-      date: "May 19, 2025",
-      price: "₹999",
-      status: "Shipped",
-      image: "https://images.unsplash.com/photo-1611591475140-be3a9f074d28?q=80&w=150&auto=format&fit=crop"
-    },
-    {
-      id: 254,
-      order_number: "BNC254",
-      name: "Silk Saree (Pink)",
-      date: "May 19, 2025",
-      price: "₹1,299",
-      status: "Processing",
-      image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=150&auto=format&fit=crop"
-    },
-    {
-      id: 253,
-      order_number: "BNC253",
-      name: "Pearl Drop Earrings",
-      date: "May 18, 2025",
-      price: "₹399",
-      status: "Delivered",
-      image: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=150&auto=format&fit=crop"
-    }
-  ];
 
   useEffect(() => {
     if (!isAuthenticated || role !== "merchant") {
@@ -79,13 +41,17 @@ function MerchantDashboardContent() {
   const loadDashboardData = async () => {
     setIsLoading(true);
     try {
-      const [analyticsRes, ordersRes] = await Promise.all([
+      const [analyticsRes, ordersRes, profileRes] = await Promise.all([
         merchantApi.analytics(30),
-        orderApi.merchantOrders({ page: 1, page_size: 5 })
+        orderApi.merchantOrders({ page: 1, page_size: 5 }),
+        merchantApi.getProfile().catch(() => ({ data: null }))
       ]);
       setAnalytics(analyticsRes.data);
       if (ordersRes.data.items && ordersRes.data.items.length > 0) {
         setRecentOrders(ordersRes.data.items);
+      }
+      if (profileRes.data) {
+        setProfile(profileRes.data);
       }
     } catch {
       // Demo fallback
@@ -140,7 +106,7 @@ function MerchantDashboardContent() {
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Sales</span>
             <span className="font-cormorant text-2xl font-extrabold text-[#1C2E24]">
-              {analytics?.total_revenue ? formatPrice(analytics.total_revenue) : "₹45,680"}
+              {formatPrice(analytics?.total_revenue || 0)}
             </span>
             <span className="text-[10px] font-bold text-[#2E7D32] block mt-1 flex items-center gap-0.5">
               <TrendingUp size={10} /> 18.5% <span className="text-[#8C9890] font-normal">vs last month</span>
@@ -156,7 +122,7 @@ function MerchantDashboardContent() {
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Orders</span>
             <span className="font-cormorant text-2xl font-extrabold text-[#1C2E24]">
-              {analytics?.total_orders || "128"}
+              {analytics?.total_orders || "0"}
             </span>
             <span className="text-[10px] font-bold text-[#2E7D32] block mt-1 flex items-center gap-0.5">
               <TrendingUp size={10} /> 12.5% <span className="text-[#8C9890] font-normal">vs last month</span>
@@ -172,7 +138,7 @@ function MerchantDashboardContent() {
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Earnings</span>
             <span className="font-cormorant text-2xl font-extrabold text-[#1C2E24]">
-              {analytics?.total_earnings ? formatPrice(analytics.total_earnings) : "₹32,450"}
+              {formatPrice(analytics?.total_earnings || 0)}
             </span>
             <span className="text-[10px] font-bold text-[#2E7D32] block mt-1 flex items-center gap-0.5">
               <TrendingUp size={10} /> 20.3% <span className="text-[#8C9890] font-normal">vs last month</span>
@@ -189,7 +155,7 @@ function MerchantDashboardContent() {
             <div>
               <span className="text-xs font-medium text-[#6B7A70] block mb-1">Available Balance</span>
               <span className="font-cormorant text-2xl font-extrabold text-[#1C2E24]">
-                {analytics?.available_payout ? formatPrice(analytics.available_payout) : "₹8,760"}
+                {formatPrice(analytics?.available_payout || 0)}
               </span>
             </div>
             <div className="w-10 h-10 rounded-2xl bg-[#FFF8E1] text-[#B85C00] flex items-center justify-center">
@@ -255,59 +221,74 @@ function MerchantDashboardContent() {
           </div>
 
           {/* Store Checklist */}
-          <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
-              <div>
-                <h3 className="font-cormorant text-lg font-bold text-[#1C2E24]">Store Checklist</h3>
-                <p className="text-[11px] text-[#8C9890]">Complete these to boost your store</p>
-              </div>
-              <span className="text-xs font-bold text-[#1C2E24]">3/5 Completed</span>
-            </div>
+          {(() => {
+            const hasLogo = !!profile?.logo_url;
+            const hasBank = !!profile?.bank_account;
+            const hasBanner = false; // Add actual banner check if banner exists
+            const hasProducts = (analytics?.total_products || 0) >= 5;
+            const isApproved = !!profile?.is_approved;
+            
+            const completedCount = [hasLogo, hasBank, hasBanner, hasProducts, isApproved].filter(Boolean).length;
+            
+            return (
+              <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
+                  <div>
+                    <h3 className="font-cormorant text-lg font-bold text-[#1C2E24]">Store Checklist</h3>
+                    <p className="text-[11px] text-[#8C9890]">Complete these to boost your store</p>
+                  </div>
+                  <span className="text-xs font-bold text-[#1C2E24]">{completedCount}/5 Completed</span>
+                </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-[11px]">
-              
-              <div className="flex items-center gap-1.5 p-2 bg-[#FAF8F3] rounded-xl border border-[#E5E0D5]">
-                <CheckSquare size={14} className="text-[#2E7D32] flex-shrink-0" />
-                <div>
-                  <span className="font-bold text-[#1C2E24] block">Store Profile</span>
-                  <span className="text-[10px] text-[#8C9890] block">Add your logo</span>
+                {/* Make it horizontal scrollable on mobile */}
+                <div className="overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
+                  <div className="flex sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-2 text-[11px] min-w-max sm:min-w-0">
+                    
+                    <div className="w-36 sm:w-auto flex-shrink-0 flex items-center gap-1.5 p-2 bg-[#FAF8F3] rounded-xl border border-[#E5E0D5]">
+                      {hasLogo ? <CheckSquare size={14} className="text-[#2E7D32] flex-shrink-0" /> : <Square size={14} className="text-[#8C9890] flex-shrink-0" />}
+                      <div>
+                        <span className="font-bold text-[#1C2E24] block truncate">Store Profile</span>
+                        <span className="text-[10px] text-[#8C9890] block truncate">Add your logo</span>
+                      </div>
+                    </div>
+
+                    <div className="w-36 sm:w-auto flex-shrink-0 flex items-center gap-1.5 p-2 bg-[#FAF8F3] rounded-xl border border-[#E5E0D5]">
+                      {hasProducts ? <CheckSquare size={14} className="text-[#2E7D32] flex-shrink-0" /> : <Square size={14} className="text-[#8C9890] flex-shrink-0" />}
+                      <div>
+                        <span className="font-bold text-[#1C2E24] block truncate">Add Products</span>
+                        <span className="text-[10px] text-[#8C9890] block truncate">Upload 5 items</span>
+                      </div>
+                    </div>
+
+                    <div className="w-36 sm:w-auto flex-shrink-0 flex items-center gap-1.5 p-2 bg-[#FAF8F3] rounded-xl border border-[#E5E0D5]">
+                      {hasBank ? <CheckSquare size={14} className="text-[#2E7D32] flex-shrink-0" /> : <Square size={14} className="text-[#8C9890] flex-shrink-0" />}
+                      <div>
+                        <span className="font-bold text-[#1C2E24] block truncate">Bank Details</span>
+                        <span className="text-[10px] text-[#8C9890] block truncate">Add bank acc</span>
+                      </div>
+                    </div>
+
+                    <div className="w-36 sm:w-auto flex-shrink-0 flex items-center gap-1.5 p-2 bg-[#FAF8F3] rounded-xl border border-[#E5E0D5]">
+                      {hasBanner ? <CheckSquare size={14} className="text-[#2E7D32] flex-shrink-0" /> : <Square size={14} className="text-[#8C9890] flex-shrink-0" />}
+                      <div>
+                        <span className="font-bold text-[#1C2E24] block truncate">Store Banner</span>
+                        <span className="text-[10px] text-[#8C9890] block truncate">Set banner image</span>
+                      </div>
+                    </div>
+
+                    <div className="w-36 sm:w-auto flex-shrink-0 flex items-center gap-1.5 p-2 bg-[#FAF8F3] rounded-xl border border-[#E5E0D5]">
+                      {isApproved ? <CheckSquare size={14} className="text-[#2E7D32] flex-shrink-0" /> : <Square size={14} className="text-[#8C9890] flex-shrink-0" />}
+                      <div>
+                        <span className="font-bold text-[#1C2E24] block truncate">Verify Account</span>
+                        <span className="text-[10px] text-[#8C9890] block truncate">Verify identity</span>
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
               </div>
-
-              <div className="flex items-center gap-1.5 p-2 bg-[#FAF8F3] rounded-xl border border-[#E5E0D5]">
-                <CheckSquare size={14} className="text-[#2E7D32] flex-shrink-0" />
-                <div>
-                  <span className="font-bold text-[#1C2E24] block">Add Products</span>
-                  <span className="text-[10px] text-[#8C9890] block">Upload 5 items</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 p-2 bg-[#FAF8F3] rounded-xl border border-[#E5E0D5]">
-                <CheckSquare size={14} className="text-[#2E7D32] flex-shrink-0" />
-                <div>
-                  <span className="font-bold text-[#1C2E24] block">Bank Details</span>
-                  <span className="text-[10px] text-[#8C9890] block">Add bank acc</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 p-2 bg-[#FAF8F3] rounded-xl border border-[#E5E0D5]">
-                <Square size={14} className="text-[#8C9890] flex-shrink-0" />
-                <div>
-                  <span className="font-bold text-[#1C2E24] block">Store Banner</span>
-                  <span className="text-[10px] text-[#8C9890] block">Set banner image</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 p-2 bg-[#FAF8F3] rounded-xl border border-[#E5E0D5]">
-                <Square size={14} className="text-[#8C9890] flex-shrink-0" />
-                <div>
-                  <span className="font-bold text-[#1C2E24] block">Verify Account</span>
-                  <span className="text-[10px] text-[#8C9890] block">Verify identity</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
+            );
+          })()}
 
         </div>
 
@@ -324,36 +305,37 @@ function MerchantDashboardContent() {
           </div>
 
           <div className="space-y-3">
-            {demoOrders.map((ord) => (
-              <div
-                key={ord.id}
-                onClick={() => router.push(`/merchant/orders?id=${ord.id}`)}
-                className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-[#FAF8F3] transition-colors cursor-pointer border border-[#F5F2EA]"
-              >
-                <div className="flex items-center gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={ord.image}
-                    alt={ord.name}
-                    className="w-10 h-10 rounded-xl object-cover border border-[#E5E0D5]"
-                  />
-                  <div>
-                    <span className="text-[11px] font-bold text-[#1C2E24] block leading-tight">Order #{ord.order_number}</span>
-                    <span className="text-[11px] text-[#556B5D] block truncate max-w-[130px]">{ord.name}</span>
-                    <span className="text-[10px] text-[#8C9890]">{ord.date}</span>
+            {recentOrders.length === 0 ? (
+              <div className="text-center py-6 text-xs text-[#8C9890]">No recent orders</div>
+            ) : (
+              recentOrders.map((ord) => (
+                <div
+                  key={ord.id}
+                  onClick={() => router.push(`/merchant/orders?id=${ord.id}`)}
+                  className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-[#FAF8F3] transition-colors cursor-pointer border border-[#F5F2EA]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#FAF8F3] flex items-center justify-center border border-[#E5E0D5] text-[#8C9890]">
+                      <Package size={20} />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-[#1C2E24] block leading-tight">Order #{ord.order_number || `BNC${ord.id}`}</span>
+                      <span className="text-[11px] text-[#556B5D] block truncate max-w-[130px]">{(ord.user as any)?.full_name || "Customer"}</span>
+                      <span className="text-[10px] text-[#8C9890]">{new Date(ord.created_at || Date.now()).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="text-right space-y-1">
-                  <span className="font-bold text-xs text-[#1C2E24] block">{ord.price}</span>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md inline-block ${getStatusBadge(ord.status)}`}>
-                    {ord.status}
-                  </span>
-                </div>
+                  <div className="text-right space-y-1">
+                    <span className="font-bold text-xs text-[#1C2E24] block">{formatPrice(ord.total_amount)}</span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md inline-block ${getStatusBadge(ord.status)}`}>
+                      {ord.status}
+                    </span>
+                  </div>
 
-                <ChevronRight size={14} className="text-[#8C9890] ml-1" />
-              </div>
-            ))}
+                  <ChevronRight size={14} className="text-[#8C9890] ml-1" />
+                </div>
+              ))
+            )}
           </div>
         </div>
 

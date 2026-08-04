@@ -8,6 +8,7 @@ const supportRouter = require('./support');
 const adminRouter = require('./admin');
 const wishlistRouter = require('./wishlist');
 const promoterRouter = require('./promoter');
+const notificationsRouter = require('./notifications');
 
 const config = require('../config');
 const router = express.Router();
@@ -99,6 +100,7 @@ router.use('/support', supportRouter);
 router.use('/admin', adminRouter);
 router.use('/wishlist', wishlistRouter);
 router.use('/promoter', promoterRouter);
+router.use('/notifications', notificationsRouter);
 
 // Cart and Orders share the same underlying routers but have different base paths
 router.use('/cart', ordersRouter.cartRouter);

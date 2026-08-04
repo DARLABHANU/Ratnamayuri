@@ -22,8 +22,9 @@ export default function ProductCard({ product }: Props) {
   const wishlisted = isWishlisted(product.id);
 
   // Compute discount percentage
-  const discount = product.compare_price
-    ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100)
+  const origPrice = product.compare_price || (product as any).original_price || 0;
+  const discount = origPrice > product.price
+    ? Math.round(((origPrice - product.price) / origPrice) * 100)
     : 0;
 
   // Swatches for sarees and bridal
@@ -128,9 +129,9 @@ export default function ProductCard({ product }: Props) {
             {/* Price section */}
             <div className="flex items-baseline gap-2 mt-1">
               <span className="font-bold text-sm text-[#1C2E24]">{formatPrice(product.price)}</span>
-              {product.compare_price && product.compare_price > product.price && (
+              {origPrice > product.price && (
                 <>
-                  <span className="text-xs text-[#8C9890] line-through">{formatPrice(product.compare_price)}</span>
+                  <span className="text-xs text-[#8C9890] line-through">{formatPrice(origPrice)}</span>
                   <span className="text-[10px] font-bold text-emerald-700">({discount}% OFF)</span>
                 </>
               )}

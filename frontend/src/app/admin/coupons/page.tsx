@@ -13,62 +13,15 @@ function CouponsContent() {
   const { isAuthenticated, role } = useAuthStore();
 
   const [coupons, setCoupons] = useState<any[]>([]);
-  const [totalCoupons, setTotalCoupons] = useState(48);
-  const [activeCoupons, setActiveCoupons] = useState(42);
-  const [promoterCoupons, setPromoterCoupons] = useState(35);
-  const [platformCoupons, setPlatformCoupons] = useState(13);
+  const [totalCoupons, setTotalCoupons] = useState(0);
+  const [activeCoupons, setActiveCoupons] = useState(0);
+  const [promoterCoupons, setPromoterCoupons] = useState(0);
+  const [platformCoupons, setPlatformCoupons] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-
-  const demoCoupons = [
-    {
-      id: 1,
-      code: "PROMO104",
-      description: "Affiliate Promoter coupon for Ravi Kumar",
-      discount_value: "₹199 Off",
-      promoter_commission: "₹100",
-      platform_profit: "₹30",
-      usage_count: 154,
-      is_active: true,
-      created_at: "30 May, 2025"
-    },
-    {
-      id: 2,
-      code: "SNEHA200",
-      description: "Affiliate Promoter coupon for Sneha Reddy",
-      discount_value: "₹199 Off",
-      promoter_commission: "₹100",
-      platform_profit: "₹30",
-      usage_count: 241,
-      is_active: true,
-      created_at: "28 May, 2025"
-    },
-    {
-      id: 3,
-      code: "FESTIVE10",
-      description: "Festive Season 10% Discount",
-      discount_value: "10% Off",
-      promoter_commission: "N/A",
-      platform_profit: "N/A",
-      usage_count: 512,
-      is_active: true,
-      created_at: "20 May, 2025"
-    },
-    {
-      id: 4,
-      code: "WELCOME50",
-      description: "New Customer Signup ₹50 Flat Off",
-      discount_value: "₹50 Off",
-      promoter_commission: "N/A",
-      platform_profit: "N/A",
-      usage_count: 890,
-      is_active: true,
-      created_at: "15 May, 2025"
-    }
-  ];
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
@@ -82,8 +35,20 @@ function CouponsContent() {
     setIsLoading(true);
     try {
       const { data } = await adminApi.coupons();
-      if (data && data.items && data.items.length > 0) {
+      if (data && data.items) {
         setCoupons(data.items);
+        setTotalCoupons(data.total || 0);
+        let active = 0;
+        let promoterCount = 0;
+        let platformCount = 0;
+        data.items.forEach((c: any) => {
+          if (c.is_active) active++;
+          if (c.promoter_commission) promoterCount++;
+          else platformCount++;
+        });
+        setActiveCoupons(active);
+        setPromoterCoupons(promoterCount);
+        setPlatformCoupons(platformCount);
       } else {
         setCoupons([]);
       }
@@ -114,19 +79,17 @@ function CouponsContent() {
     }
   };
 
-  const displayList = coupons.length > 0
-    ? coupons.map((c) => ({
-        id: c.id,
-        code: c.code,
-        description: c.description || "General Coupon",
-        discount_value: c.discount_type === "percentage" ? `${c.discount_value}% Off` : formatPrice(c.discount_value),
-        promoter_commission: c.promoter_commission ? formatPrice(c.promoter_commission) : "N/A",
-        platform_profit: c.platform_profit ? formatPrice(c.platform_profit) : "N/A",
-        usage_count: c.times_used || 0,
-        is_active: c.is_active,
-        created_at: formatDate(c.created_at || "2025-05-30T10:00:00Z")
-      }))
-    : demoCoupons;
+  const displayList = coupons.map((c) => ({
+    id: c.id,
+    code: c.code,
+    description: c.description || "General Coupon",
+    discount_value: c.discount_type === "percentage" ? `${c.discount_value}% Off` : formatPrice(c.discount_value),
+    promoter_commission: c.promoter_commission ? formatPrice(c.promoter_commission) : "N/A",
+    platform_profit: c.platform_profit ? formatPrice(c.platform_profit) : "N/A",
+    usage_count: c.times_used || 0,
+    is_active: c.is_active,
+    created_at: formatDate(c.created_at || "2025-05-30T10:00:00Z")
+  }));
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">

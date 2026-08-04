@@ -6,6 +6,7 @@ import { Loader2, Search, Download, DollarSign, Percent, ChevronLeft, ChevronRig
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/authStore";
 import { formatPrice } from "@/lib/utils";
+import { adminApi } from "@/lib/api";
 
 function CommissionsContent() {
   const router = useRouter();
@@ -15,64 +16,48 @@ function CommissionsContent() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const demoCommissions = [
-    {
-      id: 1,
-      type: "Platform Margin",
-      order_id: "#ORD12568",
-      source: "Sowmya Collections",
-      sale_amount: "₹699",
-      commission_rate: "₹299 Fixed Margin",
-      earned_amount: "₹299",
-      date: "30 May, 2025"
-    },
-    {
-      id: 2,
-      type: "Promoter Fee",
-      order_id: "#ORD12567",
-      source: "Ravi Kumar (PROMO104)",
-      sale_amount: "₹999",
-      commission_rate: "₹30 Platform Profit",
-      earned_amount: "₹30",
-      date: "30 May, 2025"
-    },
-    {
-      id: 3,
-      type: "Merchant Commission",
-      order_id: "#ORD12566",
-      source: "Lakshmi Jewels",
-      sale_amount: "₹1,299",
-      commission_rate: "10%",
-      earned_amount: "₹129.90",
-      date: "30 May, 2025"
-    },
-    {
-      id: 4,
-      type: "Platform Margin",
-      order_id: "#ORD12565",
-      source: "Heritage Handmades",
-      sale_amount: "₹399",
-      commission_rate: "₹299 Fixed Margin",
-      earned_amount: "₹299",
-      date: "29 May, 2025"
-    },
-    {
-      id: 5,
-      type: "Promoter Fee",
-      order_id: "#ORD12564",
-      source: "Sneha Reddy (SNEHA200)",
-      sale_amount: "₹1,499",
-      commission_rate: "₹30 Platform Profit",
-      earned_amount: "₹30",
-      date: "29 May, 2025"
+  const [commissions, setCommissions] = useState<any[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [stats, setStats] = useState({
+    total_platform_earnings: 0,
+    total_seller_commission: 0,
+    total_promoter_profit: 0,
+    pending_payouts: 0
+  });
+
+  const loadCommissions = async () => {
+    setIsLoading(true);
+    try {
+      const params: any = { page, page_size: 20 };
+      if (search) params.search = search;
+      
+      const { data } = await adminApi.commissions(params);
+      if (data && data.items) {
+        setCommissions(data.items);
+        setTotalPages(data.pages || 1);
+        setStats({
+          total_platform_earnings: data.total_platform_earnings || 0,
+          total_seller_commission: data.total_seller_commission || 0,
+          total_promoter_profit: data.total_promoter_profit || 0,
+          pending_payouts: data.pending_payouts || 0
+        });
+      } else {
+        setCommissions([]);
+      }
+    } catch {
+      setCommissions([]);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
       router.push("/auth/login");
+      return;
     }
-  }, [isAuthenticated, role]);
+    loadCommissions();
+  }, [isAuthenticated, role, page]);
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
@@ -86,19 +71,19 @@ function CommissionsContent() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#F0ECE1]">
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Platform Earnings</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">₹2,45,780</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{formatPrice(stats.total_platform_earnings)}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Seller Commission Margin</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">₹1,85,420</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{formatPrice(stats.total_seller_commission)}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Promoter Profit Pool</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">₹60,360</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{formatPrice(stats.total_promoter_profit)}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Pending Payout Settlements</span>
-            <span className="font-cormorant text-3xl font-[#1C2E24] text-[#B85C00] font-extrabold">₹38,500</span>
+            <span className="font-cormorant text-3xl font-[#1C2E24] text-[#B85C00] font-extrabold">{formatPrice(stats.pending_payouts)}</span>
           </div>
         </div>
 
@@ -144,41 +129,51 @@ function CommissionsContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F5F2EA]">
-                {demoCommissions.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
-                    <td className="py-3.5 px-3">
-                      <span className="font-bold text-[#1C2E24] bg-[#FAF8F3] border border-[#E5E0D5] px-2.5 py-1 rounded-md text-[11px]">
-                        {item.type}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{item.order_id}</td>
-                    <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{item.source}</td>
-                    <td className="py-3.5 px-3 font-bold text-[#1C2E24]">{item.sale_amount}</td>
-                    <td className="py-3.5 px-3 text-[#556B5D] font-medium">{item.commission_rate}</td>
-                    <td className="py-3.5 px-3 font-extrabold text-[#2E7D32]">{item.earned_amount}</td>
-                    <td className="py-3.5 px-3 text-[#556B5D] font-medium">{item.date}</td>
+                {commissions.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-[#8C9890] text-xs font-medium">No commissions found.</td>
                   </tr>
-                ))}
+                ) : (
+                  commissions.map((item) => (
+                    <tr key={item.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
+                      <td className="py-3.5 px-3">
+                        <span className="font-bold text-[#1C2E24] bg-[#FAF8F3] border border-[#E5E0D5] px-2.5 py-1 rounded-md text-[11px]">
+                          {item.type || "Margin"}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">#{item.order?.order_number || `ORD${item.order_id}`}</td>
+                      <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{item.source || "System"}</td>
+                      <td className="py-3.5 px-3 font-bold text-[#1C2E24]">{formatPrice(item.sale_amount || 0)}</td>
+                      <td className="py-3.5 px-3 text-[#556B5D] font-medium">{item.commission_rate || "N/A"}</td>
+                      <td className="py-3.5 px-3 font-extrabold text-[#2E7D32]">{formatPrice(item.amount || 0)}</td>
+                      <td className="py-3.5 px-3 text-[#556B5D] font-medium">{new Date(item.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           )}
         </div>
 
         {/* ── 4. Pagination Dock ── */}
-        <div className="flex items-center justify-center gap-1.5 pt-4 border-t border-[#F0ECE1]">
-          <button onClick={() => setPage(1)} className="w-7 h-7 rounded-lg bg-[#0D2619] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-            1
-          </button>
-          <button onClick={() => setPage(2)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            2
-          </button>
-          <button onClick={() => setPage(3)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            3
-          </button>
-          <span className="text-xs text-[#8C9890] px-1">...</span>
-          <button onClick={() => setPage(20)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            20
-          </button>
+        <div className="flex items-center justify-between pt-4 border-t border-[#F0ECE1]">
+          <span className="text-[11px] text-[#8C9890] font-medium">Page {page} of {totalPages}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page >= totalPages}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
 
       </div>

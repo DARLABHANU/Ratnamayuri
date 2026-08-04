@@ -13,68 +13,15 @@ function PromotersContent() {
   const { isAuthenticated, role } = useAuthStore();
 
   const [promoters, setPromoters] = useState<any[]>([]);
-  const [totalPromoters, setTotalPromoters] = useState(1256);
-  const [activePromoters, setActivePromoters] = useState(1120);
-  const [totalCommission, setTotalCommission] = useState("₹2,45,680");
-  const [totalSales, setTotalSales] = useState("₹14,85,900");
+  const [totalPromoters, setTotalPromoters] = useState(0);
+  const [activePromoters, setActivePromoters] = useState(0);
+  const [totalCommission, setTotalCommission] = useState(0);
+  const [totalSales, setTotalSales] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-
-  // Demo promoters data matching admin dashboard theme
-  const demoPromoters = [
-    {
-      id: 1,
-      name: "Ravi Kumar",
-      email: "ravi@gmail.com",
-      coupon_code: "PROMO104",
-      commission_earned: "₹15,400",
-      total_sales: "₹92,400",
-      orders_count: 154,
-      joined_on: "30 May, 2025"
-    },
-    {
-      id: 2,
-      name: "Sneha Reddy",
-      email: "sneha.reddy@gmail.com",
-      coupon_code: "SNEHA200",
-      commission_earned: "₹24,100",
-      total_sales: "₹1,44,600",
-      orders_count: 241,
-      joined_on: "28 May, 2025"
-    },
-    {
-      id: 3,
-      name: "Anil Varma",
-      email: "anil.v@gmail.com",
-      coupon_code: "ANIL100",
-      commission_earned: "₹18,500",
-      total_sales: "₹1,11,000",
-      orders_count: 185,
-      joined_on: "25 May, 2025"
-    },
-    {
-      id: 4,
-      name: "Kavitha Sharma",
-      email: "kavitha@gmail.com",
-      coupon_code: "KAVITHA50",
-      commission_earned: "₹12,300",
-      total_sales: "₹73,800",
-      orders_count: 123,
-      joined_on: "20 May, 2025"
-    },
-    {
-      id: 5,
-      name: "Vikram Rao",
-      email: "vikram@gmail.com",
-      coupon_code: "VIKRAM75",
-      commission_earned: "₹9,800",
-      total_sales: "₹58,800",
-      orders_count: 98,
-      joined_on: "18 May, 2025"
-    }
-  ];
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
@@ -87,10 +34,25 @@ function PromotersContent() {
   const loadPromoters = async () => {
     setIsLoading(true);
     try {
-      const { data } = await adminApi.users({ page, page_size: 20, role: "promoter" });
-      if (data && data.items && data.items.length > 0) {
+      const params: any = { page, page_size: 20, role: "promoter" };
+      if (search) params.search = search;
+      
+      const { data } = await adminApi.users(params);
+      if (data && data.items) {
         setPromoters(data.items);
-        setTotalPromoters(data.total > 0 ? data.total : 1256);
+        setTotalPromoters(data.total || 0);
+        setTotalPages(data.pages || 1);
+        setActivePromoters(data.items.filter((u: any) => u.is_active).length);
+        
+        // Use aggregated stats if API provides them in future, otherwise calculate from list
+        let comm = 0;
+        let sales = 0;
+        data.items.forEach((p: any) => {
+          comm += p.total_commission || 0;
+          sales += (p.total_commission || 0) * 6; // Temporary approximation
+        });
+        setTotalCommission(comm);
+        setTotalSales(sales);
       } else {
         setPromoters([]);
       }
@@ -105,18 +67,16 @@ function PromotersContent() {
     toast.success("Exporting Promoters list CSV...");
   };
 
-  const displayList = promoters.length > 0
-    ? promoters.map((p) => ({
-        id: p.id,
-        name: p.full_name,
-        email: p.email,
-        coupon_code: `PROMO${p.id}`,
-        commission_earned: formatPrice(p.total_commission || 12400),
-        total_sales: formatPrice((p.total_commission || 12400) * 6),
-        orders_count: Math.round((p.total_commission || 12400) / 100),
-        joined_on: formatDate(p.created_at || "2025-05-30T10:00:00Z")
-      }))
-    : demoPromoters;
+  const displayList = promoters.map((p) => ({
+    id: p.id,
+    name: p.full_name,
+    email: p.email,
+    coupon_code: `PROMO${p.id}`,
+    commission_earned: formatPrice(p.total_commission || 0),
+    total_sales: formatPrice((p.total_commission || 0) * 6),
+    orders_count: Math.round((p.total_commission || 0) / 100),
+    joined_on: formatDate(p.created_at || new Date().toISOString())
+  }));
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
@@ -138,11 +98,11 @@ function PromotersContent() {
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Commission Paid</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{totalCommission}</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{formatPrice(totalCommission)}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Promoter Sales Volume</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{totalSales}</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{formatPrice(totalSales)}</span>
           </div>
         </div>
 
@@ -214,39 +174,24 @@ function PromotersContent() {
         </div>
 
         {/* ── 4. Pagination Dock ── */}
-        <div className="flex items-center justify-center gap-1.5 pt-4 border-t border-[#F0ECE1]">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#556B5D] hover:bg-[#FAF8F3] disabled:opacity-40"
-          >
-            <ChevronLeft size={16} />
-          </button>
-
-          <button className="w-7 h-7 rounded-lg bg-[#0D2619] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-            1
-          </button>
-
-          <button onClick={() => setPage(2)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            2
-          </button>
-
-          <button onClick={() => setPage(3)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            3
-          </button>
-
-          <span className="text-xs text-[#8C9890] px-1">...</span>
-
-          <button onClick={() => setPage(25)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            25
-          </button>
-
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#556B5D] hover:bg-[#FAF8F3]"
-          >
-            <ChevronRight size={16} />
-          </button>
+        <div className="flex items-center justify-between pt-4 border-t border-[#F0ECE1]">
+          <span className="text-[11px] text-[#8C9890] font-medium">Page {page} of {totalPages}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page >= totalPages}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
 
       </div>

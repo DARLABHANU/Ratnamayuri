@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
 import { Loader2, Store, Save, CheckCircle2, Clock } from "lucide-react";
-import { merchantApi } from "@/lib/api";
+import { merchantApi, productApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { MerchantProfile } from "@/types";
 import { getApiError } from "@/lib/utils";
@@ -18,6 +18,7 @@ const schema = z.object({
   gstin: z.string().optional(),
   bank_account: z.string().optional(),
   ifsc_code: z.string().optional(),
+  logo_url: z.string().optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -28,8 +29,9 @@ export default function MerchantProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
@@ -40,6 +42,33 @@ export default function MerchantProfilePage() {
       .catch(() => setIsCreating(true))
       .finally(() => setIsLoading(false));
   }, [isAuthenticated, role]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64 = (reader.result as string).split(",")[1];
+          const res = await productApi.upload({ filename: file.name, base64, folder: "merchants" });
+          setValue("logo_url", res.data.url);
+          toast.success("Logo uploaded successfully!");
+        } catch(err) {
+          toast.error(getApiError(err));
+        } finally {
+          setIsUploading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch(err) {
+      toast.error(getApiError(err));
+      setIsUploading(false);
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     setIsSaving(true);
@@ -92,16 +121,27 @@ export default function MerchantProfilePage() {
       {/* Profile Form */}
       <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-6">
         <div className="flex items-center gap-3 border-b border-[#F0ECE1] pb-4">
-          <div className="w-10 h-10 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D5] flex items-center justify-center">
-            <Store size={18} className="text-[#0D2619]" />
+          <div className="w-16 h-16 rounded-2xl bg-[#FAF8F3] border border-[#E5E0D5] flex items-center justify-center overflow-hidden flex-shrink-0">
+            {watch("logo_url") ? (
+              <img src={watch("logo_url")} alt="Store Logo" className="w-full h-full object-cover" />
+            ) : (
+              <Store size={24} className="text-[#0D2619]" />
+            )}
           </div>
-          <div>
+          <div className="flex-1">
             <h3 className="font-cormorant text-xl font-bold text-[#1C2E24]">
               {isCreating ? "Create Your Store" : "Store Information"}
             </h3>
-            <p className="text-[11px] text-[#8C9890]">
-              {isCreating ? "Set up your merchant profile to start selling" : "Update your store details and bank information"}
+            <p className="text-xs text-[#8C9890] mt-0.5">
+              {isCreating ? "Fill out your business details to get started" : "Manage your public profile and payout settings"}
             </p>
+            
+            <div className="mt-2">
+              <label className="cursor-pointer inline-flex items-center gap-1.5 bg-[#FAF8F3] border border-[#E5E0D5] px-3 py-1.5 rounded-lg text-[11px] font-bold text-[#1C2E24] hover:bg-[#E5E0D5] transition-colors">
+                {isUploading ? <Loader2 size={12} className="animate-spin" /> : "Upload Logo"}
+                <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={isUploading} className="hidden" />
+              </label>
+            </div>
           </div>
         </div>
 

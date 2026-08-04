@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -24,6 +25,7 @@ import {
   LogOut
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { merchantApi, notificationApi } from "@/lib/api";
 
 interface NavItem {
   href: string;
@@ -49,8 +51,41 @@ const NAV_ITEMS: NavItem[] = [
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout, user } = useAuthStore();
+  const { logout, user, isAuthenticated, role } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [merchantProfile, setMerchantProfile] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && role === "merchant") {
+      merchantApi.getProfile().then(res => setMerchantProfile(res.data)).catch(() => {});
+      fetchNotifications();
+      // Optional: Poll every minute for demo purposes
+      const interval = setInterval(fetchNotifications, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, role]);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await notificationApi.getNotifications();
+      setNotifications(res.data.notifications || []);
+      setUnreadCount(res.data.unreadCount || 0);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await notificationApi.markAsRead(id);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[#0D2619] text-emerald-100 p-4 font-garamond justify-between">
@@ -176,23 +211,70 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
           <div className="flex items-center gap-4">
             
             {/* Bell notification */}
-            <div className="relative cursor-pointer text-[#1C2E24] hover:text-[#0D2619]">
-              <Bell size={18} />
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-extrabold flex items-center justify-center">
-                3
-              </span>
+            <div className="relative">
+              <div 
+                className="cursor-pointer text-[#1C2E24] hover:text-[#0D2619]" 
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-extrabold flex items-center justify-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </div>
+              
+              {/* Notification Dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-[#E5E0D5] overflow-hidden z-50">
+                  <div className="p-3 border-b border-[#F0ECE1] flex justify-between items-center">
+                    <h4 className="font-bold text-sm text-[#1C2E24]">Notifications</h4>
+                    {unreadCount > 0 && (
+                      <button 
+                        onClick={() => handleMarkAsRead('all')} 
+                        className="text-[10px] text-[#2E7D32] hover:underline"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-[#8C9890]">No notifications yet</div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div 
+                          key={notif._id || notif.id} 
+                          className={`p-3 border-b border-[#F0ECE1] last:border-0 hover:bg-[#FAF8F3] transition-colors cursor-pointer ${!notif.is_read ? 'bg-[#F4F9F5]' : ''}`}
+                          onClick={() => {
+                            if (!notif.is_read) handleMarkAsRead(notif._id || notif.id);
+                          }}
+                        >
+                          <p className="text-xs font-bold text-[#1C2E24]">{notif.title}</p>
+                          <p className="text-[11px] text-[#6B7A70] mt-0.5 line-clamp-2">{notif.message}</p>
+                          <p className="text-[9px] text-[#8C9890] mt-1">
+                            {new Date(notif.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Seller profile pill */}
-            <div className="flex items-center gap-2 pl-2 border-l border-[#F0ECE1]">
+            <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-[#F0ECE1]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={(user as any)?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop"}
-                alt="Seller Avatar"
+                src={merchantProfile?.logo_url || (user as any)?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop"}
+                alt="Store Logo"
                 className="w-8 h-8 rounded-full object-cover border border-[#E5E0D5]"
               />
               <div className="hidden sm:block text-left">
-                <p className="text-xs font-bold text-[#1C2E24] leading-none">{user?.full_name?.split(" ")[0] || "Megathavi"}</p>
+                <p className="text-xs font-bold text-[#1C2E24] leading-none truncate max-w-[100px]">
+                  {merchantProfile?.business_name || user?.full_name?.split(" ")[0] || "Store"}
+                </p>
                 <p className="text-[10px] text-[#8C9890] flex items-center gap-0.5">
                   Seller <ChevronDown size={10} />
                 </p>
@@ -213,9 +295,46 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full pb-20 lg:pb-8">
           {children}
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E0D5] lg:hidden z-40 pb-safe">
+          <div className="flex items-center justify-around px-2 py-2">
+            {[
+              { href: "/merchant/dashboard", label: "Dashboard", icon: LayoutDashboard },
+              { href: "/merchant/products", label: "Products", icon: Package },
+              { href: "/merchant/orders", label: "Orders", icon: ShoppingBag, badge: NAV_ITEMS.find(n => n.href === "/merchant/orders")?.badge },
+              { href: "/merchant/analytics", label: "Earnings", icon: CircleDollarSign },
+            ].map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href || (item.href !== "/merchant/dashboard" && pathname.startsWith(item.href));
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex flex-col items-center justify-center p-2 relative ${
+                    isActive ? "text-[#0D2619]" : "text-[#8C9890] hover:text-[#556B5D]"
+                  }`}
+                >
+                  <div className="relative">
+                    <Icon size={20} className={isActive ? "fill-[#0D2619]/10" : ""} />
+                    {item.badge && (
+                      <span className="absolute -top-1.5 -right-2 w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-extrabold flex items-center justify-center">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-[10px] mt-1 font-medium ${isActive ? "font-bold" : ""}`}>
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
 
       </div>
 

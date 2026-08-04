@@ -14,54 +14,16 @@ function SellersContent() {
   const { isAuthenticated, role } = useAuthStore();
 
   const [merchants, setMerchants] = useState<any[]>([]);
-  const [totalSellers, setTotalSellers] = useState(732);
-  const [activeSellers, setActiveSellers] = useState(687);
-  const [inactiveSellers, setInactiveSellers] = useState(45);
-  const [pendingApproval, setPendingApproval] = useState(12);
+  const [totalSellers, setTotalSellers] = useState(0);
+  const [activeSellers, setActiveSellers] = useState(0);
+  const [inactiveSellers, setInactiveSellers] = useState(0);
+  const [pendingApproval, setPendingApproval] = useState(0);
   
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(1);
-
-  // Demo sellers matching reference screenshot if DB data is pending/empty
-  const demoSellers = [
-    {
-      id: 1,
-      seller_name: "Sowmya",
-      store_name: "Sowmya Collections",
-      sales: "₹2,85,610",
-      joined_on: "30 May, 2025"
-    },
-    {
-      id: 2,
-      seller_name: "Lakshmi",
-      store_name: "Lakshmi Jewels",
-      sales: "₹2,45,320",
-      joined_on: "29 May, 2025"
-    },
-    {
-      id: 3,
-      seller_name: "Heritage",
-      store_name: "Heritage Handmades",
-      sales: "₹1,95,450",
-      joined_on: "29 May, 2025"
-    },
-    {
-      id: 4,
-      seller_name: "Divine",
-      store_name: "Divine Ornaments",
-      sales: "₹95,250",
-      joined_on: "28 May, 2025"
-    },
-    {
-      id: 5,
-      seller_name: "Radha",
-      store_name: "Traditional Weaves",
-      sales: "₹1,35,680",
-      joined_on: "28 May, 2025"
-    }
-  ];
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
@@ -75,11 +37,29 @@ function SellersContent() {
     setIsLoading(true);
     try {
       const { data } = await adminApi.merchants({ page, page_size: 20 });
-      if (data && data.items && data.items.length > 0) {
+      if (data && data.items) {
         setMerchants(data.items);
-        setTotalSellers(data.total > 0 ? data.total : 732);
-        setActiveSellers(Math.round((data.total > 0 ? data.total : 732) * 0.938));
-        setInactiveSellers(Math.round((data.total > 0 ? data.total : 732) * 0.062));
+        setTotalSellers(data.total);
+        setTotalPages(data.pages || 1);
+        
+        let active = 0;
+        let inactive = 0;
+        let pending = 0;
+        
+        data.items.forEach((m: any) => {
+          if (!m.is_approved) {
+            pending++;
+          }
+          if (m.user?.is_active) {
+            active++;
+          } else {
+            inactive++;
+          }
+        });
+        
+        setActiveSellers(active);
+        setInactiveSellers(inactive);
+        setPendingApproval(pending);
       } else {
         setMerchants([]);
       }
@@ -94,15 +74,18 @@ function SellersContent() {
     toast.success("Exporting Sellers list CSV...");
   };
 
-  const displayList = merchants.length > 0
-    ? merchants.map((m) => ({
-        id: m.id,
-        seller_name: m.user?.full_name || `Seller #${m.id}`,
-        store_name: m.business_name || "Jewellery Store",
-        sales: formatPrice(m.total_sales || 185000),
-        joined_on: formatDate(m.created_at || "2025-05-30T10:00:00Z")
-      }))
-    : demoSellers;
+  const displayList = merchants
+    .filter(m => 
+      (m.business_name || "").toLowerCase().includes(search.toLowerCase()) || 
+      (m.user?.full_name || "").toLowerCase().includes(search.toLowerCase())
+    )
+    .map((m) => ({
+      id: m.id,
+      seller_name: m.user?.full_name || `Seller #${m.id}`,
+      store_name: m.business_name || "Jewellery Store",
+      sales: formatPrice(m.total_sales || 0),
+      joined_on: formatDate(m.created_at || new Date().toISOString())
+    }));
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
@@ -186,64 +169,53 @@ function SellersContent() {
                   <th className="pb-3 px-3">Store Name</th>
                   <th className="pb-3 px-3">Sales</th>
                   <th className="pb-3 px-3">Joined On</th>
+                  <th className="pb-3 px-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F5F2EA]">
-                {displayList.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
-                    <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{item.seller_name}</td>
-                    <td className="py-3.5 px-3 font-bold text-[#1C2E24]">{item.store_name}</td>
-                    <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{item.sales}</td>
-                    <td className="py-3.5 px-3 text-[#556B5D] font-medium">{item.joined_on}</td>
-                  </tr>
-                ))}
+                {displayList.length === 0 ? (
+                  <tr><td colSpan={5} className="py-8 text-center text-[#8C9890]">No sellers found.</td></tr>
+                ) : (
+                  displayList.map((seller) => (
+                    <tr key={seller.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
+                      <td className="py-3.5 px-3 font-bold text-[#1C2E24]">{seller.seller_name}</td>
+                      <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{seller.store_name}</td>
+                      <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{seller.sales}</td>
+                      <td className="py-3.5 px-3 text-[#556B5D] font-medium">{seller.joined_on}</td>
+                      <td className="py-3.5 px-3 text-right">
+                        <button
+                          onClick={() => router.push(`/admin/sellers/${seller.id}`)}
+                          className="bg-[#0D2619] hover:bg-[#19402B] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                        >
+                          Manage
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           )}
         </div>
 
-        {/* ── 4. Pagination Dock ── */}
-        <div className="flex items-center justify-center gap-1.5 pt-4 border-t border-[#F0ECE1]">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#556B5D] hover:bg-[#FAF8F3] disabled:opacity-40"
-          >
-            <ChevronLeft size={16} />
-          </button>
-
-          <button className="w-7 h-7 rounded-lg bg-[#0D2619] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-            1
-          </button>
-
-          <button onClick={() => setPage(2)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            2
-          </button>
-
-          <button onClick={() => setPage(3)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            3
-          </button>
-
-          <button onClick={() => setPage(4)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            4
-          </button>
-
-          <button onClick={() => setPage(5)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            5
-          </button>
-
-          <span className="text-xs text-[#8C9890] px-1">...</span>
-
-          <button onClick={() => setPage(15)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            15
-          </button>
-
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#556B5D] hover:bg-[#FAF8F3]"
-          >
-            <ChevronRight size={16} />
-          </button>
+        <div className="flex items-center justify-between pt-4 border-t border-[#F0ECE1]">
+          <span className="text-[11px] text-[#8C9890] font-medium">Page {page} of {totalPages}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page >= totalPages}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
 
       </div>

@@ -14,70 +14,17 @@ function ProductsContent() {
   const { isAuthenticated, role } = useAuthStore();
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [totalProducts, setTotalProducts] = useState(2458);
-  const [activeProducts, setActiveProducts] = useState(2301);
-  const [inactiveProducts, setInactiveProducts] = useState(157);
-  const [outOfStock, setOutOfStock] = useState(89);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [activeProducts, setActiveProducts] = useState(0);
+  const [inactiveProducts, setInactiveProducts] = useState(0);
+  const [outOfStock, setOutOfStock] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [togglingId, setTogglingId] = useState<number | null>(null);
-
-  // Demo products matching reference screenshot if DB items are empty
-  const demoProducts = [
-    {
-      id: 1,
-      name: "Gold Plated Chain",
-      category: "Chains",
-      price: 699,
-      status: "Active",
-      is_active: true,
-      stock: 120,
-      image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=200&auto=format&fit=crop"
-    },
-    {
-      id: 2,
-      name: "Kundan Bangles Set",
-      category: "Bangles",
-      price: 999,
-      status: "Active",
-      is_active: true,
-      stock: 85,
-      image: "https://images.unsplash.com/photo-1611591475140-be3a9f074d28?q=80&w=200&auto=format&fit=crop"
-    },
-    {
-      id: 3,
-      name: "Silk Saree (Pink)",
-      category: "Sarees",
-      price: 1299,
-      status: "Active",
-      is_active: true,
-      stock: 45,
-      image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=200&auto=format&fit=crop"
-    },
-    {
-      id: 4,
-      name: "Pearl Drop Earrings",
-      category: "Earrings",
-      price: 399,
-      status: "Active",
-      is_active: true,
-      stock: 60,
-      image: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=200&auto=format&fit=crop"
-    },
-    {
-      id: 5,
-      name: "Ring",
-      category: "Rings",
-      price: 1499,
-      status: "Active",
-      is_active: true,
-      stock: 30,
-      image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=200&auto=format&fit=crop"
-    }
-  ];
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
@@ -94,11 +41,24 @@ function ProductsContent() {
       if (search) params.search = search;
       
       const { data } = await adminApi.products(params);
-      if (data && data.items && data.items.length > 0) {
+      if (data && data.items) {
         setProducts(data.items);
-        setTotalProducts(data.total > 0 ? data.total : 2458);
-        setActiveProducts(Math.round((data.total > 0 ? data.total : 2458) * 0.936));
-        setInactiveProducts(Math.round((data.total > 0 ? data.total : 2458) * 0.064));
+        setTotalProducts(data.total);
+        setTotalPages(data.pages || 1);
+        
+        let active = 0;
+        let inactive = 0;
+        let oos = 0;
+        data.items.forEach((p: any) => {
+          if (p.is_active) active++;
+          else inactive++;
+          
+          if (p.stock_quantity <= (p.low_stock_threshold || 5)) oos++;
+        });
+        
+        setActiveProducts(active);
+        setInactiveProducts(inactive);
+        setOutOfStock(oos);
       } else {
         setProducts([]);
       }
@@ -123,18 +83,18 @@ function ProductsContent() {
     }
   };
 
-  const displayList = products.length > 0
-    ? products.map((p) => ({
-        id: p.id,
-        name: p.name,
-        category: p.category?.name || "General",
-        price: p.price,
-        status: p.is_active ? "Active" : "Inactive",
-        is_active: p.is_active,
-        stock: p.stock_quantity,
-        image: p.images?.[0] || "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=200&auto=format&fit=crop"
-      }))
-    : demoProducts;
+  const displayList = products
+    .filter(p => categoryFilter === "all" || p.category?.name?.toLowerCase() === categoryFilter.toLowerCase())
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: p.category?.name || "General",
+      price: p.price,
+      status: p.is_active ? "Active" : "Inactive",
+      is_active: p.is_active,
+      stock: p.stock_quantity,
+      image: p.images?.[0] || "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=200&auto=format&fit=crop"
+    }));
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
@@ -296,47 +256,24 @@ function ProductsContent() {
         </div>
 
         {/* ── 4. Pagination Dock ── */}
-        <div className="flex items-center justify-center gap-1.5 pt-4 border-t border-[#F0ECE1]">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#556B5D] hover:bg-[#FAF8F3] disabled:opacity-40"
-          >
-            <ChevronLeft size={16} />
-          </button>
-
-          <button className="w-7 h-7 rounded-lg bg-[#0D2619] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-            1
-          </button>
-
-          <button onClick={() => setPage(2)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            2
-          </button>
-
-          <button onClick={() => setPage(3)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            3
-          </button>
-
-          <button onClick={() => setPage(4)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            4
-          </button>
-
-          <button onClick={() => setPage(5)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            5
-          </button>
-
-          <span className="text-xs text-[#8C9890] px-1">...</span>
-
-          <button onClick={() => setPage(50)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            50
-          </button>
-
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#556B5D] hover:bg-[#FAF8F3]"
-          >
-            <ChevronRight size={16} />
-          </button>
+        <div className="flex items-center justify-between pt-4 border-t border-[#F0ECE1]">
+          <span className="text-[11px] text-[#8C9890] font-medium">Page {page} of {totalPages}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page >= totalPages}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
 
       </div>

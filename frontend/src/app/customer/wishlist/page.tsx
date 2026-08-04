@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Heart, ChevronLeft, MoreVertical, ArrowRight, ShoppingBag } from "lucide-react";
@@ -11,52 +11,11 @@ import ProductCard from "@/components/customer/ProductCard";
 import { getProductImage } from "@/lib/utils";
 import toast from "react-hot-toast";
 
-// Demo wishlist items matching design screenshot exactly as fallback/demo
-const DEMO_WISHLIST = [
-  {
-    id: "demo-1",
-    name: "Pearl Drop Earrings",
-    price: 399,
-    original_price: 599,
-    discount: "33% OFF",
-    images: ["/design/cat_jewellery.png"],
-    category: { name: "Jewellery", slug: "jewellery" },
-  },
-  {
-    id: "demo-2",
-    name: "Kundan Bangles",
-    price: 799,
-    original_price: 1199,
-    discount: "33% OFF",
-    images: ["/design/prod_bangles.png"],
-    category: { name: "Jewellery", slug: "jewellery" },
-  },
-  {
-    id: "demo-3",
-    name: "Traditional Silk Saree",
-    price: 1499,
-    original_price: 2199,
-    discount: "32% OFF",
-    images: ["/design/prod_saree.png"],
-    category: { name: "Sarees", slug: "sarees" },
-  },
-  {
-    id: "demo-4",
-    name: "Gold Plated Necklace",
-    price: 899,
-    original_price: 1299,
-    discount: "31% OFF",
-    images: ["/design/prod_chain.png"],
-    category: { name: "Jewellery", slug: "jewellery" },
-  },
-];
-
 export default function WishlistPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuthStore();
   const { wishlistItems, isLoading, fetchWishlist, toggleWishlist } = useWishlistStore();
   const { addItem } = useCartStore();
-  const [removedDemoIds, setRemovedDemoIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -72,31 +31,57 @@ export default function WishlistPage() {
     );
   }
 
-  // Display real wishlist if available, otherwise show demo items matching screenshot
-  const displayItems = wishlistItems.length > 0
-    ? wishlistItems.map((item) => {
-        const origPrice = item.price + Math.round(item.price * 0.4);
-        const discPercent = Math.round(((origPrice - item.price) / origPrice) * 100);
-        return {
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          original_price: origPrice,
-          discount: `${discPercent}% OFF`,
-          images: item.images,
-          rawItem: item,
-        };
-      })
-    : DEMO_WISHLIST.filter((d) => !removedDemoIds.includes(d.id));
+  // Not authenticated — prompt login
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F3] text-[#1C2E24] font-garamond">
+        <div className="md:hidden sticky top-0 z-40 bg-[#FAF8F3] border-b border-[#E5E0D5] shadow-xs">
+          <div className="flex items-center justify-between px-4 py-3.5">
+            <button onClick={() => router.back()} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#F0ECE5] transition-colors" aria-label="Go back">
+              <ChevronLeft size={22} className="text-[#1C2E24]" />
+            </button>
+            <h1 className="font-cormorant text-[20px] font-bold tracking-wide text-[#1C2E24]">My Wishlist</h1>
+            <div className="w-9 h-9" />
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center space-y-5">
+          <div className="w-20 h-20 bg-white border border-[#E5E0D5] rounded-full flex items-center justify-center text-[#8C9890] shadow-xs">
+            <Heart size={32} />
+          </div>
+          <div className="space-y-2">
+            <h2 className="font-cormorant text-2xl font-bold text-[#1C2E24]">Sign In to View Wishlist</h2>
+            <p className="text-xs text-[#8C9890]">Please log in to view and manage your saved items.</p>
+          </div>
+          <Link
+            href="/auth/login"
+            className="inline-flex items-center justify-center gap-2 bg-[#0D2619] hover:bg-[#19402B] text-white px-7 py-3 rounded-xl text-xs font-bold transition-all shadow-xs"
+          >
+            Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
-  const handleRemoveItem = (id: string | number) => {
-    if (typeof id === "string" && id.startsWith("demo-")) {
-      setRemovedDemoIds((prev) => [...prev, id]);
-      toast.success("Removed from Wishlist");
-    } else {
-      toggleWishlist(id as number);
-      toast.success("Removed from Wishlist");
-    }
+  // Compute display items with real discount info from database price fields
+  const displayItems = wishlistItems.map((item) => {
+    const comparePrice = (item as any).compare_price || (item as any).original_price;
+    const origPrice = comparePrice && comparePrice > item.price ? comparePrice : null;
+    const discPercent = origPrice ? Math.round(((origPrice - item.price) / origPrice) * 100) : 0;
+    return {
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      original_price: origPrice,
+      discount: discPercent > 0 ? `${discPercent}% OFF` : null,
+      images: item.images,
+      rawItem: item,
+    };
+  });
+
+  const handleRemoveItem = (id: number) => {
+    toggleWishlist(id);
+    toast.success("Removed from Wishlist");
   };
 
   return (
@@ -162,7 +147,6 @@ export default function WishlistPage() {
           <>
             {/* ══════════════════════════════════════════════
                 MOBILE VIEW — Card Container with item rows
-                Matches design image screenshot 1:1
                ══════════════════════════════════════════════ */}
             <div className="md:hidden">
               <div className="bg-white border border-[#E5E0D5]/70 rounded-2xl shadow-xs overflow-hidden divide-y divide-[#F2EFE9]">
@@ -189,22 +173,26 @@ export default function WishlistPage() {
                         <span className="font-garamond text-base font-bold text-[#1C2E24]">
                           ₹{item.price.toLocaleString("en-IN")}
                         </span>
-                        <span className="font-garamond text-xs text-[#8C9890] line-through">
-                          ₹{item.original_price.toLocaleString("en-IN")}
-                        </span>
+                        {item.original_price && (
+                          <span className="font-garamond text-xs text-[#8C9890] line-through">
+                            ₹{item.original_price.toLocaleString("en-IN")}
+                          </span>
+                        )}
                       </div>
 
                       {/* Discount Pill Badge */}
-                      <div>
-                        <span className="inline-block bg-[#FFF0E6] text-[#E05A2B] text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
-                          {item.discount}
-                        </span>
-                      </div>
+                      {item.discount && (
+                        <div>
+                          <span className="inline-block bg-[#FFF0E6] text-[#E05A2B] text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                            {item.discount}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Red Heart Button to Remove */}
                     <button
-                      onClick={() => handleRemoveItem(item.id)}
+                      onClick={() => handleRemoveItem(item.id as number)}
                       className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-50 transition-colors flex-shrink-0"
                       title="Remove from Wishlist"
                       aria-label="Remove from Wishlist"
@@ -220,42 +208,40 @@ export default function WishlistPage() {
                 DESKTOP VIEW — Product Cards Grid
                ══════════════════════════════════════════════ */}
             <div className="hidden md:grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-5">
-              {wishlistItems.length > 0 ? (
-                wishlistItems.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))
-              ) : (
-                displayItems.map((item) => (
-                  <div key={item.id} className="bg-white border border-[#E5E0D5] rounded-2xl overflow-hidden shadow-xs p-4 flex flex-col justify-between space-y-3">
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-[#FAF8F3]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={getProductImage(item.images)} alt={item.name} className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-xs"
-                      >
-                        <Heart size={16} className="fill-red-500 text-red-500" />
-                      </button>
-                    </div>
-                    <div>
-                      <h3 className="font-garamond text-sm font-bold text-[#1C2E24]">{item.name}</h3>
-                      <div className="flex items-baseline gap-2 mt-1">
-                        <span className="font-bold text-sm">₹{item.price}</span>
-                        <span className="text-xs text-[#8C9890] line-through">₹{item.original_price}</span>
-                      </div>
-                    </div>
+              {wishlistItems.map((product) => (
+                <div key={product.id} className="bg-white border border-[#E5E0D5] rounded-2xl overflow-hidden shadow-xs p-4 flex flex-col justify-between space-y-3">
+                  <div className="relative aspect-square rounded-xl overflow-hidden bg-[#FAF8F3]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={getProductImage(product.images)} alt={product.name} className="w-full h-full object-cover" />
                     <button
-                      onClick={() => {
-                        if (typeof item.id === "number") addItem(item.id, 1);
-                        toast.success("Added to cart!");
-                      }}
-                      className="w-full bg-[#0D2619] text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
+                      onClick={() => handleRemoveItem(product.id)}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-xs"
                     >
-                      <ShoppingBag size={14} /> Add to Cart
+                      <Heart size={16} className="fill-red-500 text-red-500" />
                     </button>
                   </div>
-                ))
-              )}
+                  <div>
+                    <h3 className="font-garamond text-sm font-bold text-[#1C2E24]">{product.name}</h3>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className="font-bold text-sm">₹{product.price.toLocaleString("en-IN")}</span>
+                      {((product as any).compare_price || (product as any).original_price) && (
+                        <span className="text-xs text-[#8C9890] line-through">
+                          ₹{((product as any).compare_price || (product as any).original_price).toLocaleString("en-IN")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      addItem(product.id, 1);
+                      toast.success("Added to cart!");
+                    }}
+                    className="w-full bg-[#0D2619] text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
+                  >
+                    <ShoppingBag size={14} /> Add to Cart
+                  </button>
+                </div>
+              ))}
             </div>
           </>
         )}

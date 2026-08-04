@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const MerchantProfile = require('../models/MerchantProfile');
 const Review = require('../models/Review');
+const Notification = require('../models/Notification');
 const User = require('../models/User');
 const { getCurrentUser, requireMerchantOrAdmin } = require('../middleware/auth');
 const { slugify } = require('../utils/helpers');
@@ -511,6 +512,17 @@ router.post('/:product_id/reviews', getCurrentUser, async (req, res, next) => {
     });
 
     await review.save();
+
+    // Notify the merchant
+    const notification = new Notification({
+      recipient_id: product.merchant_id,
+      type: 'review',
+      title: 'New Product Review',
+      message: `Someone left a ${rating}-star review on ${product.name}.`,
+      related_id: review.id
+    });
+    await notification.save().catch(err => console.error('Failed to save notification', err));
+
 
     // Recalculate average rating & rating count on the product
     const allReviews = await Review.find({ product_id: productId });

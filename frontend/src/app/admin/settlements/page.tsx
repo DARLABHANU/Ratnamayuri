@@ -13,50 +13,16 @@ function SettlementsContent() {
   const { isAuthenticated, role } = useAuthStore();
 
   const [settlements, setSettlements] = useState<any[]>([]);
-  const [totalSettled, setTotalSettled] = useState("₹8,45,680");
-  const [pendingSettlements, setPendingSettlements] = useState("₹38,500");
-  const [completedRequests, setCompletedRequests] = useState(412);
-  const [pendingRequests, setPendingRequests] = useState(4);
+  const [totalSettled, setTotalSettled] = useState(0);
+  const [pendingSettlements, setPendingSettlements] = useState(0);
+  const [completedRequests, setCompletedRequests] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [processingId, setProcessingId] = useState<number | null>(null);
-
-  const demoSettlements = [
-    {
-      id: 1254,
-      withdrawal_id: "#WD1254",
-      store_name: "Sowmya Collections",
-      amount: "₹15,000",
-      status: "Completed",
-      date: "30 May, 2025"
-    },
-    {
-      id: 1253,
-      withdrawal_id: "#WD1253",
-      store_name: "Lakshmi Jewels",
-      amount: "₹10,000",
-      status: "Completed",
-      date: "29 May, 2025"
-    },
-    {
-      id: 1252,
-      withdrawal_id: "#WD1252",
-      store_name: "Heritage Handmades",
-      amount: "₹8,500",
-      status: "Completed",
-      date: "29 May, 2025"
-    },
-    {
-      id: 1251,
-      withdrawal_id: "#WD1251",
-      store_name: "Divine Ornaments",
-      amount: "₹5,000",
-      status: "Pending",
-      date: "28 May, 2025"
-    }
-  ];
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
@@ -69,9 +35,30 @@ function SettlementsContent() {
   const loadSettlements = async () => {
     setIsLoading(true);
     try {
-      const { data } = await adminApi.withdrawals();
-      if (data && data.items && data.items.length > 0) {
+      const { data } = await adminApi.withdrawals({ page, page_size: 20 });
+      if (data && data.items) {
         setSettlements(data.items);
+        setTotalPages(data.pages || 1);
+        
+        let settledAmount = 0;
+        let pendingAmount = 0;
+        let completedCount = 0;
+        let pendingCount = 0;
+
+        data.items.forEach((item: any) => {
+          if (item.status === "approved" || item.status === "completed") {
+            settledAmount += item.amount;
+            completedCount++;
+          } else {
+            pendingAmount += item.amount;
+            pendingCount++;
+          }
+        });
+
+        setTotalSettled(settledAmount);
+        setPendingSettlements(pendingAmount);
+        setCompletedRequests(completedCount);
+        setPendingRequests(pendingCount);
       } else {
         setSettlements([]);
       }
@@ -95,16 +82,19 @@ function SettlementsContent() {
     }
   };
 
-  const displayList = settlements.length > 0
-    ? settlements.map((w) => ({
-        id: w.id,
-        withdrawal_id: `#WD${w.id}`,
-        store_name: w.merchant?.business_name || w.user?.full_name || "Merchant Store",
-        amount: formatPrice(w.amount),
-        status: w.status === "approved" || w.status === "completed" ? "Completed" : "Pending",
-        date: formatDate(w.created_at || "2025-05-30T10:00:00Z")
-      }))
-    : demoSettlements;
+  const displayList = settlements
+    .filter(w => 
+      String(w.id).includes(search) || 
+      (w.merchant?.business_name || w.user?.full_name || "").toLowerCase().includes(search.toLowerCase())
+    )
+    .map((w) => ({
+      id: w.id,
+      withdrawal_id: `#WD${w.id}`,
+      store_name: w.merchant?.business_name || w.user?.full_name || "Merchant Store",
+      amount: formatPrice(w.amount),
+      status: w.status === "approved" || w.status === "completed" ? "Completed" : "Pending",
+      date: formatDate(w.created_at)
+    }));
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
@@ -118,11 +108,11 @@ function SettlementsContent() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#F0ECE1]">
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Paid Out</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{totalSettled}</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{formatPrice(totalSettled)}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Pending Payouts</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#B85C00]">{pendingSettlements}</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#B85C00]">{formatPrice(pendingSettlements)}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Completed Transfers</span>

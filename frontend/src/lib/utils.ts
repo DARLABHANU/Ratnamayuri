@@ -90,3 +90,28 @@ export const REGEX_UPI_ID = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2-64}$/;
 export const REGEX_GSTIN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 export const REGEX_COUPON = /^[A-Z0-9]{3,15}$/;
 export const REGEX_STRONG_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+// ── Estimated delivery date helper ───────────────────────────────────────────
+export function getEstimatedDelivery(pincode: string | undefined): string {
+  if (!pincode || pincode.length !== 6) return "";
+
+  const now = new Date();
+  // Same-day / Express cities (major metros)
+  const expressPincodes = ["110", "400", "560", "600", "700", "500"]; // Delhi, Mumbai, Bengaluru, Chennai, Kolkata, Hyderabad
+  const prefix = pincode.slice(0, 3);
+  const isExpress = expressPincodes.includes(prefix);
+
+  // Metro pincode prefixes (2-4 days)
+  const metroPrefixes = ["122", "302", "380", "641", "411", "462", "226", "208"];
+  const isMetro = metroPrefixes.includes(prefix);
+
+  const daysToAdd = isExpress ? 2 : isMetro ? 4 : 7;
+  const deliveryDate = new Date(now);
+  deliveryDate.setDate(now.getDate() + daysToAdd);
+
+  // Skip Sundays
+  if (deliveryDate.getDay() === 0) deliveryDate.setDate(deliveryDate.getDate() + 1);
+
+  const options: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "short" };
+  return deliveryDate.toLocaleDateString("en-IN", options);
+}

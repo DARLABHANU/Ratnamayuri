@@ -107,6 +107,7 @@ export const authApi = {
   verifyMagicToken: (data: { token: string }) => api.post("/auth/verify-magic-token", data),
   googleLogin: (data: { idToken: string; role?: string }) => api.post("/auth/google", data),
   verifyEmailOtp: (data: { email: string; otp: string }) => api.post("/auth/verify-email-otp", data),
+  updateProfile: (data: { full_name: string; phone?: string }) => api.put("/auth/profile", data),
 };
 
 export const productApi = {
@@ -162,6 +163,9 @@ export const merchantApi = {
   withdrawals: (params?: object) => api.get("/merchant/withdrawals", { params }),
   settlements: (params?: object) => api.get("/merchant/settlements", { params }),
   bulkUploadProducts: (data: { csvData: string; imageMap?: Record<string, string> }) => api.post("/merchant/products/bulk-upload", data),
+  reviews: (params?: object) => api.get("/merchant/reviews", { params }),
+  customers: (params?: object) => api.get("/merchant/customers", { params }),
+  coupons: () => api.get("/merchant/coupons"),
 };
 
 export const adminApi = {
@@ -222,6 +226,11 @@ export const supportApi = {
   getAllTickets: (params?: object) => api.get("/support/tickets/all", { params }),
   updateTicketStatus: (id: number, data: object) => api.patch(`/support/tickets/${id}/status`, data),
   agentReplyToTicket: (id: number, data: object) => api.post(`/support/tickets/${id}/agent-reply`, data),
+};
+
+export const notificationApi = {
+  getNotifications: () => api.get('/notifications'),
+  markAsRead: (id: string) => api.put(`/notifications/${id}/read`),
 };
 
 export const addressApi = {

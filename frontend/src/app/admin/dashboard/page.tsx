@@ -52,11 +52,11 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // Live DB fallback with exact reference design values
-  const totalSalesFormatted = data ? formatPrice(data.total_revenue || 1245680) : "₹12,45,680";
-  const totalOrdersCount = data?.total_orders || 1842;
-  const totalUsersCount = data?.total_users || 5892;
-  const totalSellersCount = data?.total_merchants || 732;
+  // Live DB data only - no hardcoded fallbacks
+  const totalSalesFormatted = data ? formatPrice(data.total_revenue || 0) : "—";
+  const totalOrdersCount = data?.total_orders ?? 0;
+  const totalUsersCount = data?.total_users ?? 0;
+  const totalSellersCount = data?.total_merchants ?? 0;
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
@@ -148,11 +148,8 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-2 space-y-1">
-            <h3 className="font-cormorant text-xl font-bold text-[#1C2E24]">1,256</h3>
-            <p className="text-[10px] font-semibold text-emerald-600 flex items-center gap-0.5">
-              <span>↑ 14.3%</span>
-              <span className="text-[#8C9890] font-normal">vs last month</span>
-            </p>
+            <h3 className="font-cormorant text-xl font-bold text-[#1C2E24]">{(data?.total_promoters ?? 0).toLocaleString()}</h3>
+            <p className="text-[10px] font-semibold text-[#8C9890]">Active promoters</p>
           </div>
         </div>
 
@@ -262,7 +259,7 @@ export default function AdminDashboardPage() {
 
               {/* Center Donut Label */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="font-cormorant text-lg font-bold text-[#1C2E24] leading-none">1,842</span>
+                <span className="font-cormorant text-lg font-bold text-[#1C2E24] leading-none">{totalOrdersCount.toLocaleString()}</span>
                 <span className="text-[9px] text-[#7A6E5D] font-medium mt-0.5">Total Orders</span>
               </div>
             </div>
@@ -298,15 +295,15 @@ export default function AdminDashboardPage() {
                   <span className="w-2.5 h-2.5 rounded-full bg-[#E53935]" />
                   <span className="text-[#4A4033]">Pending</span>
                 </div>
-                <span className="font-semibold text-[#1C2E24]">92 (5.0%)</span>
+                <span className="font-semibold text-[#1C2E24]">{(data?.pending_orders ?? 0)} orders</span>
               </div>
 
               <div className="flex items-center justify-between text-[11px]">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#8E24AA]" />
-                  <span className="text-[#4A4033]">Cancelled</span>
+                  <span className="text-[#4A4033]">Total</span>
                 </div>
-                <span className="font-semibold text-[#1C2E24]">20 (1.5%)</span>
+                <span className="font-semibold text-[#1C2E24]">{totalOrdersCount.toLocaleString()} orders</span>
               </div>
             </div>
 
@@ -316,7 +313,7 @@ export default function AdminDashboardPage() {
         {/* Top Categories By Sales (3 Cols) */}
         <div className="lg:col-span-3 bg-white border border-[#E5E0D5] rounded-2xl p-5 shadow-2xs space-y-3">
           <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
-            <h3 className="text-sm font-bold text-[#1C2E24]">Top Categories (By Sales)</h3>
+            <h3 className="text-sm font-bold text-[#1C2E24]">Category Breakdown</h3>
             <Link href="/admin/products" className="text-xs font-semibold text-[#1B4D3E] hover:underline">
               View All
             </Link>
@@ -324,24 +321,19 @@ export default function AdminDashboardPage() {
 
           <div className="space-y-3">
             {[
-              { icon: "📿", name: "Chains", sales: "₹12,45,680", percent: "34.1%" },
-              { icon: "💍", name: "Bangles", sales: "₹8,15,420", percent: "28.3%" },
-              { icon: "🥻", name: "Sarees", sales: "₹7,35,760", percent: "19.7%" },
-              { icon: "💎", name: "Earrings", sales: "₹3,15,350", percent: "10.8%" },
-              { icon: "💍", name: "Rings", sales: "₹1,85,510", percent: "7.1%" },
+              { icon: "📿", name: "Jewellery", href: "/admin/products?category=jewellery" },
+              { icon: "🥻", name: "Sarees", href: "/admin/products?category=sarees" },
+              { icon: "👗", name: "Dresses", href: "/admin/products?category=dresses" },
+              { icon: "💎", name: "Bridal Wear", href: "/admin/products?category=bridal" },
+              { icon: "🌸", name: "Luxury", href: "/admin/products?category=luxury" },
             ].map((cat) => (
-              <div key={cat.name} className="flex items-center justify-between text-xs">
+              <Link key={cat.name} href={cat.href} className="flex items-center justify-between text-xs py-1.5 px-2 rounded-lg hover:bg-[#FAF8F3] transition-colors">
                 <div className="flex items-center gap-2">
                   <span>{cat.icon}</span>
                   <span className="font-medium text-[#1C2E24]">{cat.name}</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-[#1C2E24]">{cat.sales}</span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-sm">
-                    {cat.percent}
-                  </span>
-                </div>
-              </div>
+                <span className="text-[#8C9890] font-medium">Browse →</span>
+              </Link>
             ))}
           </div>
         </div>
@@ -351,7 +343,7 @@ export default function AdminDashboardPage() {
       {/* ── 3. Bottom Row Tables & Rankings (3 Columns Layout) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Recent Orders (4 Cols) */}
+        {/* Recent Orders (4 Cols) — from real DB */}
         <div className="lg:col-span-4 bg-white border border-[#E5E0D5] rounded-2xl p-5 shadow-2xs space-y-3">
           <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
             <h3 className="text-sm font-bold text-[#1C2E24]">Recent Orders</h3>
@@ -361,89 +353,103 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="space-y-3">
-            {[
-              { id: "#ORD12568", name: "Priya Sharma", date: "30 May, 2025", price: "₹699", status: "Delivered", color: "bg-emerald-100 text-emerald-800" },
-              { id: "#ORD12567", name: "Karthik Reddy", date: "30 May, 2025", price: "₹999", status: "Shipped", color: "bg-blue-100 text-blue-800" },
-              { id: "#ORD12566", name: "Anjali Reddy", date: "30 May, 2025", price: "₹1,299", status: "Processing", color: "bg-orange-100 text-orange-800" },
-              { id: "#ORD12565", name: "Ravi Kumar", date: "30 May, 2025", price: "₹399", status: "Pending", color: "bg-purple-100 text-purple-800" }
-            ].map((ord) => (
-              <div key={ord.id} className="flex items-center justify-between text-xs py-1 border-b border-[#F5F2EA] last:border-0">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-[#1C2E24]">{ord.id}</span>
+            {data?.recent_orders && data.recent_orders.length > 0 ? (
+              data.recent_orders.slice(0, 4).map((ord) => {
+                const statusColors: Record<string, string> = {
+                  delivered: "bg-emerald-100 text-emerald-800",
+                  shipped: "bg-blue-100 text-blue-800",
+                  confirmed: "bg-orange-100 text-orange-800",
+                  pending: "bg-purple-100 text-purple-800",
+                  cancelled: "bg-red-100 text-red-800",
+                };
+                const color = statusColors[ord.status] || "bg-gray-100 text-gray-800";
+                const customerName = (ord as any).customer?.full_name || (ord as any).user?.full_name || "Customer";
+                const date = ord.created_at ? new Date(ord.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
+                return (
+                  <div key={ord.id} className="flex items-center justify-between text-xs py-1 border-b border-[#F5F2EA] last:border-0">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-[#1C2E24]">#{ord.id}</span>
+                      </div>
+                      <p className="text-[11px] text-[#6B7A70]">{customerName}</p>
+                      <p className="text-[9px] text-[#8C9890]">{date}</p>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <span className="font-bold text-[#1C2E24] block">₹{(ord.total_amount || 0).toLocaleString("en-IN")}</span>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-block capitalize ${color}`}>
+                        {ord.status}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-[#6B7A70]">{ord.name}</p>
-                  <p className="text-[9px] text-[#8C9890]">{ord.date}</p>
-                </div>
-                <div className="text-right space-y-1">
-                  <span className="font-bold text-[#1C2E24] block">{ord.price}</span>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-block ${ord.color}`}>
-                    {ord.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+                );
+              })
+            ) : (
+              <p className="text-xs text-[#8C9890] text-center py-4">No recent orders</p>
+            )}
           </div>
         </div>
 
-        {/* Top Sellers By Sales (4 Cols) */}
+        {/* Top Categories (3 Cols) — static but representative */}
         <div className="lg:col-span-4 bg-white border border-[#E5E0D5] rounded-2xl p-5 shadow-2xs space-y-3">
           <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
-            <h3 className="text-sm font-bold text-[#1C2E24]">Top Sellers (By Sales)</h3>
-            <Link href="/admin/users?role=merchant" className="text-xs font-semibold text-[#1B4D3E] hover:underline">
-              View All
-            </Link>
+            <h3 className="text-sm font-bold text-[#1C2E24]">Quick Actions</h3>
           </div>
 
-          <div className="space-y-3">
-            {[
-              { rank: 1, name: "Sowmya Collections", sales: "₹2,85,610", icon: "🏪" },
-              { rank: 2, name: "Lakshmi Jewels", sales: "₹2,45,320", icon: "🏪" },
-              { rank: 3, name: "Heritage Handmades", sales: "₹1,95,450", icon: "🏪" },
-              { rank: 4, name: "Traditional Weaves", sales: "₹1,35,680", icon: "🏪" },
-              { rank: 5, name: "Divine Ornaments", sales: "₹95,250", icon: "🏪" },
-            ].map((seller) => (
-              <div key={seller.rank} className="flex items-center justify-between text-xs py-1 border-b border-[#F5F2EA] last:border-0">
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-[#1C2E24] w-4">{seller.rank}</span>
-                  <span className="text-sm">{seller.icon}</span>
-                  <span className="font-medium text-[#1C2E24]">{seller.name}</span>
-                </div>
-                <span className="font-bold text-[#1C2E24]">{seller.sales}</span>
-              </div>
-            ))}
+          <div className="space-y-2">
+            <Link href="/admin/products?status=pending" className="flex items-center justify-between text-xs py-2 px-3 bg-[#FFF8F0] border border-[#FFD9B0] rounded-xl hover:bg-[#FFE9CC] transition-colors">
+              <span className="font-medium text-[#1C2E24]">⏳ Pending Product Approvals</span>
+              <span className="font-bold text-[#E07830]">Review →</span>
+            </Link>
+            <Link href="/admin/withdrawals?status=pending" className="flex items-center justify-between text-xs py-2 px-3 bg-[#F0FFF4] border border-[#B0F0C8] rounded-xl hover:bg-[#CCFFE0] transition-colors">
+              <span className="font-medium text-[#1C2E24]">💸 Pending Withdrawals</span>
+              <span className="font-bold text-[#2E7D32]">Approve →</span>
+            </Link>
+            <Link href="/admin/orders?status=pending" className="flex items-center justify-between text-xs py-2 px-3 bg-[#F0F4FF] border border-[#B0C4F0] rounded-xl hover:bg-[#CCDAFF] transition-colors">
+              <span className="font-medium text-[#1C2E24]">📦 Pending Orders</span>
+              <span className="font-bold text-[#1565C0]">Manage →</span>
+            </Link>
+            <Link href="/admin/return-requests" className="flex items-center justify-between text-xs py-2 px-3 bg-[#FFF0F0] border border-[#F0B0B0] rounded-xl hover:bg-[#FFCCCC] transition-colors">
+              <span className="font-medium text-[#1C2E24]">↩️ Return Requests</span>
+              <span className="font-bold text-[#C62828]">Review →</span>
+            </Link>
+            <Link href="/admin/merchants?status=pending" className="flex items-center justify-between text-xs py-2 px-3 bg-[#F5F0FF] border border-[#C8B0F0] rounded-xl hover:bg-[#E0D0FF] transition-colors">
+              <span className="font-medium text-[#1C2E24]">🏪 Merchant Approvals</span>
+              <span className="font-bold text-[#7B1FA2]">Approve →</span>
+            </Link>
           </div>
         </div>
 
-        {/* Recent Withdrawals (4 Cols) */}
+        {/* Database Summary (4 Cols) */}
         <div className="lg:col-span-4 bg-white border border-[#E5E0D5] rounded-2xl p-5 shadow-2xs space-y-3">
           <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
-            <h3 className="text-sm font-bold text-[#1C2E24]">Recent Withdrawals</h3>
-            <Link href="/admin/withdrawals" className="text-xs font-semibold text-[#1B4D3E] hover:underline">
-              View All
-            </Link>
+            <h3 className="text-sm font-bold text-[#1C2E24]">Platform Overview</h3>
           </div>
 
-          <div className="space-y-3">
-            {[
-              { name: "Sowmya Collections", date: "30 May, 2025", amount: "₹15,000", status: "Completed", color: "bg-emerald-100 text-emerald-800" },
-              { name: "Lakshmi Jewels", date: "29 May, 2025", amount: "₹10,000", status: "Completed", color: "bg-emerald-100 text-emerald-800" },
-              { name: "Heritage Handmades", date: "29 May, 2025", amount: "₹8,500", status: "Completed", color: "bg-emerald-100 text-emerald-800" },
-              { name: "Divine Ornaments", date: "28 May, 2025", amount: "₹5,000", status: "Pending", color: "bg-orange-100 text-orange-800" }
-            ].map((w, idx) => (
-              <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-[#F5F2EA] last:border-0">
-                <div>
-                  <p className="font-bold text-[#1C2E24]">{w.name}</p>
-                  <p className="text-[9px] text-[#8C9890]">{w.date}</p>
-                </div>
-                <div className="text-right space-y-1">
-                  <span className="font-bold text-[#1C2E24] block">{w.amount}</span>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-block ${w.color}`}>
-                    {w.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div className="space-y-2.5 text-xs">
+            <div className="flex justify-between py-1.5 border-b border-[#F5F2EA]">
+              <span className="text-[#6B7A70]">Total Revenue</span>
+              <span className="font-bold text-[#1C2E24]">{totalSalesFormatted}</span>
+            </div>
+            <div className="flex justify-between py-1.5 border-b border-[#F5F2EA]">
+              <span className="text-[#6B7A70]">Total Orders</span>
+              <span className="font-bold text-[#1C2E24]">{totalOrdersCount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between py-1.5 border-b border-[#F5F2EA]">
+              <span className="text-[#6B7A70]">Pending Orders</span>
+              <span className="font-bold text-orange-700">{(data?.pending_orders ?? 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between py-1.5 border-b border-[#F5F2EA]">
+              <span className="text-[#6B7A70]">Active Coupons</span>
+              <span className="font-bold text-[#1C2E24]">{(data?.active_coupons ?? 0)}</span>
+            </div>
+            <div className="flex justify-between py-1.5 border-b border-[#F5F2EA]">
+              <span className="text-[#6B7A70]">Total Users</span>
+              <span className="font-bold text-[#1C2E24]">{totalUsersCount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between py-1.5">
+              <span className="text-[#6B7A70]">Total Merchants</span>
+              <span className="font-bold text-[#1C2E24]">{totalSellersCount.toLocaleString()}</span>
+            </div>
           </div>
         </div>
 

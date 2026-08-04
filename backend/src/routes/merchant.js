@@ -475,4 +475,126 @@ router.get('/settlements', getCurrentUser, requireMerchantOrAdmin, async (req, r
   }
 });
 
+// Get Merchant's Reviews
+router.get('/reviews', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
+  try {
+    const Review = require('../models/Review');
+    const profile = await MerchantProfile.findOne({ user_id: req.user.id });
+    if (!profile) {
+      return res.status(404).json({ detail: 'Merchant profile not found' });
+    }
+
+    // 1. Find all products belonging to this merchant
+    const products = await Product.find({ merchant_id: profile.id });
+    const productIds = products.map(p => p.id);
+
+    // 2. Fetch reviews for those products
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.page_size) || 10;
+    const skip = (page - 1) * pageSize;
+
+    const total = await Review.countDocuments({ product_id: { $in: productIds } });
+    const items = await Review.find({ product_id: { $in: productIds } })
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(pageSize);
+
+    // Enrich with user name and product name
+    const User = require('../models/User');
+    const enriched = await Promise.all(items.map(async (item) => {
+      const plain = item.toObject();
+      const product = products.find(p => p.id === item.product_id);
+      const user = await User.findOne({ id: item.user_id });
+      plain.product_name = product ? product.name : 'Unknown Product';
+      plain.customer_name = user ? user.full_name : 'Customer';
+      return plain;
+    }));
+
+    res.json({
+      items: enriched,
+      total,
+      page,
+      pages: Math.ceil(total / pageSize)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get Merchant's Customers
+router.get('/customers', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
+  try {
+    const Order = require('../models/Order');
+    const profile = await MerchantProfile.findOne({ user_id: req.user.id });
+    if (!profile) {
+      return res.status(404).json({ detail: 'Merchant profile not found' });
+    }
+
+    // Since we don't have a direct "MerchantCustomer" table, we can aggregate from Orders
+    const orders = await Order.find({ merchant_id: profile.id });
+    
+    const customersMap = {};
+    orders.forEach(order => {
+      const uId = order.user_id;
+      if (!uId) return;
+      if (!customersMap[uId]) {
+        customersMap[uId] = {
+          user_id: uId,
+          total_orders: 0,
+          total_spent: 0,
+          last_order: null
+        };
+      }
+      customersMap[uId].total_orders += 1;
+      customersMap[uId].total_spent += order.total_amount;
+      
+      const orderDate = new Date(order.created_at);
+      if (!customersMap[uId].last_order || orderDate > new Date(customersMap[uId].last_order)) {
+        customersMap[uId].last_order = order.created_at;
+      }
+    });
+
+    const items = Object.values(customersMap);
+    
+    // Sort by most recent order
+    items.sort((a, b) => new Date(b.last_order) - new Date(a.last_order));
+
+    // Enrich with user name and email
+    const User = require('../models/User');
+    const enriched = await Promise.all(items.map(async (item) => {
+      const user = await User.findOne({ id: item.user_id });
+      return {
+        ...item,
+        name: user ? user.full_name : 'Customer',
+        email: user ? user.email : 'N/A'
+      };
+    }));
+
+    res.json({
+      items: enriched,
+      total: enriched.length,
+      page: 1,
+      pages: 1
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get Merchant's Coupons
+router.get('/coupons', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
+  try {
+    const Coupon = require('../models/Coupon');
+    const profile = await MerchantProfile.findOne({ user_id: req.user.id });
+    if (!profile) {
+      return res.status(404).json({ detail: 'Merchant profile not found' });
+    }
+
+    const coupons = await Coupon.find({ created_by: req.user.id }).sort({ created_at: -1 });
+    res.json(coupons);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

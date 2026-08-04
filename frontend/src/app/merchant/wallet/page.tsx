@@ -6,27 +6,39 @@ import { Loader2, Wallet, ArrowUpRight, CheckCircle2, Clock } from "lucide-react
 import toast from "react-hot-toast";
 import { merchantApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, formatDate } from "@/lib/utils";
 
 function MerchantWalletContent() {
   const router = useRouter();
   const { isAuthenticated, role } = useAuthStore();
 
-  const [availableBalance, setAvailableBalance] = useState("₹8,760");
-  const [totalWithdrawn, setTotalWithdrawn] = useState("₹23,690");
+  const [availableBalance, setAvailableBalance] = useState("₹0");
+  const [totalWithdrawn, setTotalWithdrawn] = useState("₹0");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const demoWithdrawals = [
-    { id: 1254, amount: "₹15,000", status: "Completed", date: "30 May, 2025 | 11:20 AM" },
-    { id: 1253, amount: "₹8,690", status: "Completed", date: "15 May, 2025 | 02:45 PM" }
-  ];
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
 
   useEffect(() => {
     if (!isAuthenticated || role !== "merchant") {
       router.push("/auth/login");
+      return;
     }
+    loadWalletData();
   }, [isAuthenticated, role]);
+
+  const loadWalletData = async () => {
+    try {
+      const [walletRes, withdrawalsRes] = await Promise.all([
+        merchantApi.wallet(),
+        merchantApi.withdrawals({ page_size: 10 })
+      ]);
+      setAvailableBalance(formatPrice(walletRes.data.available_balance || 0));
+      setTotalWithdrawn(formatPrice(walletRes.data.total_withdrawn || 0));
+      setWithdrawals(withdrawalsRes.data.items || []);
+    } catch (err) {
+      // Keep initial states if error
+    }
+  };
 
   const handleRequestWithdrawal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,17 +125,21 @@ function MerchantWalletContent() {
           <h3 className="font-cormorant text-xl font-bold text-[#1C2E24] border-b border-[#F0ECE1] pb-3">Recent Payouts</h3>
 
           <div className="space-y-3">
-            {demoWithdrawals.map((w) => (
-              <div key={w.id} className="p-3 bg-[#FAF8F3] border border-[#E5E0D5] rounded-2xl flex items-center justify-between">
-                <div>
-                  <span className="font-extrabold text-xs text-[#1C2E24] block">{w.amount}</span>
-                  <span className="text-[10px] text-[#8C9890]">{w.date}</span>
+            {withdrawals.length === 0 ? (
+              <div className="text-center py-4 text-[#8C9890] text-xs">No recent payouts</div>
+            ) : (
+              withdrawals.map((w) => (
+                <div key={w.id} className="p-3 bg-[#FAF8F3] border border-[#E5E0D5] rounded-2xl flex items-center justify-between">
+                  <div>
+                    <span className="font-extrabold text-xs text-[#1C2E24] block">{formatPrice(w.amount)}</span>
+                    <span className="text-[10px] text-[#8C9890]">{formatDate(w.created_at)}</span>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${w.status === "completed" ? "bg-[#E8F5E9] text-[#2E7D32]" : "bg-[#FFF3E0] text-[#E65100]"}`}>
+                    {w.status}
+                  </span>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#E8F5E9] text-[#2E7D32]">
-                  {w.status}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 

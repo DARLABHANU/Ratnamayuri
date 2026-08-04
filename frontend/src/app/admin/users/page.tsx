@@ -57,60 +57,7 @@ function UsersContent() {
   const [commissionInputs, setCommissionInputs] = useState<Record<number, number>>({});
   const [actionMerchantId, setActionMerchantId] = useState<number | null>(null);
 
-  // Default mock user list matching design screenshot if database is initial/empty
-  const demoUsers = [
-    {
-      id: 101,
-      full_name: "Priya Sharma",
-      email: "priya@gmail.com",
-      role: "merchant",
-      displayRole: "Seller",
-      is_active: true,
-      created_at: "2025-05-30T10:00:00Z",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop"
-    },
-    {
-      id: 102,
-      full_name: "Karthik Reddy",
-      email: "karthik@gmail.com",
-      role: "merchant",
-      displayRole: "Seller",
-      is_active: true,
-      created_at: "2025-05-30T10:00:00Z",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&auto=format&fit=crop"
-    },
-    {
-      id: 103,
-      full_name: "Anjali Reddy",
-      email: "anjali@gmail.com",
-      role: "merchant",
-      displayRole: "Seller",
-      is_active: true,
-      created_at: "2025-05-30T10:00:00Z",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&auto=format&fit=crop"
-    },
-    {
-      id: 104,
-      full_name: "Ravi Kumar",
-      email: "ravi@gmail.com",
-      role: "promoter",
-      is_promoter: true,
-      displayRole: "Promoter",
-      is_active: true,
-      created_at: "2025-05-30T10:00:00Z",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=150&auto=format&fit=crop"
-    },
-    {
-      id: 105,
-      full_name: "Sneha Patil",
-      email: "sneha@gmail.com",
-      role: "customer",
-      displayRole: "Buyer",
-      is_active: true,
-      created_at: "2025-05-30T10:00:00Z",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150&auto=format&fit=crop"
-    }
-  ];
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
@@ -133,10 +80,23 @@ function UsersContent() {
         role: roleFilter || undefined,
         search: search || undefined,
       });
-      setUsers(data.items);
-      setTotal(data.total > 0 ? data.total : 5892);
-      setActiveCount(Math.round((data.total > 0 ? data.total : 5892) * 0.885));
-      setInactiveCount(Math.round((data.total > 0 ? data.total : 5892) * 0.115));
+      if (data && data.items) {
+        setUsers(data.items);
+        setTotal(data.total);
+        setTotalPages(data.pages || 1);
+        
+        // Count active/inactive from current page as an approximation if backend doesn't provide global stats
+        let active = 0;
+        let inactive = 0;
+        data.items.forEach((u: any) => {
+          if (u.is_active) active++;
+          else inactive++;
+        });
+        setActiveCount(active);
+        setInactiveCount(inactive);
+      } else {
+        setUsers([]);
+      }
     } catch {
       setUsers([]);
     } finally {
@@ -217,19 +177,17 @@ function UsersContent() {
     }
   };
 
-  const displayUserList = users.length > 0
-    ? users.map((u) => ({
-        id: u.id,
-        full_name: u.full_name,
-        email: u.email,
-        role: u.role,
-        is_promoter: u.is_promoter,
-        displayRole: u.is_promoter ? "Promoter" : u.role === "merchant" ? "Seller" : u.role === "customer" ? "Buyer" : u.role,
-        is_active: u.is_active,
-        created_at: u.created_at,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name)}&background=0D2619&color=fff`
-      }))
-    : demoUsers;
+  const displayUserList = users.map((u) => ({
+    id: u.id,
+    full_name: u.full_name,
+    email: u.email,
+    role: u.role,
+    is_promoter: u.is_promoter,
+    displayRole: u.is_promoter ? "Promoter" : u.role === "merchant" ? "Seller" : u.role === "customer" ? "Buyer" : u.role,
+    is_active: u.is_active,
+    created_at: u.created_at,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name)}&background=0D2619&color=fff`
+  }));
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
@@ -340,7 +298,10 @@ function UsersContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F5F2EA]">
-                  {displayUserList.map((u) => (
+                {displayUserList.length === 0 ? (
+                  <tr><td colSpan={6} className="py-8 text-center text-[#8C9890]">No users found.</td></tr>
+                ) : (
+                  displayUserList.map((u) => (
                     <tr key={u.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
                       
                       {/* Avatar & Name */}
@@ -418,50 +379,32 @@ function UsersContent() {
                       </td>
 
                     </tr>
-                  ))}
+                  ))
+                )}
                 </tbody>
               </table>
             )}
           </div>
 
           {/* ── 4. Pagination Dock ── */}
-          <div className="flex items-center justify-center gap-1.5 pt-4 border-t border-[#F0ECE1]">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#556B5D] hover:bg-[#FAF8F3] disabled:opacity-40"
-            >
-              <ChevronLeft size={16} />
-            </button>
-
-            <button className="w-7 h-7 rounded-lg bg-[#0D2619] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-              1
-            </button>
-
-            <button onClick={() => setPage(2)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-              2
-            </button>
-
-            <button onClick={() => setPage(3)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-              3
-            </button>
-
-            <button onClick={() => setPage(4)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-              4
-            </button>
-
-            <span className="text-xs text-[#8C9890] px-1">...</span>
-
-            <button onClick={() => setPage(59)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-              59
-            </button>
-
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#556B5D] hover:bg-[#FAF8F3]"
-            >
-              <ChevronRight size={16} />
-            </button>
+          <div className="flex items-center justify-between pt-4 border-t border-[#F0ECE1]">
+              <span className="text-[11px] text-[#8C9890] font-medium">Page {page} of {totalPages}</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page >= totalPages}
+                  className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
           </div>
 
         </div>

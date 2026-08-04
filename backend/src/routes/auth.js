@@ -518,6 +518,44 @@ router.post('/send-otp', strictLimiter, async (req, res, next) => {
 
 const { validateBankAccount, validateIFSC, validateUPI } = require('../utils/validators');
 
+// Update User Profile (name & phone)
+router.put('/profile', getCurrentUser, async (req, res, next) => {
+  try {
+    const { full_name, phone } = req.body;
+    const user = req.user;
+
+    if (!full_name || !full_name.trim()) {
+      return res.status(400).json({ detail: 'Full name is required' });
+    }
+
+    if (phone && phone.trim()) {
+      const { validatePhone } = require('../utils/validators');
+      const cleanPhone = phone.trim().replace(/\D/g, '');
+      if (!validatePhone(cleanPhone)) {
+        return res.status(400).json({ detail: 'Please enter a valid 10-digit Indian mobile number.' });
+      }
+      user.phone = cleanPhone;
+    }
+
+    user.full_name = full_name.trim();
+    await user.save();
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        phone: user.phone,
+        role: user.role,
+        avatar_url: user.avatar_url
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Update Payout Settings (Bank details & UPI account)
 router.put('/payout-settings', getCurrentUser, async (req, res, next) => {
   try {

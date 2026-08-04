@@ -4,17 +4,32 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Download, TrendingUp, DollarSign, Wallet, ShoppingBag } from "lucide-react";
 import toast from "react-hot-toast";
+import { merchantApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { formatPrice } from "@/lib/utils";
 
 function MerchantAnalyticsContent() {
   const router = useRouter();
   const { isAuthenticated, role } = useAuthStore();
 
+  const [analytics, setAnalytics] = useState<any>(null);
+
   useEffect(() => {
     if (!isAuthenticated || role !== "merchant") {
       router.push("/auth/login");
+      return;
     }
+    loadAnalytics();
   }, [isAuthenticated, role]);
+
+  const loadAnalytics = async () => {
+    try {
+      const res = await merchantApi.analytics(30);
+      setAnalytics(res.data);
+    } catch {
+      // Fallback handled in UI
+    }
+  };
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
@@ -27,19 +42,19 @@ function MerchantAnalyticsContent() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#F0ECE1]">
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Sales Revenue</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">₹45,680</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{formatPrice(analytics?.total_revenue || 0)}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Net Earnings Payout</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#2E7D32]">₹32,450</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#2E7D32]">{formatPrice(analytics?.total_earnings || 0)}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Available to Withdraw</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#B85C00]">₹8,760</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#B85C00]">{formatPrice(analytics?.available_payout || 0)}</span>
           </div>
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Orders Delivered</span>
-            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">128</span>
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{analytics?.total_orders || 0}</span>
           </div>
         </div>
 

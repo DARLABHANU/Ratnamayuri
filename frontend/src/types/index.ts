@@ -228,6 +228,7 @@ export interface MerchantProfile {
 export interface AdminDashboard {
   total_users: number;
   total_merchants: number;
+  total_promoters?: number;
   total_orders: number;
   total_revenue: number;
   total_profit: number;

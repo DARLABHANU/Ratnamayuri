@@ -12,7 +12,9 @@ import Cookies from "js-cookie";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
+import { useDeliveryLocationStore } from "@/store/deliveryLocationStore";
 import { authApi } from "@/lib/api";
+import DeliveryLocationModal from "@/components/customer/DeliveryLocationModal";
 
 export default function Navbar() {
   const router = useRouter();
@@ -27,6 +29,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { location: deliveryLocation, openModal } = useDeliveryLocationStore();
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,10 +90,18 @@ export default function Navbar() {
             <span>Handmade with Love</span><span>•</span>
             <span>Supporting Small Artisans</span>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5 font-medium text-emerald-200">
+          <button 
+            onClick={openModal}
+            className="hidden sm:flex items-center gap-1.5 font-medium text-emerald-200 hover:text-white transition-colors"
+          >
             <MapPin size={13} className="text-emerald-300" />
-            <span>Delivering Across India</span>
-          </div>
+            <span>
+              {deliveryLocation 
+                ? `Deliver to ${deliveryLocation.city}, ${deliveryLocation.pincode}`
+                : "Delivering Across India"}
+            </span>
+            <ChevronDown size={12} className="opacity-70" />
+          </button>
         </div>
       </div>
 
@@ -298,10 +309,19 @@ export default function Navbar() {
                 <Link href="/customer/products?sort_by=price&sort_order=asc" className="text-[#364B3E] hover:text-[#1E3A2B] transition-colors">Offers</Link>
                 <Link href="/about" className="text-[#364B3E] hover:text-[#1E3A2B] transition-colors">About Us</Link>
               </div>
+              <button 
+                onClick={openModal}
+                className="ml-auto text-[#1E3A2B] flex items-center gap-1 font-semibold hover:underline"
+              >
+                <MapPin size={13} /> Deliver to {deliveryLocation ? `${deliveryLocation.city}, ${deliveryLocation.pincode}` : "India"}
+              </button>
             </div>
           </div>
         </div>
       </header>
+
+      {/* Modal is rendered here but only visible when open */}
+      <DeliveryLocationModal />
 
       {/* ════════════════════════════════════════════════ */}
       {/* MOBILE SLIDE-IN DRAWER                          */}

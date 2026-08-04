@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { useDeliveryLocationStore } from "@/store/deliveryLocationStore";
 import {
   Star, Heart, ArrowRight, ShieldCheck, Truck,
   RefreshCw, Banknote, Headphones, MapPin, ChevronDown, Tag,
@@ -12,22 +13,28 @@ import {
 import { productApi } from "@/lib/api";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
 import toast from "react-hot-toast";
 import { Product } from "@/types";
 import { getProductImage } from "@/lib/utils";
 
 export default function HomePage() {
-  useRouter(); // keep for future use
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
   const { wishlistIds, toggleWishlist } = useWishlistStore();
   const { addItem } = useCartStore();
+  const { location: deliveryLocation, openModal } = useDeliveryLocationStore();
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(false);
 
   useEffect(() => {
+    setIsLoadingProducts(true);
     productApi.list({ page_size: 8 })
       .then((res) => setProducts(res.data.items || []))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoadingProducts(false));
   }, []);
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -43,26 +50,21 @@ export default function HomePage() {
     toast.success("Coupon RATNA10 applied! 10% discount activated.");
   };
 
-  // Demo products (used when DB is empty/loading)
-  const demoTrending = [
-    { id: 1, name: "Gold Plated Chain", rating: 4.8, reviews: 128, price: 699, originalPrice: 999, discount: "30% OFF", img: "/design/prod_chain.png" },
-    { id: 2, name: "Classic Bangles Set", rating: 4.7, reviews: 97, price: 499, originalPrice: 699, discount: "28% OFF", img: "/design/prod_bangles.png" },
-    { id: 3, name: "Silk Saree (Pink)", rating: 4.9, reviews: 156, price: 1299, originalPrice: 1999, discount: "35% OFF", img: "/design/prod_saree.png" },
-    { id: 4, name: "Floral Anarkali Dress", rating: 4.7, reviews: 88, price: 1499, originalPrice: 1999, discount: "25% OFF", img: "/design/prod_dress.png" },
-  ];
-
-  const displayProducts = products.length >= 4
-    ? products.slice(0, 4).map((p, idx) => ({
-        id: p.id,
-        name: p.name,
-        rating: 4.7 + (idx % 3) * 0.1,
-        reviews: 80 + idx * 25,
-        price: p.price,
-        originalPrice: p.price + 300,
-        discount: `${Math.round((300 / (p.price + 300)) * 100)}% OFF`,
-        img: getProductImage(p.images),
-      }))
-    : demoTrending;
+  // Map real database products to display format
+  const displayProducts = products.map((p) => {
+    const origPrice = (p as any).compare_price || (p as any).original_price;
+    const discVal = origPrice && origPrice > p.price ? Math.round(((origPrice - p.price) / origPrice) * 100) : 0;
+    return {
+      id: p.id,
+      name: p.name,
+      rating: p.rating_avg || null,
+      reviews: p.rating_count || null,
+      price: p.price,
+      originalPrice: origPrice && origPrice > p.price ? origPrice : null,
+      discount: discVal > 0 ? `${discVal}% OFF` : null,
+      img: getProductImage(p.images),
+    };
+  });
 
   return (
     <div className="min-h-screen bg-[#FAF8F3] text-[#1C2E24] font-garamond">
@@ -75,10 +77,23 @@ export default function HomePage() {
 
         {/* ── Delivery Location Row ── */}
         <div className="bg-white border-b border-[#F0ECE1] px-4 py-2.5">
-          <button className="flex items-center gap-2 text-xs font-garamond w-full text-left">
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 text-xs font-garamond w-full text-left"
+            aria-label="Change delivery location"
+          >
             <MapPin size={14} className="text-[#1E3A2B] flex-shrink-0" />
             <span className="text-[#556B5D]">Deliver to:</span>
-            <span className="font-bold text-[#1C2E24]">Guntur, Andhra Pradesh</span>
+            <span className="font-bold text-[#1C2E24] truncate">
+              {deliveryLocation
+                ? `${deliveryLocation.district}, ${deliveryLocation.state}`
+                : "Select your location"}
+            </span>
+            {deliveryLocation && (
+              <span className="text-[10px] text-[#8C9890] font-normal flex-shrink-0">
+                {deliveryLocation.pincode}
+              </span>
+            )}
             <ChevronDown size={13} className="text-[#556B5D] ml-auto flex-shrink-0" />
           </button>
         </div>
@@ -200,59 +215,90 @@ export default function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {displayProducts.map((item) => {
-                const isWished = wishlistIds.includes(item.id);
-                return (
-                  <div
-                    key={item.id}
-                    className="bg-white border border-[#E5E0D5] rounded-2xl overflow-hidden shadow-xs"
-                  >
-                    {/* Product Image */}
-                    <div className="relative aspect-square bg-[#F8F5EE]">
-                      {/* Discount Badge */}
-                      <span className="absolute top-2 left-2 bg-[#E07830] text-white font-garamond text-[9.5px] font-bold px-2 py-0.5 rounded-md z-10">
-                        {item.discount}
-                      </span>
-                      {/* Wishlist Button */}
-                      <button
-                        onClick={() => toggleWishlist(item.id)}
-                        className="absolute top-2 right-2 w-6 h-6 bg-white/80 rounded-full flex items-center justify-center z-10 shadow-xs"
-                        aria-label="Toggle wishlist"
-                      >
-                        <Heart size={12} className={isWished ? "fill-red-500 text-red-500" : "text-[#8C8273]"} />
-                      </button>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.img}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="p-2.5 space-y-1">
-                      {/* Stars */}
-                      <div className="flex items-center gap-1">
-                        <div className="flex">
-                          {Array(5).fill(0).map((_, i) => (
-                            <Star key={i} size={10} className="fill-amber-400 text-amber-400" />
-                          ))}
-                        </div>
-                        <span className="font-garamond text-[9px] text-[#7A6E5D]">{item.rating.toFixed(1)}</span>
-                      </div>
-                      {/* Name */}
-                      <h3 className="font-garamond text-[11.5px] font-bold text-[#1C2E24] line-clamp-1 leading-snug">
-                        {item.name}
-                      </h3>
-                      {/* Price */}
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="font-garamond text-sm font-bold text-[#1C2E24]">₹{item.price.toLocaleString()}</span>
-                        <span className="font-garamond text-[10px] text-[#8C8273] line-through">₹{item.originalPrice.toLocaleString()}</span>
-                      </div>
+              {isLoadingProducts ? (
+                // Loading skeleton while fetching from database
+                Array(4).fill(0).map((_, i) => (
+                  <div key={i} className="bg-white border border-[#E5E0D5] rounded-2xl overflow-hidden shadow-xs animate-pulse">
+                    <div className="aspect-square bg-[#F0EBE3]" />
+                    <div className="p-2.5 space-y-2">
+                      <div className="h-2 bg-[#F0EBE3] rounded w-2/3" />
+                      <div className="h-3 bg-[#F0EBE3] rounded" />
+                      <div className="h-2 bg-[#F0EBE3] rounded w-1/2" />
                     </div>
                   </div>
-                );
-              })}
+                ))
+              ) : displayProducts.length === 0 ? (
+                <div className="col-span-2 text-center py-8">
+                  <p className="font-garamond text-sm text-[#8C9890]">No products available at the moment.</p>
+                  <Link href="/customer/products" className="text-xs font-bold text-[#0D2619] underline mt-2 inline-block">Browse All Products</Link>
+                </div>
+              ) : (
+                displayProducts.map((item) => {
+                  const isWished = wishlistIds.includes(item.id);
+                  return (
+                    <Link
+                      href={`/customer/products/${item.id}`}
+                      key={item.id}
+                      className="bg-white border border-[#E5E0D5] rounded-2xl overflow-hidden shadow-xs block"
+                    >
+                      {/* Product Image */}
+                      <div className="relative aspect-square bg-[#F8F5EE]">
+                        {/* Discount Badge — only shown when real discount exists */}
+                        {item.discount && (
+                          <span className="absolute top-2 left-2 bg-[#E07830] text-white font-garamond text-[9.5px] font-bold px-2 py-0.5 rounded-md z-10">
+                            {item.discount}
+                          </span>
+                        )}
+                        {/* Wishlist Button */}
+                        <button
+                          onClick={async (e) => { 
+                            e.preventDefault(); 
+                            if (!isAuthenticated) { toast.error("Please sign in to save to wishlist"); return; }
+                            const added = await toggleWishlist(item.id); 
+                            toast.success(added ? "Added to wishlist" : "Removed from wishlist");
+                          }}
+                          className="absolute top-2 right-2 w-6 h-6 bg-white/80 rounded-full flex items-center justify-center z-10 shadow-xs"
+                          aria-label="Toggle wishlist"
+                        >
+                          <Heart size={12} className={isWished ? "fill-red-500 text-red-500" : "text-[#8C8273]"} />
+                        </button>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={item.img}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="p-2.5 space-y-1">
+                        {/* Stars — only shown when real rating exists */}
+                        {item.rating !== null && (
+                          <div className="flex items-center gap-1">
+                            <div className="flex">
+                              {Array(5).fill(0).map((_, i) => (
+                                <Star key={i} size={10} className="fill-amber-400 text-amber-400" />
+                              ))}
+                            </div>
+                            <span className="font-garamond text-[9px] text-[#7A6E5D]">{item.rating.toFixed(1)}</span>
+                          </div>
+                        )}
+                        {/* Name */}
+                        <h3 className="font-garamond text-[11.5px] font-bold text-[#1C2E24] line-clamp-1 leading-snug">
+                          {item.name}
+                        </h3>
+                        {/* Price */}
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="font-garamond text-sm font-bold text-[#1C2E24]">₹{item.price.toLocaleString()}</span>
+                          {item.originalPrice && (
+                            <span className="font-garamond text-[10px] text-[#8C8273] line-through">₹{item.originalPrice.toLocaleString()}</span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
             </div>
           </section>
 
@@ -340,7 +386,8 @@ export default function HomePage() {
               {displayProducts.map((item) => {
                 const isWished = wishlistIds.includes(item.id);
                 return (
-                  <div
+                  <Link
+                    href={`/customer/products/${item.id}`}
                     key={item.id}
                     className="bg-white border border-[#E5E0D5] rounded-2xl overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-col justify-between"
                   >
@@ -349,7 +396,12 @@ export default function HomePage() {
                         {item.discount}
                       </span>
                       <button
-                        onClick={() => toggleWishlist(item.id)}
+                        onClick={async (e) => { 
+                          e.preventDefault(); 
+                          if (!isAuthenticated) { toast.error("Please sign in to save to wishlist"); return; }
+                          const added = await toggleWishlist(item.id);
+                          toast.success(added ? "Added to wishlist" : "Removed from wishlist");
+                        }}
                         className="absolute top-2 right-2 w-7 h-7 bg-white/80 backdrop-blur-xs rounded-full flex items-center justify-center text-[#1C2E24] hover:bg-white shadow-xs z-10 transition-colors"
                         aria-label="Wishlist"
                       >
@@ -367,29 +419,37 @@ export default function HomePage() {
                         <h3 className="font-garamond text-xs font-bold text-[#1C2E24] line-clamp-1 group-hover:text-[#1E3A2B] transition-colors">
                           {item.name}
                         </h3>
-                        <div className="flex items-center gap-1 mt-1">
-                          <div className="flex text-amber-500">
-                            {Array(5).fill(0).map((_, i) => (
-                              <Star key={i} size={11} className="fill-amber-400 text-amber-400" />
-                            ))}
+                        {item.rating !== null && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <div className="flex text-amber-500">
+                              {Array(5).fill(0).map((_, i) => (
+                                <Star key={i} size={11} className="fill-amber-400 text-amber-400" />
+                              ))}
+                            </div>
+                            <span className="font-garamond text-[10px] text-[#7A6E5D]">{item.rating.toFixed(1)}</span>
                           </div>
-                          <span className="font-garamond text-[10px] text-[#7A6E5D]">{item.rating.toFixed(1)}</span>
-                        </div>
+                        )}
                       </div>
                       <div className="pt-2 border-t border-[#F0ECE1] flex items-center justify-between">
                         <div>
                           <span className="font-garamond text-sm font-bold text-[#1C2E24]">₹{item.price.toLocaleString()}</span>
-                          <span className="font-garamond text-[11px] text-[#8C8273] line-through ml-1.5">₹{item.originalPrice.toLocaleString()}</span>
+                          {item.originalPrice && (
+                            <span className="font-garamond text-[11px] text-[#8C8273] line-through ml-1.5">₹{item.originalPrice.toLocaleString()}</span>
+                          )}
                         </div>
                         <button
-                          onClick={() => { addItem(item.id, 1); toast.success(`Added to cart!`); }}
+                          onClick={async (e) => { 
+                            e.preventDefault(); 
+                            if (!isAuthenticated) { toast.error("Please sign in to add to cart"); return; }
+                            try { await addItem(item.id, 1); toast.success(`Added to cart!`); } catch (err) { toast.error("Failed to add to cart"); }
+                          }}
                           className="bg-[#1E3A2B] hover:bg-[#2A4D3B] text-white text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors"
                         >
                           + Add
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

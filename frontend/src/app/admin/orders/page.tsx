@@ -25,60 +25,17 @@ function AdminOrdersContent() {
   const { isAuthenticated, role } = useAuthStore();
 
   const [orders, setOrders] = useState<Order[]>([]);
-  const [totalOrders, setTotalOrders] = useState(1842);
-  const [deliveredCount, setDeliveredCount] = useState(1102);
-  const [shippedCount, setShippedCount] = useState(482);
-  const [processingCount, setProcessingCount] = useState(208);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [deliveredCount, setDeliveredCount] = useState(0);
+  const [shippedCount, setShippedCount] = useState(0);
+  const [processingCount, setProcessingCount] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState(params.get("status") || "");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
-
-  // Demo fallback matching admin theme
-  const demoOrders = [
-    {
-      id: 12568,
-      order_number: "ORD12568",
-      customer_name: "Priya Sharma",
-      price: 699,
-      status: "delivered",
-      date: "30 May, 2025"
-    },
-    {
-      id: 12567,
-      order_number: "ORD12567",
-      customer_name: "Karthik Reddy",
-      price: 999,
-      status: "shipped",
-      date: "30 May, 2025"
-    },
-    {
-      id: 12566,
-      order_number: "ORD12566",
-      customer_name: "Anjali Reddy",
-      price: 1299,
-      status: "processing",
-      date: "30 May, 2025"
-    },
-    {
-      id: 12565,
-      order_number: "ORD12565",
-      customer_name: "Ravi Kumar",
-      price: 399,
-      status: "pending",
-      date: "30 May, 2025"
-    },
-    {
-      id: 12564,
-      order_number: "ORD12564",
-      customer_name: "Sneha Patil",
-      price: 1499,
-      status: "delivered",
-      date: "29 May, 2025"
-    }
-  ];
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
@@ -92,9 +49,22 @@ function AdminOrdersContent() {
     setIsLoading(true);
     try {
       const { data } = await adminApi.orders({ page, page_size: 20, status: filter || undefined });
-      if (data && data.items && data.items.length > 0) {
+      if (data && data.items) {
         setOrders(data.items);
-        setTotalOrders(data.total > 0 ? data.total : 1842);
+        setTotalOrders(data.total);
+        setTotalPages(data.pages || 1);
+        
+        let delivered = 0;
+        let shipped = 0;
+        let processing = 0;
+        data.items.forEach((o: any) => {
+          if (o.status === "delivered") delivered++;
+          else if (o.status === "shipped") shipped++;
+          else if (o.status === "processing") processing++;
+        });
+        setDeliveredCount(delivered);
+        setShippedCount(shipped);
+        setProcessingCount(processing);
       } else {
         setOrders([]);
       }
@@ -132,16 +102,19 @@ function AdminOrdersContent() {
     }
   };
 
-  const displayList = orders.length > 0
-    ? orders.map((o) => ({
-        id: o.id,
-        order_number: o.order_number || `ORD${o.id}`,
-        customer_name: (o as any).shipping_address?.full_name || (o as any).user?.full_name || "Customer",
-        price: o.total_amount,
-        status: o.status,
-        date: formatDate(o.created_at || "2025-05-30T10:00:00Z")
-      }))
-    : demoOrders;
+  const displayList = orders
+    .filter(o => 
+      (o.order_number || "").toLowerCase().includes(search.toLowerCase()) || 
+      ((o as any).user?.full_name || "").toLowerCase().includes(search.toLowerCase())
+    )
+    .map((o) => ({
+      id: o.id,
+      order_number: o.order_number,
+      customer_name: (o as any).user?.full_name || "Guest Customer",
+      price: formatPrice(o.total_amount),
+      status: o.status,
+      date: formatDate(o.created_at || "")
+    }));
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -238,28 +211,31 @@ function AdminOrdersContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F5F2EA]">
-                {displayList.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
-                    <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">#{item.order_number}</td>
-                    <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{item.customer_name}</td>
-                    <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{formatPrice(item.price)}</td>
+                {displayList.length === 0 ? (
+                  <tr><td colSpan={6} className="py-8 text-center text-[#8C9890]">No orders found.</td></tr>
+                ) : (
+                  displayList.map((order) => (
+                  <tr key={order.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
+                    <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">#{order.order_number}</td>
+                    <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{order.customer_name}</td>
+                    <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{order.price}</td>
                     <td className="py-3.5 px-3">
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md capitalize inline-block ${getStatusBadge(item.status)}`}>
-                        {item.status}
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md capitalize inline-block ${getStatusBadge(order.status)}`}>
+                        {order.status}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 text-[#556B5D] font-medium">{item.date}</td>
+                    <td className="py-3.5 px-3 text-[#556B5D] font-medium">{order.date}</td>
                     <td className="py-3.5 px-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => router.push(`/admin/orders/${item.id}`)}
+                          onClick={() => router.push(`/admin/orders/${order.id}`)}
                           className="p-1 text-[#6B7A70] hover:text-[#0D2619] transition-colors"
                           title="View Order Details"
                         >
                           <Eye size={15} />
                         </button>
                         <button
-                          onClick={() => handleDeleteOrder(item.id)}
+                          onClick={() => handleDeleteOrder(order.id)}
                           className="p-1 text-[#6B7A70] hover:text-red-600 transition-colors"
                           title="Delete Order"
                         >
@@ -268,37 +244,32 @@ function AdminOrdersContent() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                ))
+                )}
               </tbody>
             </table>
           )}
         </div>
 
         {/* ── 4. Pagination Dock ── */}
-        <div className="flex items-center justify-center gap-1.5 pt-4 border-t border-[#F0ECE1]">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#556B5D] hover:bg-[#FAF8F3] disabled:opacity-40"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button className="w-7 h-7 rounded-lg bg-[#0D2619] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-            1
-          </button>
-          <button onClick={() => setPage(2)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            2
-          </button>
-          <button onClick={() => setPage(3)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            3
-          </button>
-          <span className="text-xs text-[#8C9890] px-1">...</span>
-          <button onClick={() => setPage(50)} className="w-7 h-7 rounded-lg text-[#556B5D] hover:bg-[#FAF8F3] text-xs font-semibold">
-            50
-          </button>
-          <button onClick={() => setPage((p) => p + 1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#556B5D] hover:bg-[#FAF8F3]">
-            <ChevronRight size={16} />
-          </button>
+        <div className="flex items-center justify-between pt-4 border-t border-[#F0ECE1]">
+          <span className="text-[11px] text-[#8C9890] font-medium">Page {page} of {totalPages}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page >= totalPages}
+              className="p-1.5 rounded-lg border border-[#E5E0D5] text-[#1C2E24] hover:bg-[#FAF8F3] disabled:opacity-50 transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
 
       </div>

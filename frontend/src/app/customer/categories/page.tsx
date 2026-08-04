@@ -1,13 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ShoppingBag, ChevronRight } from "lucide-react";
+import { productApi } from "@/lib/api";
 
-/* ────────────────────────────────────────────────────────
-   Category data – matches the design image exactly
-──────────────────────────────────────────────────────── */
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   {
     name: "Jewellery",
     sub: "Shine in Every Style",
@@ -33,6 +32,22 @@ const CATEGORIES = [
 
 export default function CategoriesPage() {
   const router = useRouter();
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+
+  useEffect(() => {
+    productApi.categories().then((res) => {
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        const mapped = res.data.map((cat: any) => ({
+          name: cat.name,
+          sub: cat.description || (cat.slug === "jewellery" ? "Shine in Every Style" : cat.slug === "sarees" ? "Grace in Every Drape" : "Style for Every You"),
+          img: cat.image_url || (cat.slug === "jewellery" ? "/design/cat_jewellery.png" : cat.slug === "sarees" ? "/design/cat_sarees.png" : "/design/cat_dresses.png"),
+          href: `/customer/products?category=${cat.slug}`,
+          bg: "#FBF7F0",
+        }));
+        setCategories(mapped);
+      }
+    }).catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FAF8F3] font-garamond text-[#1C2E24]">
@@ -124,7 +139,7 @@ export default function CategoriesPage() {
         </section>
 
         {/* ── Category Cards ── */}
-        {CATEGORIES.map((cat, i) => (
+        {categories.map((cat, i) => (
           <Link
             key={cat.name}
             href={cat.href}

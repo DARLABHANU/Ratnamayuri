@@ -147,7 +147,7 @@ router.get('/analytics', getCurrentUser, requireMerchantOrAdmin, async (req, res
       await wallet.save();
     }
 
-    const pending_payout   = wallet.pending_balance   || 0; // In escrow (7-day hold)
+    const pending_payout = wallet.pending_balance || 0; // In escrow (7-day hold)
     const available_payout = wallet.available_balance || 0; // Released, ready to withdraw
     const withdrawn_payout = wallet.withdrawn_balance || 0; // Already requested/paid out
 
@@ -215,7 +215,7 @@ router.post('/withdraw', getCurrentUser, requireMerchantOrAdmin, async (req, res
   try {
     const Wallet = require('../models/Wallet');
     const WithdrawalRequest = require('../models/WithdrawalRequest');
-    
+
     const profile = await MerchantProfile.findOne({ user_id: req.user.id });
     if (!profile) {
       return res.status(404).json({ detail: 'Merchant profile not found' });
@@ -306,7 +306,7 @@ router.post('/products/bulk-upload', getCurrentUser, requireMerchantOrAdmin, asy
 
     const headers = rows[0].map(h => h.trim().toLowerCase());
     const colIndex = (name) => headers.indexOf(name);
-    
+
     const nameIdx = colIndex('name');
     const descIdx = colIndex('description');
     const basePriceIdx = colIndex('base_price');
@@ -534,7 +534,7 @@ router.get('/customers', getCurrentUser, requireMerchantOrAdmin, async (req, res
 
     // Since we don't have a direct "MerchantCustomer" table, we can aggregate from Orders
     const orders = await Order.find({ merchant_id: profile.id });
-    
+
     const customersMap = {};
     orders.forEach(order => {
       const uId = order.user_id;
@@ -549,7 +549,7 @@ router.get('/customers', getCurrentUser, requireMerchantOrAdmin, async (req, res
       }
       customersMap[uId].total_orders += 1;
       customersMap[uId].total_spent += order.total_amount;
-      
+
       const orderDate = new Date(order.created_at);
       if (!customersMap[uId].last_order || orderDate > new Date(customersMap[uId].last_order)) {
         customersMap[uId].last_order = order.created_at;
@@ -557,7 +557,7 @@ router.get('/customers', getCurrentUser, requireMerchantOrAdmin, async (req, res
     });
 
     const items = Object.values(customersMap);
-    
+
     // Sort by most recent order
     items.sort((a, b) => new Date(b.last_order) - new Date(a.last_order));
 
@@ -594,6 +594,11 @@ router.get('/coupons', getCurrentUser, requireMerchantOrAdmin, async (req, res, 
 
     const coupons = await Coupon.find({ created_by: req.user.id }).sort({ created_at: -1 });
     res.json(coupons);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get Merchant's Product Reviews
 router.get('/reviews', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
   try {

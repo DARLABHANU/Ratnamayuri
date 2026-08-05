@@ -66,7 +66,7 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-[9999] md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
       style={{
         background: "#FAF8F3",
         borderTop: "1.5px solid #E5E0D5",

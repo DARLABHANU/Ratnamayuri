@@ -17,6 +17,7 @@ import { useAuthStore } from "@/store/authStore";
 import toast from "react-hot-toast";
 import { Product } from "@/types";
 import { getProductImage } from "@/lib/utils";
+import FilterSidebar from "@/components/customer/FilterSidebar";
 
 export default function HomePage() {
   const router = useRouter();
@@ -28,6 +29,11 @@ export default function HomePage() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedFabric, setSelectedFabric] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => {
     setIsLoadingProducts(true);
@@ -368,11 +374,43 @@ export default function HomePage() {
           ))}
         </section>
 
-        {/* ── 3. Trending Now + Side Panel ── */}
+        {/* ── 3. Catalog Grid with Left Side Navbar (Identical to /customer/products) ── */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-          {/* Left: Product Grid */}
-          <div className="lg:col-span-8 space-y-6">
+          {/* Left Side Navbar (Category & Filters) */}
+          <div className="lg:col-span-3">
+            <FilterSidebar
+              selectedCategory={selectedCategory}
+              selectedFabric={selectedFabric}
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+              onCategorySelect={(cat) => {
+                setSelectedCategory(cat);
+                if (cat) router.push(`/customer/products?category=${cat}`);
+                else router.push("/customer/products");
+              }}
+              onFabricSelect={(fab) => {
+                setSelectedFabric(fab);
+                router.push(`/customer/products?fabric=${encodeURIComponent(fab)}`);
+              }}
+              onPriceRangeSelect={(min, max) => {
+                setMinPrice(min);
+                setMaxPrice(max);
+                router.push(`/customer/products?min_price=${min}&max_price=${max}`);
+              }}
+              onClearAll={() => {
+                setSelectedCategory("");
+                setSelectedFabric("");
+                setMinPrice("");
+                setMaxPrice("");
+              }}
+              showMobileFilters={showMobileFilters}
+              onCloseMobileFilters={() => setShowMobileFilters(false)}
+            />
+          </div>
+
+          {/* Center: Product Grid */}
+          <div className="lg:col-span-6 space-y-6">
             <div className="flex items-center justify-between border-b border-[#E5E0D5] pb-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🌿</span>
@@ -382,7 +420,7 @@ export default function HomePage() {
                 View All →
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {displayProducts.map((item) => {
                 const isWished = wishlistIds.includes(item.id);
                 return (
@@ -392,9 +430,11 @@ export default function HomePage() {
                     className="bg-white border border-[#E5E0D5] rounded-2xl overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-col justify-between"
                   >
                     <div className="relative aspect-square bg-[#FAF8F3] overflow-hidden">
-                      <span className="absolute top-2 left-2 bg-[#B9381E] text-white font-garamond text-[10px] font-bold px-2 py-0.5 rounded-md z-10">
-                        {item.discount}
-                      </span>
+                      {item.discount && (
+                        <span className="absolute top-2 left-2 bg-[#B9381E] text-white font-garamond text-[10px] font-bold px-2 py-0.5 rounded-md z-10">
+                          {item.discount}
+                        </span>
+                      )}
                       <button
                         onClick={async (e) => { 
                           e.preventDefault(); 
@@ -456,22 +496,22 @@ export default function HomePage() {
           </div>
 
           {/* Right: Info Cards */}
-          <div className="lg:col-span-4 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             {/* Why Choose Card */}
             <div className="bg-[#1E3A2B] text-white rounded-2xl p-6 relative overflow-hidden space-y-5 shadow-sm">
               <div className="space-y-1 relative z-10">
                 <h3 className="font-cormorant text-2xl font-bold">Why Choose Ratnamayuri?</h3>
                 <div className="w-12 h-0.5 bg-[#C9973E]" />
               </div>
-              <div className="grid grid-cols-2 gap-4 relative z-10 font-garamond">
+              <div className="grid grid-cols-1 gap-3 relative z-10 font-garamond">
                 {[
                   { icon: "🌸", label: "Handmade with Love" },
                   { icon: "🌿", label: "Eco-friendly Products" },
                   { icon: "🤝", label: "Support Local Artisans" },
                   { icon: "🏆", label: "Premium Quality" },
                 ].map((item) => (
-                  <div key={item.label} className="flex flex-col items-center text-center p-3 bg-white/5 rounded-xl border border-white/10">
-                    <span className="text-xl mb-1">{item.icon}</span>
+                  <div key={item.label} className="flex items-center gap-3 p-2.5 bg-white/5 rounded-xl border border-white/10">
+                    <span className="text-lg">{item.icon}</span>
                     <span className="text-xs font-semibold">{item.label}</span>
                   </div>
                 ))}
@@ -480,26 +520,22 @@ export default function HomePage() {
 
             {/* Newsletter Card */}
             <div className="bg-[#EFECE3] border border-[#E5E0D5] rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between space-y-4">
-              <div className="space-y-1 relative z-10 max-w-[70%]">
-                <h3 className="font-cormorant text-2xl font-bold text-[#1C2E24]">Stay Connected with Nature &amp; Style</h3>
+              <div className="space-y-1 relative z-10">
+                <h3 className="font-cormorant text-xl font-bold text-[#1C2E24]">Stay Connected</h3>
                 <p className="font-garamond text-xs text-[#556B5D]">Join our newsletter for exclusive offers &amp; new arrivals.</p>
               </div>
-              <div className="absolute right-2 bottom-2 w-20 h-24 pointer-events-none opacity-90">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/design/newsletter_plant.png" alt="Plant" className="w-full h-full object-contain" />
-              </div>
-              <form onSubmit={handleSubscribe} className="flex gap-2 relative z-10">
+              <form onSubmit={handleSubscribe} className="flex flex-col gap-2 relative z-10">
                 <input
                   type="email"
                   required
                   placeholder="Enter your email"
                   value={newsletterEmail}
                   onChange={(e) => setNewsletterEmail(e.target.value)}
-                  className="flex-1 bg-white border border-[#D8D2C5] px-3 py-2 text-xs font-garamond text-[#1C2E24] placeholder-[#8C8273] rounded-lg focus:outline-none focus:border-[#1E3A2B]"
+                  className="w-full bg-white border border-[#D8D2C5] px-3 py-2 text-xs font-garamond text-[#1C2E24] placeholder-[#8C8273] rounded-lg focus:outline-none focus:border-[#1E3A2B]"
                 />
                 <button
                   type="submit"
-                  className="bg-[#1E3A2B] hover:bg-[#2A4D3B] text-white font-garamond text-xs font-semibold px-4 py-2 rounded-lg transition-colors shadow-xs"
+                  className="w-full bg-[#1E3A2B] hover:bg-[#2A4D3B] text-white font-garamond text-xs font-semibold py-2 rounded-lg transition-colors shadow-xs"
                 >
                   Subscribe
                 </button>

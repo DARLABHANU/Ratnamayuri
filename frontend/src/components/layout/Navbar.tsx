@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   ShoppingBag, Heart, User, LogOut, Settings, Award,
   Package, Search, ChevronDown, MapPin, Menu, X, Bell,
+  Home, Sparkles, Star, Flame, PhoneCall, Tag, LayoutDashboard
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
@@ -71,14 +72,7 @@ export default function Navbar() {
   const dashboardLink = role ? `/${role}/dashboard` : "/auth/login";
   const cartCount = cart?.item_count || 0;
 
-  // Pages with their own mobile top bar matching design screenshots 1:1
-  const HIDE_MOBILE_HEADER_PAGES = [
-    "/customer/profile",
-    "/customer/categories",
-    "/customer/wishlist",
-    "/customer/cart",
-  ];
-  const isMobileHeaderHidden = HIDE_MOBILE_HEADER_PAGES.some((p) => pathname.startsWith(p));
+  const isMobileHeaderHidden = false;
 
   return (
     <>
@@ -324,87 +318,127 @@ export default function Navbar() {
       <DeliveryLocationModal />
 
       {/* ════════════════════════════════════════════════ */}
-      {/* MOBILE SLIDE-IN DRAWER                          */}
+      {/* MOBILE SLIDE-IN DRAWER (EXACT MERCHANT LAYOUT DESIGN) */}
       {/* ════════════════════════════════════════════════ */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-[9998] md:hidden"
+          className="fixed inset-0 z-[10000] md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" />
 
-          {/* Drawer Panel */}
+          {/* Drawer Panel - Exact Merchant Layout Code & Styling */}
           <div
-            className="absolute left-0 top-0 bottom-0 w-72 bg-[#FAF8F3] shadow-2xl flex flex-col"
+            className="absolute left-0 top-0 bottom-0 w-64 bg-[#0D2619] text-emerald-100 p-4 shadow-2xl flex flex-col justify-between font-garamond"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E0D5] bg-[#0D2619]">
-              <div>
-                <span className="font-cormorant text-xl font-bold text-white">Ratnamayuri</span>
-                <p className="text-[10px] text-emerald-300 font-garamond">Handmade with Love ❤️</p>
+            <div className="space-y-4 overflow-y-auto pr-1">
+              {/* Drawer Top Header Logo */}
+              <div className="flex items-center justify-between border-b border-emerald-900/50 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#143323] border border-gold-400/40 flex items-center justify-center text-gold-400 text-sm font-bold shadow-xs">
+                    ✦
+                  </div>
+                  <div>
+                    <span className="font-cormorant text-lg font-bold text-white tracking-wide block leading-none">
+                      Ratnamayuri
+                    </span>
+                    <span className="text-[10px] text-emerald-300 font-semibold tracking-wider uppercase mt-0.5 block">
+                      STOREFRONT
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1 text-emerald-300 hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
               </div>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 text-white hover:text-emerald-300 transition-colors">
-                <X size={22} />
-              </button>
+
+              {/* Navigation Items (Exact Merchant Layout active/inactive styling) */}
+              <div className="space-y-1">
+                {[
+                  { href: "/", label: "Home", icon: Home },
+                  { href: "/customer/products?category=jewellery", label: "Jewellery", icon: Sparkles },
+                  { href: "/customer/products?category=sarees", label: "Sarees", icon: Tag },
+                  { href: "/customer/products?category=dresses", label: "Dresses", icon: Package },
+                  { href: "/customer/products?is_featured=true", label: "New Arrivals", icon: Star },
+                  { href: "/customer/products?sort_by=total_sold", label: "Bestsellers", icon: Flame },
+                  { href: "/customer/orders", label: "Track Order", icon: ShoppingBag },
+                  { href: "/customer/support", label: "Contact Us", icon: PhoneCall },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+
+                  if (isActive) {
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white text-[#0D2619] font-bold text-xs shadow-sm transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon size={16} className="text-[#0D2619]" />
+                          <span>{item.label}</span>
+                        </div>
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-between px-4 py-2.5 rounded-xl text-emerald-100/80 hover:bg-white/10 hover:text-white text-xs font-medium transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon size={16} className="text-emerald-300/80" />
+                        <span>{item.label}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Links */}
-            <nav className="flex-1 overflow-y-auto px-0 py-2">
-              {[
-                { href: "/", label: "🏠 Home" },
-                { href: "/customer/products?category=jewellery", label: "✨ Jewellery" },
-                { href: "/customer/products?category=sarees", label: "🥻 Sarees" },
-                { href: "/customer/products?category=dresses", label: "👗 Dresses" },
-                { href: "/customer/products?is_featured=true", label: "🌟 New Arrivals" },
-                { href: "/customer/products?sort_by=total_sold", label: "🔥 Bestsellers" },
-                { href: "/customer/orders", label: "📦 Track Order" },
-                { href: "/contact", label: "📞 Contact Us" },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center px-5 py-3.5 font-garamond text-sm text-[#1C2E24] hover:bg-[#F0ECE5] border-b border-[#F0ECE1] transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-
-            {/* Drawer Footer */}
-            {mounted && (
-              <div className="px-5 py-4 border-t border-[#E5E0D5]">
-                {isAuthenticated ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#0D2619] flex items-center justify-center text-white font-cormorant font-bold text-lg">
-                        {user?.full_name?.charAt(0) || "U"}
-                      </div>
-                      <div>
-                        <p className="font-garamond text-sm font-bold text-[#1C2E24] truncate">{user?.full_name}</p>
-                        <p className="font-garamond text-xs text-[#8C9890] truncate">{user?.email}</p>
-                      </div>
+            {/* Drawer Footer (User Info & Sign Out) */}
+            <div className="pt-4 border-t border-emerald-900/50 mt-auto">
+              {mounted && isAuthenticated ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 px-2 py-1">
+                    <div className="w-8 h-8 rounded-full bg-[#143323] border border-gold-400/40 flex items-center justify-center text-gold-400 font-cormorant font-bold text-sm flex-shrink-0">
+                      {user?.full_name?.charAt(0) || "U"}
                     </div>
-                    <button
-                      onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                      className="w-full bg-red-50 text-red-600 font-garamond text-xs font-semibold py-2.5 rounded-xl border border-red-200 mt-1"
-                    >
-                      Sign Out
-                    </button>
+                    <div className="overflow-hidden">
+                      <p className="font-garamond text-xs font-bold text-white truncate">{user?.full_name}</p>
+                      <p className="font-garamond text-[10px] text-emerald-300 truncate">{user?.email}</p>
+                    </div>
                   </div>
-                ) : (
-                  <Link
-                    href="/auth/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-full bg-[#0D2619] text-white font-garamond text-xs font-semibold py-3 rounded-xl block text-center hover:bg-[#19402B] transition-colors"
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-emerald-300 hover:text-red-400 text-xs font-semibold transition-colors"
                   >
-                    Login / Signup
-                  </Link>
-                )}
-              </div>
-            )}
+                    <LogOut size={15} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full bg-white text-[#0D2619] font-garamond text-xs font-bold py-3 rounded-2xl block text-center shadow-md hover:bg-emerald-50 transition-colors"
+                >
+                  Login / Signup
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       )}

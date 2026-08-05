@@ -87,30 +87,7 @@ export default function WishlistPage() {
   return (
     <div className="min-h-screen bg-[#FAF8F3] text-[#1C2E24] font-garamond">
 
-      {/* ══════════════════════════════════════════════
-          MOBILE HEADER (Matches screenshot 1:1)
-          <   My Wishlist   ⋮
-         ══════════════════════════════════════════════ */}
-      <div className="md:hidden sticky top-0 z-40 bg-[#FAF8F3] border-b border-[#E5E0D5] shadow-xs">
-        <div className="flex items-center justify-between px-4 py-3.5">
-          <button
-            onClick={() => router.back()}
-            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#F0ECE5] transition-colors"
-            aria-label="Go back"
-          >
-            <ChevronLeft size={22} className="text-[#1C2E24]" />
-          </button>
-          <h1 className="font-cormorant text-[20px] font-bold tracking-wide text-[#1C2E24]">
-            My Wishlist
-          </h1>
-          <button
-            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#F0ECE5] transition-colors"
-            aria-label="More options"
-          >
-            <MoreVertical size={20} className="text-[#1C2E24]" />
-          </button>
-        </div>
-      </div>
+      {/* Desktop Header */}
 
       {/* ══════════════════════════════════════════════
           DESKTOP HEADER

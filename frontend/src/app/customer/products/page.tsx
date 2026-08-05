@@ -6,6 +6,7 @@ import { SlidersHorizontal, Search, X, ChevronLeft, ChevronRight, Check, Star, S
 import { productApi } from "@/lib/api";
 import { Product, ProductListResponse } from "@/types";
 import ProductCard from "@/components/customer/ProductCard";
+import FilterSidebar from "@/components/customer/FilterSidebar";
 
 const SORT_OPTIONS = [
   { value: "created_at:desc", label: "Newest First" },
@@ -266,138 +267,25 @@ function ProductsContent() {
 
       {/* Main Catalog Layout (Sidebar + Product Grid) */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        
-        {/* Left Sidebar Filter (Desktop Sidebar / Mobile Drawer) */}
-        <aside className={`lg:block ${showMobileFilters ? "fixed inset-0 z-50 bg-black/60 flex justify-end" : "hidden"}`}>
-          <div className={`${showMobileFilters ? "w-4/5 max-w-sm bg-white h-full overflow-y-auto p-6 animate-fade-left" : "bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs sticky top-24"}`}>
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#F0ECE1]">
-              <h3 className="font-cormorant text-lg font-bold text-[#1C2E24] flex items-center gap-1.5">
-                <SlidersHorizontal size={15} className="text-[#0D2619]" /> Category &amp; Filters
-              </h3>
-              {(selectedFabric || minPrice || maxPrice || search || categoryParam || minRating) && (
-                <button onClick={clearAllFilters} className="text-xs text-[#0D2619] font-bold hover:underline">
-                  Clear All
-                </button>
-              )}
-              {showMobileFilters && (
-                <button onClick={() => setShowMobileFilters(false)}><X size={18} className="text-[#8C9890]" /></button>
-              )}
-            </div>
-
-            {/* Dynamic Category Taxonomy */}
-            <div className="mb-6">
-              <h4 className="text-xs font-bold text-[#8C9890] tracking-wider mb-2 uppercase">Category</h4>
-              <div className="space-y-1 text-xs font-bold">
-                <button
-                  onClick={() => router.push("/customer/products")}
-                  className={`w-full text-left px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${
-                    !categoryParam ? "bg-[#0D2619] text-white" : "hover:bg-[#FAF8F3] text-[#556B5D]"
-                  }`}
-                >
-                  <span>All Items</span>
-                </button>
-                {(dbCategories.length > 0
-                  ? dbCategories
-                  : [
-                      { id: 1, name: "Silk Sarees & Weaves", slug: "sarees" },
-                      { id: 2, name: "Luxury Jewellery", slug: "jewellery" },
-                      { id: 3, name: "Bridal Collection", slug: "bridal" },
-                    ]
-                ).map((cat) => {
-                  const isCatActive = categoryParam === cat.slug;
-                  return (
-                    <button
-                      key={cat.slug}
-                      onClick={() => router.push(`/customer/products?category=${cat.slug}`)}
-                      className={`w-full text-left px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${
-                        isCatActive ? "bg-[#0D2619] text-white" : "hover:bg-[#FAF8F3] text-[#556B5D]"
-                      }`}
-                    >
-                      <span>{cat.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Dynamic Fabric, Material & Craft Filter Chips */}
-            <div className="mb-6">
-              <h4 className="text-xs font-bold text-[#8C9890] tracking-wider mb-2.5 uppercase">Fabric / Material / Craft</h4>
-              <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto scrollbar-none pr-1">
-                {(dbTags.length > 0
-                  ? Array.from(new Set([...dbTags, ...FABRIC_FILTERS]))
-                  : FABRIC_FILTERS
-                ).map((fab) => {
-                  const isFabActive = selectedFabric.toLowerCase() === fab.toLowerCase();
-                  return (
-                    <button
-                      key={fab}
-                      onClick={() => applyFabricFilter(fab)}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border ${
-                        isFabActive
-                          ? "bg-[#0D2619] text-white border-[#0D2619]"
-                          : "bg-white text-[#556B5D] border-[#E5E0D5] hover:border-[#0D2619]"
-                      }`}
-                    >
-                      {isFabActive && <Check size={11} />}
-                      {fab}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Price Ranges */}
-            <div className="mb-6">
-              <h4 className="text-xs font-bold text-[#8C9890] tracking-wider mb-2.5 uppercase">Price Range</h4>
-              <div className="space-y-1 text-xs font-bold">
-                {PRICE_RANGES.map((pr) => {
-                  const isPrActive = minPrice === pr.min && maxPrice === pr.max;
-                  return (
-                    <button
-                      key={pr.label}
-                      onClick={() => applyPriceRange(pr.min, pr.max)}
-                      className={`w-full text-left px-3 py-2 rounded-xl transition-colors flex items-center justify-between ${
-                        isPrActive ? "bg-[#0D2619] text-white" : "text-[#556B5D] hover:bg-[#FAF8F3]"
-                      }`}
-                    >
-                      <span>{pr.label}</span>
-                      {isPrActive && <Check size={12} className="text-white" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Minimum Rating */}
-            <div className="mb-6">
-              <h4 className="text-xs font-bold text-[#8C9890] tracking-wider mb-2.5 uppercase">Customer Rating</h4>
-              <div className="space-y-1 text-xs font-bold">
-                {["4", "3"].map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => { setMinRating(minRating === r ? "" : r); setPage(1); }}
-                    className={`w-full text-left px-3 py-2 rounded-xl flex items-center gap-1 transition-colors ${
-                      minRating === r ? "bg-[#0D2619] text-white" : "text-[#556B5D] hover:bg-[#FAF8F3]"
-                    }`}
-                  >
-                    <div className="flex items-center text-amber-400"><Star size={12} fill="currentColor" /></div>
-                    <span>{r}★ &amp; above</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {showMobileFilters && (
-              <button
-                onClick={() => setShowMobileFilters(false)}
-                className="w-full bg-[#0D2619] text-white mt-4 py-3 rounded-xl text-xs font-bold tracking-widest shadow-xs"
-              >
-                APPLY FILTERS
-              </button>
-            )}
-          </div>
-        </aside>
+        <FilterSidebar
+          selectedCategory={categoryParam || ""}
+          selectedFabric={selectedFabric}
+          minPrice={minPrice}
+          maxPrice={maxPrice}
+          onCategorySelect={(slug) => {
+            if (!slug) {
+              router.push("/customer/products");
+            } else {
+              router.push(`/customer/products?category=${slug}`);
+            }
+            setPage(1);
+          }}
+          onFabricSelect={(fab) => applyFabricFilter(fab)}
+          onPriceRangeSelect={(min, max) => applyPriceRange(min, max)}
+          onClearAll={clearAllFilters}
+          showMobileFilters={showMobileFilters}
+          onCloseMobileFilters={() => setShowMobileFilters(false)}
+        />
 
         {/* Product Grid Area */}
         <main className="lg:col-span-3 space-y-4">

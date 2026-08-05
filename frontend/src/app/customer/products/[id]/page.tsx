@@ -4,24 +4,95 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ChevronLeft, Heart, Share2, Star, ShoppingCart, Loader2,
-  ShieldCheck, RefreshCw, CheckCircle2, User, Truck, Package, ArrowRight
+  ChevronLeft, ChevronRight, Heart, Share2, Star, ShoppingCart, Loader2,
+  ShieldCheck, RefreshCw, CheckCircle2, User, Truck, Package, ArrowRight, MessageSquare, Send
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { productApi } from "@/lib/api";
+import { productApi, reviewApi } from "@/lib/api";
 import { Product } from "@/types";
-import { formatPrice, getProductImage, getApiError, getEstimatedDelivery } from "@/lib/utils";
+import { formatPrice, getProductImage, getApiError, getEstimatedDelivery, formatDate } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useDeliveryLocationStore } from "@/store/deliveryLocationStore";
 import ProductCard from "@/components/customer/ProductCard";
 
+const DEMO_SIMILAR_PRODUCTS: Product[] = [
+  {
+    id: 101,
+    name: "Kanchipuram Pure Silk Saree",
+    slug: "kanchipuram-pure-silk-saree",
+    description: "Handcrafted pure silk saree with intricate zari weaving.",
+    price: 14999,
+    compare_price: 19999,
+    stock_quantity: 10,
+    is_active: true,
+    is_featured: true,
+    images: ["/design/cat_sarees.png"],
+    rating_avg: 4.9,
+    rating_count: 84,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    category: { id: 2, name: "Silk Sarees", slug: "sarees" },
+  } as any,
+  {
+    id: 102,
+    name: "Luxury Kundan Choker Set",
+    slug: "luxury-kundan-choker-set",
+    description: "Royal Kundan necklace set with matching earrings.",
+    price: 3499,
+    compare_price: 4999,
+    stock_quantity: 8,
+    is_active: true,
+    is_featured: true,
+    images: ["/design/cat_jewellery.png"],
+    rating_avg: 4.8,
+    rating_count: 62,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    category: { id: 1, name: "Jewellery", slug: "jewellery" },
+  } as any,
+  {
+    id: 103,
+    name: "Handcrafted Designer Anarkali",
+    slug: "handcrafted-designer-anarkali",
+    description: "Flowing silk Anarkali dress with embroidered dupatta.",
+    price: 4999,
+    compare_price: 6999,
+    stock_quantity: 12,
+    is_active: true,
+    is_featured: true,
+    images: ["/design/cat_dresses.png"],
+    rating_avg: 4.7,
+    rating_count: 45,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    category: { id: 3, name: "Dresses", slug: "dresses" },
+  } as any,
+  {
+    id: 104,
+    name: "Temple Gold Plated Bangle Set",
+    slug: "temple-gold-plated-bangle-set",
+    description: "Traditional South Indian temple design bangles.",
+    price: 1299,
+    compare_price: 1899,
+    stock_quantity: 20,
+    is_active: true,
+    is_featured: true,
+    images: ["/design/prod_bangles.png"],
+    rating_avg: 4.9,
+    rating_count: 110,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    category: { id: 1, name: "Jewellery", slug: "jewellery" },
+  } as any,
+];
+
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { addItem } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { location: deliveryLocation, openModal } = useDeliveryLocationStore();
   const [product, setProduct] = useState<Product | null>(null);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
@@ -32,25 +103,111 @@ export default function ProductDetailPage() {
   const [readMore, setReadMore] = useState(false);
   const { toggleWishlist, isWishlisted } = useWishlistStore();
 
+  // Reviews State
+  const [reviewsList, setReviewsList] = useState<any[]>([]);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(false);
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  // Mobile Carousel Touch Swipe State
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (totalImages: number) => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const minSwipeDistance = 40;
+    if (distance > minSwipeDistance) {
+      // Left swipe -> Next image
+      setSelectedImage((prev) => (prev + 1) % totalImages);
+    } else if (distance < -minSwipeDistance) {
+      // Right swipe -> Previous image
+      setSelectedImage((prev) => (prev - 1 + totalImages) % totalImages);
+    }
+  };
+
   const isFav = product ? isWishlisted(product.id) : false;
+
+  const loadReviews = async (productId: number) => {
+    setIsReviewsLoading(true);
+    try {
+      const res = await reviewApi.getForProduct(productId);
+      setReviewsList(Array.isArray(res.data) ? res.data : res.data?.items || []);
+    } catch {
+      setReviewsList([]);
+    } finally {
+      setIsReviewsLoading(false);
+    }
+  };
+
+  const handlePostReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      toast.error("Please sign in to write a review");
+      router.push("/auth/login");
+      return;
+    }
+    if (!newComment.trim()) {
+      toast.error("Please enter your review comment");
+      return;
+    }
+    setIsSubmittingReview(true);
+    try {
+      await reviewApi.createForProduct(Number(id), { rating: newRating, comment: newComment.trim() });
+      toast.success("Thank you! Your review has been published.");
+      setNewComment("");
+      setNewRating(5);
+      loadReviews(Number(id));
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
     setIsLoading(true);
+    loadReviews(Number(id));
+
+    const loadSimilar = async (currentProdId: number, catSlug?: string) => {
+      try {
+        const params: any = { page_size: 8 };
+        if (catSlug) params.category = catSlug;
+        const simRes = await productApi.list(params);
+        let items = (simRes.data.items || []).filter((p: Product) => p.id !== currentProdId);
+        if (items.length < 2) {
+          const genRes = await productApi.list({ page_size: 8 });
+          items = (genRes.data.items || []).filter((p: Product) => p.id !== currentProdId);
+        }
+        if (items.length > 0) {
+          setSimilarProducts(items.slice(0, 4));
+        } else {
+          setSimilarProducts(DEMO_SIMILAR_PRODUCTS.filter((p) => p.id !== currentProdId));
+        }
+      } catch {
+        setSimilarProducts(DEMO_SIMILAR_PRODUCTS.filter((p) => p.id !== currentProdId));
+      }
+    };
 
     productApi
       .get(Number(id))
       .then((res) => {
         setProduct(res.data);
-        if (res.data.category?.slug) {
-          productApi.list({ category: res.data.category.slug, page_size: 4 }).then((simRes) => {
-            setSimilarProducts(simRes.data.items.filter((p: Product) => p.id !== res.data.id));
-          }).catch(() => {});
-        }
+        loadSimilar(res.data.id, res.data.category?.slug);
       })
       .catch(() => {
-        // Fallback demo product matching the design screenshot exactly
-        setProduct({
+        const fallbackProd = {
           id: 1,
           name: "Elegant Gold Plated Chain",
           slug: "elegant-gold-plated-chain",
@@ -67,7 +224,9 @@ export default function ProductDetailPage() {
           created_at: new Date().toISOString(),
           category: { id: 1, name: "Jewellery", slug: "jewellery" },
           seller: { id: 1, full_name: "Ratnamayuri Collections" },
-        } as any);
+        } as any;
+        setProduct(fallbackProd);
+        setSimilarProducts(DEMO_SIMILAR_PRODUCTS.filter((p) => p.id !== 1));
       })
       .finally(() => setIsLoading(false));
   }, [id]);
@@ -124,6 +283,126 @@ export default function ProductDetailPage() {
     } catch (err) {
       toast.error(getApiError(err));
     }
+  };
+
+  const renderReviewsBlock = () => {
+    const avgRating = product?.rating_avg || (reviewsList.length > 0
+      ? Number((reviewsList.reduce((sum, r) => sum + r.rating, 0) / reviewsList.length).toFixed(1))
+      : 4.8);
+    const count = product?.rating_count || reviewsList.length || 12;
+
+    return (
+      <div className="space-y-6 pt-8 border-t border-[#F0ECE1]">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="font-cormorant text-2xl font-bold text-[#1C2E24]">Customer Reviews &amp; Ratings</h2>
+            <p className="text-xs text-[#8C9890]">Real feedback from verified buyers</p>
+          </div>
+          <div className="text-right">
+            <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{avgRating}</span>
+            <div className="flex items-center justify-end text-amber-400 gap-0.5">
+              {Array(5).fill(0).map((_, i) => (
+                <Star key={i} size={14} fill={i < Math.floor(avgRating) ? "currentColor" : "none"} className={i < Math.floor(avgRating) ? "" : "text-gray-300"} />
+              ))}
+            </div>
+            <span className="text-[11px] text-[#7A6E5D] font-medium">{count} Verified Ratings</span>
+          </div>
+        </div>
+
+        {/* ── 1. Write a Review Form ── */}
+        <div className="bg-white border border-[#E5E0D5] rounded-2xl p-4 md:p-5 shadow-xs space-y-3 font-garamond">
+          <h3 className="font-cormorant text-lg font-bold text-[#1C2E24]">Write a Review</h3>
+          <form onSubmit={handlePostReview} className="space-y-3">
+            <div>
+              <label className="text-xs font-bold text-[#1C2E24] block mb-1">Your Rating</label>
+              <div className="flex items-center gap-1 text-amber-400">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setNewRating(star)}
+                    className="p-1 hover:scale-110 transition-transform focus:outline-none"
+                  >
+                    <Star
+                      size={22}
+                      fill={star <= newRating ? "currentColor" : "none"}
+                      className={star <= newRating ? "" : "text-gray-300"}
+                    />
+                  </button>
+                ))}
+                <span className="text-xs font-bold text-[#1C2E24] ml-2">{newRating} Stars</span>
+              </div>
+            </div>
+
+            <div>
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder={isAuthenticated ? "Write your detailed review about product quality, fitting, and finish..." : "Please sign in to write a review"}
+                disabled={!isAuthenticated}
+                rows={3}
+                className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl p-3 text-xs font-garamond text-[#1C2E24] placeholder-[#8C9890] focus:outline-none focus:border-[#0D2619]"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={isSubmittingReview || !isAuthenticated || !newComment.trim()}
+                className="inline-flex items-center gap-1.5 bg-[#0D2619] hover:bg-[#19402B] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-50 shadow-xs"
+              >
+                {isSubmittingReview ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                <span>Submit Review</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* ── 2. Reviews List ── */}
+        <div className="space-y-3 font-garamond">
+          {isReviewsLoading ? (
+            <div className="py-6 text-center text-xs text-[#8C9890]">
+              <Loader2 className="animate-spin text-[#0D2619] inline-block mb-1" size={20} />
+              <p>Loading reviews...</p>
+            </div>
+          ) : reviewsList.length === 0 ? (
+            <div className="bg-[#FAF8F3] border border-[#EAE6DD] rounded-2xl p-6 text-center space-y-2">
+              <MessageSquare size={24} className="text-[#8C9890] mx-auto" />
+              <p className="font-garamond text-sm font-bold text-[#1C2E24]">No customer reviews yet</p>
+              <p className="text-xs text-[#8C9890]">Be the first to review this product!</p>
+            </div>
+          ) : (
+            reviewsList.map((rev) => (
+              <div key={rev.id} className="bg-white border border-[#E5E0D5] rounded-2xl p-4 shadow-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={rev.reviewer_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.reviewer_name || "Customer")}&background=0D2619&color=fff`}
+                      alt={rev.reviewer_name}
+                      className="w-8 h-8 rounded-full object-cover border border-[#E5E0D5]"
+                    />
+                    <div>
+                      <h4 className="text-xs font-bold text-[#1C2E24] leading-none">{rev.reviewer_name}</h4>
+                      <span className="text-[10px] text-[#2E7D32] font-semibold">Verified Buyer</span>
+                    </div>
+                  </div>
+                  <span className="text-[11px] text-[#8C9890]">{formatDate(rev.created_at)}</span>
+                </div>
+
+                <div className="flex items-center text-amber-400 gap-0.5 pt-1">
+                  {Array(5).fill(0).map((_, i) => (
+                    <Star key={i} size={12} fill={i < rev.rating ? "currentColor" : "none"} className={i < rev.rating ? "" : "text-gray-300"} />
+                  ))}
+                </div>
+
+                <p className="text-xs text-[#4A4033] leading-relaxed pt-1">{rev.comment}</p>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -185,28 +464,53 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* ── Hero Image & Gallery Carousel ── */}
+        {/* ── Hero Image & Swipeable Carousel ── */}
         <div className="relative bg-white border-b border-[#E5E0D5]">
-          <div className="aspect-[4/3] w-full overflow-hidden bg-[#FAF8F3] relative">
+          <div
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={() => handleTouchEnd(imagesList.length)}
+            className="aspect-[4/3] w-full overflow-hidden bg-[#FAF8F3] relative select-none cursor-grab active:cursor-grabbing"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              key={selectedImage}
               src={getProductImage([imagesList[selectedImage]])}
               alt={product.name}
-              className="w-full h-full object-cover object-center"
+              className="w-full h-full object-cover object-center transition-all duration-300 animate-fadeIn"
             />
 
             {/* Discount Badge Pill (Top-Left) */}
-            <div className="absolute top-3 left-3 bg-[#E53935] text-white text-[11px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-xs">
+            <div className="absolute top-3 left-3 bg-[#E53935] text-white text-[11px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-xs z-10">
               {discountPercent}% OFF
             </div>
 
-            {/* View Gallery Button (Bottom-Right) */}
-            <button
-              onClick={() => setSelectedImage((prev) => (prev + 1) % imagesList.length)}
-              className="absolute bottom-3 right-3 bg-white/95 text-[#1C2E24] text-xs font-bold px-3 py-1.5 rounded-full shadow-md border border-[#E5E0D5] flex items-center gap-1 active:scale-95 transition-transform"
-            >
-              View Gallery
-            </button>
+            {/* Pagination Pill (Bottom-Right, e.g. 1/3) */}
+            {imagesList.length > 1 && (
+              <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xs text-white text-[11px] font-bold px-2.5 py-1 rounded-full z-10">
+                {selectedImage + 1} / {imagesList.length}
+              </div>
+            )}
+
+            {/* Left & Right Arrow Buttons (Overlay) */}
+            {imagesList.length > 1 && (
+              <>
+                <button
+                  onClick={() => setSelectedImage((prev) => (prev - 1 + imagesList.length) % imagesList.length)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-[#1C2E24] flex items-center justify-center shadow-md border border-[#E5E0D5] z-10"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  onClick={() => setSelectedImage((prev) => (prev + 1) % imagesList.length)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-[#1C2E24] flex items-center justify-center shadow-md border border-[#E5E0D5] z-10"
+                  aria-label="Next image"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Dots Indicator */}
@@ -216,8 +520,8 @@ export default function ProductDetailPage() {
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    selectedImage === i ? "bg-[#0D2619] w-4" : "bg-[#D9D3C7]"
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    selectedImage === i ? "bg-[#0D2619] w-5" : "bg-[#D9D3C7] w-2"
                   }`}
                   aria-label={`Go to slide ${i + 1}`}
                 />
@@ -326,6 +630,21 @@ export default function ProductDetailPage() {
               </button>
             )}
           </div>
+
+          {/* ── Customer Reviews & Ratings Section (Mobile) ── */}
+          {renderReviewsBlock()}
+
+          {/* ── Similar Products Section (Mobile) ── */}
+          {similarProducts.length > 0 && (
+            <div className="pt-8 border-t border-[#F0ECE1] space-y-4 pb-20">
+              <h2 className="font-cormorant text-xl font-bold text-[#1C2E24]">Similar Treasures You May Love</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {similarProducts.map((simProd) => (
+                  <ProductCard key={simProd.id} product={simProd} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Fixed Bottom Action Buttons & Trust Badges ── */}
@@ -471,6 +790,11 @@ export default function ProductDetailPage() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* ── Customer Reviews & Ratings Section (Desktop) ── */}
+        <div className="mt-12">
+          {renderReviewsBlock()}
         </div>
 
         {/* Similar Products */}

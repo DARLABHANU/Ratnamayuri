@@ -171,12 +171,25 @@ router.patch('/users/:user_id', requireAdminOrSupport, async (req, res, next) =>
     });
     await user.save();
 
-    // Sync: If the user's role is merchant, automatically align their profile approval status
-    if (user.role === 'merchant' && req.body.is_verified !== undefined) {
-      await MerchantProfile.updateOne(
-        { user_id: user.id },
-        { is_approved: user.is_verified }
-      );
+    // Sync: If the user's role is merchant, automatically ensure MerchantProfile exists and align approval
+    if (user.role === 'merchant') {
+      let profile = await MerchantProfile.findOne({ user_id: user.id });
+      if (!profile) {
+        const Counter = require('../models/Counter');
+        const counter = await Counter.findByIdAndUpdate('merchantId', { $inc: { seq: 1 } }, { new: true, upsert: true });
+        profile = new MerchantProfile({
+          id: counter.seq,
+          user_id: user.id,
+          business_name: user.full_name ? `${user.full_name}'s Store` : 'Merchant Store',
+          business_email: user.email,
+          is_approved: true,
+          is_active: true
+        });
+        await profile.save();
+      } else if (req.body.is_verified !== undefined) {
+        profile.is_approved = user.is_verified;
+        await profile.save();
+      }
     }
 
     res.json(user);

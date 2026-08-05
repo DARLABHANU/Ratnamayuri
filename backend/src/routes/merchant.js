@@ -4,6 +4,8 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
 const Commission = require('../models/Commission');
+const Review = require('../models/Review');
+const User = require('../models/User');
 const { getCurrentUser, requireMerchantOrAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -592,6 +594,42 @@ router.get('/coupons', getCurrentUser, requireMerchantOrAdmin, async (req, res, 
 
     const coupons = await Coupon.find({ created_by: req.user.id }).sort({ created_at: -1 });
     res.json(coupons);
+// Get Merchant's Product Reviews
+router.get('/reviews', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) => {
+  try {
+    const profile = await MerchantProfile.findOne({ user_id: req.user.id });
+    if (!profile) {
+      return res.status(404).json({ detail: 'Merchant profile not found' });
+    }
+
+    const merchantProducts = await Product.find({ merchant_id: profile.id }, 'id name images');
+    const productIds = merchantProducts.map(p => p.id);
+    const prodMap = new Map(merchantProducts.map(p => [p.id, p]));
+
+    const reviews = await Review.find({ product_id: { $in: productIds } }).sort({ created_at: -1 });
+
+    const userIds = [...new Set(reviews.map(r => r.user_id).filter(Boolean))];
+    const users = await User.find({ id: { $in: userIds } }, 'id full_name avatar_url');
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    const formatted = reviews.map(r => {
+      const rObj = r.toObject();
+      const user = userMap.get(rObj.user_id);
+      const prod = prodMap.get(rObj.product_id);
+      return {
+        id: rObj.id,
+        product_id: rObj.product_id,
+        product_name: prod ? prod.name : `Product #${rObj.product_id}`,
+        product_image: prod && prod.images && prod.images.length > 0 ? prod.images[0] : null,
+        rating: rObj.rating,
+        comment: rObj.comment,
+        created_at: rObj.created_at,
+        reviewer_name: user ? user.full_name : 'Customer',
+        reviewer_avatar: user ? user.avatar_url : null
+      };
+    });
+
+    res.json(formatted);
   } catch (error) {
     next(error);
   }

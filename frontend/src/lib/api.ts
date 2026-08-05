@@ -250,3 +250,10 @@ export const promoterApi = {
   coupons: () => api.get("/promoter/coupons"),
   analytics: () => api.get("/promoter/analytics"),
 };
+
+export const reviewApi = {
+  getForProduct: (productId: number) => api.get(`/products/${productId}/reviews`),
+  createForProduct: (productId: number, data: { rating: number; comment?: string }) =>
+    api.post(`/products/${productId}/reviews`, data),
+  getForMerchant: () => api.get("/merchant/reviews"),
+};

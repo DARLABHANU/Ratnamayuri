@@ -177,6 +177,25 @@ function UsersContent() {
     }
   };
 
+  const makeUserMerchant = async (userTarget: any) => {
+    if (userTarget.role === "merchant") {
+      toast.error(`"${userTarget.full_name}" is already a Merchant!`);
+      return;
+    }
+    if (!confirm(`Make "${userTarget.full_name}" a Merchant?\nThis will grant merchant dashboard access and automatically create their store profile.`)) return;
+
+    setActionUserId(userTarget.id);
+    try {
+      await adminApi.updateUser(userTarget.id, { role: "merchant", is_verified: true });
+      toast.success(`User "${userTarget.full_name}" promoted to Merchant successfully!`);
+      loadUsers();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
   const displayUserList = users.map((u) => ({
     id: u.id,
     full_name: u.full_name,
@@ -352,6 +371,26 @@ function UsersContent() {
                             <Loader2 size={14} className="animate-spin text-[#0D2619]" />
                           ) : (
                             <>
+                              {u.role !== "merchant" ? (
+                                <button
+                                  onClick={() => makeUserMerchant(u)}
+                                  title="Promote User to Merchant"
+                                  className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#0D2619] border border-emerald-300 rounded-lg text-[11px] font-bold transition-all inline-flex items-center gap-1 shadow-2xs"
+                                >
+                                  <Store size={13} />
+                                  <span>Make Merchant</span>
+                                </button>
+                              ) : (
+                                <button
+                                  disabled
+                                  title="User is a Merchant"
+                                  className="px-2 py-1 bg-emerald-100/60 text-emerald-900 border border-emerald-200 rounded-lg text-[11px] font-bold inline-flex items-center gap-1 opacity-80 cursor-default"
+                                >
+                                  <Store size={13} />
+                                  <span>Merchant</span>
+                                </button>
+                              )}
+
                               <button
                                 onClick={() => toggleActive(u)}
                                 title={u.is_active ? "Deactivate" : "Activate"}

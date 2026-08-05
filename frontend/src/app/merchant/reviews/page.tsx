@@ -30,18 +30,17 @@ function MerchantReviewsContent() {
     setIsLoading(true);
     try {
       const { data } = await merchantApi.reviews({ page_size: 50 });
-      if (data && data.items) {
-        setReviews(data.items);
-        setTotalReviews(data.total);
-        
-        if (data.items.length > 0) {
-          const totalRating = data.items.reduce((sum: number, r: any) => sum + r.rating, 0);
-          setAverageRating(Number((totalRating / data.items.length).toFixed(1)));
-          setFiveStarCount(data.items.filter((r: any) => r.rating === 5).length);
-        }
+      const list = Array.isArray(data) ? data : data?.items || [];
+      setReviews(list);
+      setTotalReviews(list.length);
+      
+      if (list.length > 0) {
+        const totalRating = list.reduce((sum: number, r: any) => sum + r.rating, 0);
+        setAverageRating(Number((totalRating / list.length).toFixed(1)));
+        setFiveStarCount(list.filter((r: any) => r.rating === 5).length);
       }
     } catch {
-      // Error fetching
+      setReviews([]);
     } finally {
       setIsLoading(false);
     }
@@ -49,6 +48,7 @@ function MerchantReviewsContent() {
 
   const filteredReviews = reviews.filter(r => 
     r.comment?.toLowerCase().includes(search.toLowerCase()) || 
+    r.reviewer_name?.toLowerCase().includes(search.toLowerCase()) ||
     r.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
     r.product_name?.toLowerCase().includes(search.toLowerCase())
   );

@@ -70,10 +70,10 @@ export default function WithdrawalDetailsPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 divide-y md:divide-y-0 md:divide-x divide-[#F0ECE1]">
             
-            {/* Left Panel: Seller & Bank Details */}
+            {/* Left Panel: Merchant & Bank Details */}
             <div className="space-y-6 pr-0 md:pr-6">
               
-              {/* Seller Header */}
+              {/* Merchant Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -83,7 +83,7 @@ export default function WithdrawalDetailsPage() {
                     className="w-10 h-10 rounded-full object-cover border border-[#E5E0D5]"
                   />
                   <div>
-                    <span className="text-[11px] text-[#8C9890] block">Seller Name</span>
+                    <span className="text-[11px] text-[#8C9890] block">Merchant Name</span>
                     <span className="font-bold text-sm text-[#1C2E24]">{displayWD.store_name}</span>
                   </div>
                 </div>

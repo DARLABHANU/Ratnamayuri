@@ -122,10 +122,10 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Card 4: Total Sellers */}
+        {/* Card 4: Total Merchants */}
         <div className="bg-white border border-[#E5E0D5] rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-[#6B7A70]">Total Sellers</span>
+            <span className="text-[11px] font-semibold text-[#6B7A70]">Total Merchants</span>
             <div className="w-8 h-8 rounded-xl bg-[#FFF3E0] flex items-center justify-center text-[#E65100]">
               <Store size={16} />
             </div>

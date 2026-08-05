@@ -7,8 +7,8 @@ import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useAuthStore } from "@/store/authStore";
 
-// Only hide on internal staff/dashboard portals
-const HIDDEN_PREFIXES = ["/admin", "/merchant", "/promoter", "/support"];
+// Only hide on internal staff/portal dashboards
+const HIDDEN_PREFIXES = ["/admin", "/merchant", "/promoter", "/support", "/customer"];
 
 const navItems = [
   {

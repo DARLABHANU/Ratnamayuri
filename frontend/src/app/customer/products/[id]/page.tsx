@@ -304,7 +304,7 @@ export default function ProductDetailPage() {
               </p>
               <div className="flex items-center gap-1 text-[11px] font-bold text-[#2E7D32] mt-0.5">
                 <CheckCircle2 size={12} fill="currentColor" className="text-white bg-[#2E7D32] rounded-full" />
-                <span>Verified Seller</span>
+                <span>Verified Merchant</span>
               </div>
             </div>
           </div>

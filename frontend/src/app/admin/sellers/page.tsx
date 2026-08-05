@@ -71,7 +71,7 @@ function SellersContent() {
   };
 
   const handleExport = () => {
-    toast.success("Exporting Sellers list CSV...");
+    toast.success("Exporting Merchants list CSV...");
   };
 
   const displayList = merchants
@@ -81,7 +81,7 @@ function SellersContent() {
     )
     .map((m) => ({
       id: m.id,
-      seller_name: m.user?.full_name || `Seller #${m.id}`,
+      merchant_name: m.user?.full_name || `Merchant #${m.id}`,
       store_name: m.business_name || "Jewellery Store",
       sales: formatPrice(m.total_sales || 0),
       joined_on: formatDate(m.created_at || new Date().toISOString())
@@ -91,22 +91,22 @@ function SellersContent() {
     <div className="space-y-6 text-[#1C2E24] font-garamond">
       
       {/* Title */}
-      <h1 className="font-cormorant text-2xl md:text-3xl font-bold text-[#1C2E24]">Sellers Management</h1>
+      <h1 className="font-cormorant text-2xl md:text-3xl font-bold text-[#1C2E24]">Merchants Management</h1>
 
       <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-6">
         
         {/* ── 1. Top Summary Metrics (4 Columns) ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#F0ECE1]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pb-6 border-b border-[#F0ECE1]">
           <div>
-            <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Sellers</span>
+            <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Merchants</span>
             <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{totalSellers.toLocaleString()}</span>
           </div>
           <div>
-            <span className="text-xs font-medium text-[#6B7A70] block mb-1">Active Sellers</span>
+            <span className="text-xs font-medium text-[#6B7A70] block mb-1">Active Merchants</span>
             <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{activeSellers.toLocaleString()}</span>
           </div>
           <div>
-            <span className="text-xs font-medium text-[#6B7A70] block mb-1">Inactive Sellers</span>
+            <span className="text-xs font-medium text-[#6B7A70] block mb-1">Inactive Merchants</span>
             <span className="font-cormorant text-3xl font-extrabold text-[#B85C00]">{inactiveSellers.toLocaleString()}</span>
           </div>
           <div>
@@ -123,7 +123,7 @@ function SellersContent() {
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890]" />
             <input
               type="text"
-              placeholder="Search sellers..."
+              placeholder="Search merchants..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-full pl-9 pr-4 py-2 text-xs font-garamond text-[#1C2E24] placeholder-[#8C9890] focus:outline-none focus:border-[#0D2619]"
@@ -138,8 +138,8 @@ function SellersContent() {
                 onChange={(e) => setFilter(e.target.value)}
                 className="text-xs font-semibold text-[#1C2E24] bg-transparent appearance-none pr-6 focus:outline-none cursor-pointer"
               >
-                <option value="all">All Sellers</option>
-                <option value="active">Active Sellers</option>
+                <option value="all">All Merchants</option>
+                <option value="active">Active Merchants</option>
                 <option value="pending">Pending Approval</option>
               </select>
             </div>
@@ -165,7 +165,7 @@ function SellersContent() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[#F0ECE1] text-[#7A6E5D] font-bold uppercase tracking-wider text-[11px]">
-                  <th className="pb-3 px-3">Seller Name</th>
+                  <th className="pb-3 px-3">Merchant Name</th>
                   <th className="pb-3 px-3">Store Name</th>
                   <th className="pb-3 px-3">Sales</th>
                   <th className="pb-3 px-3">Joined On</th>
@@ -174,17 +174,17 @@ function SellersContent() {
               </thead>
               <tbody className="divide-y divide-[#F5F2EA]">
                 {displayList.length === 0 ? (
-                  <tr><td colSpan={5} className="py-8 text-center text-[#8C9890]">No sellers found.</td></tr>
+                  <tr><td colSpan={5} className="py-8 text-center text-[#8C9890]">No merchants found.</td></tr>
                 ) : (
-                  displayList.map((seller) => (
-                    <tr key={seller.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
-                      <td className="py-3.5 px-3 font-bold text-[#1C2E24]">{seller.seller_name}</td>
-                      <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{seller.store_name}</td>
-                      <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{seller.sales}</td>
-                      <td className="py-3.5 px-3 text-[#556B5D] font-medium">{seller.joined_on}</td>
+                  displayList.map((mItem) => (
+                    <tr key={mItem.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
+                      <td className="py-3.5 px-3 font-bold text-[#1C2E24]">{mItem.merchant_name}</td>
+                      <td className="py-3.5 px-3 font-semibold text-[#1C2E24]">{mItem.store_name}</td>
+                      <td className="py-3.5 px-3 font-extrabold text-[#1C2E24]">{mItem.sales}</td>
+                      <td className="py-3.5 px-3 text-[#556B5D] font-medium">{mItem.joined_on}</td>
                       <td className="py-3.5 px-3 text-right">
                         <button
-                          onClick={() => router.push(`/admin/sellers/${seller.id}`)}
+                          onClick={() => router.push(`/admin/sellers/${mItem.id}`)}
                           className="bg-[#0D2619] hover:bg-[#19402B] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
                         >
                           Manage

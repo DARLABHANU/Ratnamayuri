@@ -434,7 +434,7 @@ export default function MerchantProductsPage() {
                   </div>
 
                   <div>
-                    <label className="font-bold text-[#1C2E24] block mb-1">Seller Product Price (₹) *</label>
+                    <label className="font-bold text-[#1C2E24] block mb-1">Merchant Product Price (₹) *</label>
                     <input {...register("price")} type="number" step="0.01" className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2.5 font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]" placeholder="e.g. 1700" />
                     {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>}
                   </div>

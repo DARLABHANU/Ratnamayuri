@@ -24,7 +24,7 @@ import { formatDate, getApiError } from "@/lib/utils";
 const ROLE_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "All Users" },
   { value: "customer", label: "Buyers" },
-  { value: "merchant", label: "Sellers" },
+  { value: "merchant", label: "Merchants" },
   { value: "promoter", label: "Promoters" },
   { value: "support", label: "Support" },
   { value: "admin", label: "Admins" },
@@ -40,9 +40,9 @@ function UsersContent() {
 
   // Users state
   const [users, setUsers] = useState<User[]>([]);
-  const [total, setTotal] = useState(5892);
-  const [activeCount, setActiveCount] = useState(5210);
-  const [inactiveCount, setInactiveCount] = useState(682);
+  const [total, setTotal] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [inactiveCount, setInactiveCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState(params.get("role") || "");
@@ -183,7 +183,7 @@ function UsersContent() {
     email: u.email,
     role: u.role,
     is_promoter: u.is_promoter,
-    displayRole: u.is_promoter ? "Promoter" : u.role === "merchant" ? "Seller" : u.role === "customer" ? "Buyer" : u.role,
+    displayRole: u.is_promoter ? "Promoter" : u.role === "merchant" ? "Merchant" : u.role === "customer" ? "Buyer" : u.role,
     is_active: u.is_active,
     created_at: u.created_at,
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name)}&background=0D2619&color=fff`
@@ -221,7 +221,7 @@ function UsersContent() {
         <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-6">
           
           {/* ── 1. Top Summary Metrics ── */}
-          <div className="grid grid-cols-3 gap-6 pb-6 border-b border-[#F0ECE1]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-6 border-b border-[#F0ECE1]">
             <div>
               <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Users</span>
               <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{total.toLocaleString()}</span>

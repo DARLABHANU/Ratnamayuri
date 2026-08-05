@@ -105,7 +105,7 @@ function SettlementsContent() {
       <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-6">
         
         {/* ── 1. Metrics ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#F0ECE1]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pb-6 border-b border-[#F0ECE1]">
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Paid Out</span>
             <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{formatPrice(totalSettled)}</span>
@@ -157,7 +157,7 @@ function SettlementsContent() {
               <thead>
                 <tr className="border-b border-[#F0ECE1] text-[#7A6E5D] font-bold uppercase tracking-wider text-[11px]">
                   <th className="pb-3 px-3">Withdrawal ID</th>
-                  <th className="pb-3 px-3">Seller / Store</th>
+                  <th className="pb-3 px-3">Merchant / Store</th>
                   <th className="pb-3 px-3">Amount</th>
                   <th className="pb-3 px-3">Status</th>
                   <th className="pb-3 px-3">Request Date</th>

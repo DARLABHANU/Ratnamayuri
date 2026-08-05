@@ -39,7 +39,7 @@ export default function MerchantSupportPage() {
           </div>
           <div>
             <h3 className="font-cormorant text-xl font-bold text-[#1C2E24]">Frequently Asked Questions</h3>
-            <p className="text-[11px] text-[#8C9890]">Quick answers to common seller questions</p>
+            <p className="text-[11px] text-[#8C9890]">Quick answers to common merchant questions</p>
           </div>
         </div>
 

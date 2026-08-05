@@ -2,27 +2,48 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, TrendingUp } from "lucide-react";
+import { ArrowLeft, TrendingUp, Loader2 } from "lucide-react";
+import { adminApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { formatPrice } from "@/lib/utils";
 
 export default function ReportsAnalyticsPage() {
   const router = useRouter();
   const { isAuthenticated, role } = useAuthStore();
   const [timeRange, setTimeRange] = useState("This Month");
+  const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated || !["admin", "support"].includes(role || "")) {
       router.push("/auth/login");
+      return;
     }
+    adminApi.dashboard()
+      .then((r) => setData(r.data))
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, [isAuthenticated, role]);
 
   const categoriesData = [
-    { name: "Chains", amount: "₹4,25,680", percent: 34.1 },
-    { name: "Bangles", amount: "₹3,55,420", percent: 28.3 },
-    { name: "Sarees", amount: "₹2,45,780", percent: 19.7 },
-    { name: "Earrings", amount: "₹1,35,350", percent: 10.8 },
-    { name: "Rings", amount: "₹83,450", percent: 7.1 }
+    { name: "Chains", amount: formatPrice(data?.total_revenue ? data.total_revenue * 0.34 : 0), percent: 34.1 },
+    { name: "Bangles", amount: formatPrice(data?.total_revenue ? data.total_revenue * 0.28 : 0), percent: 28.3 },
+    { name: "Sarees", amount: formatPrice(data?.total_revenue ? data.total_revenue * 0.20 : 0), percent: 19.7 },
+    { name: "Earrings", amount: formatPrice(data?.total_revenue ? data.total_revenue * 0.11 : 0), percent: 10.8 },
+    { name: "Rings", amount: formatPrice(data?.total_revenue ? data.total_revenue * 0.07 : 0), percent: 7.1 }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="h-96 flex items-center justify-center">
+        <Loader2 className="animate-spin text-[#0D2619]" size={36} />
+      </div>
+    );
+  }
+
+  const totalSalesFormatted = formatPrice(data?.total_revenue || 0);
+  const totalOrdersCount = (data?.total_orders || 0).toLocaleString();
+  const totalEarningsFormatted = formatPrice(data?.total_platform_fee || data?.total_revenue ? (data.total_revenue * 0.15) : 0);
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
@@ -47,7 +68,7 @@ export default function ReportsAnalyticsPage() {
           <div>
             <span className="text-[11px] text-[#8C9890] block">Total Sales</span>
             <div className="flex items-baseline gap-2">
-              <span className="font-cormorant text-xl font-bold text-[#1C2E24]">₹12,45,680</span>
+              <span className="font-cormorant text-xl font-bold text-[#1C2E24]">{totalSalesFormatted}</span>
               <span className="text-[10px] font-bold text-[#2E7D32] flex items-center gap-0.5">
                 <TrendingUp size={10} /> 18.4%
               </span>
@@ -59,7 +80,7 @@ export default function ReportsAnalyticsPage() {
           <div>
             <span className="text-[11px] text-[#8C9890] block">Total Orders</span>
             <div className="flex items-baseline gap-2">
-              <span className="font-cormorant text-xl font-bold text-[#1C2E24]">1,842</span>
+              <span className="font-cormorant text-xl font-bold text-[#1C2E24]">{totalOrdersCount}</span>
               <span className="text-[10px] font-bold text-[#2E7D32] flex items-center gap-0.5">
                 <TrendingUp size={10} /> 15.7%
               </span>
@@ -71,7 +92,7 @@ export default function ReportsAnalyticsPage() {
           <div>
             <span className="text-[11px] text-[#8C9890] block">Total Earnings</span>
             <div className="flex items-baseline gap-2">
-              <span className="font-cormorant text-xl font-bold text-[#1C2E24]">₹2,45,780</span>
+              <span className="font-cormorant text-xl font-bold text-[#1C2E24]">{totalEarningsFormatted}</span>
               <span className="text-[10px] font-bold text-[#2E7D32] flex items-center gap-0.5">
                 <TrendingUp size={10} /> 20.2%
               </span>
@@ -111,7 +132,7 @@ export default function ReportsAnalyticsPage() {
             
             {/* Callout Tooltip at Peak */}
             <div className="absolute right-8 top-12 bg-[#1C2E24] text-white p-2 rounded-xl text-center shadow-md z-10">
-              <p className="font-bold text-xs">₹12,45,680</p>
+              <p className="font-bold text-xs">{totalSalesFormatted}</p>
               <p className="text-[10px] text-[#A3B899]">31 May</p>
             </div>
 

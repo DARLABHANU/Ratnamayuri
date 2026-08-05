@@ -100,7 +100,7 @@ function CouponsContent() {
       <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-6">
         
         {/* ── 1. Metrics ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#F0ECE1]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pb-6 border-b border-[#F0ECE1]">
           <div>
             <span className="text-xs font-medium text-[#6B7A70] block mb-1">Total Coupons</span>
             <span className="font-cormorant text-3xl font-extrabold text-[#0D2619]">{totalCoupons}</span>

@@ -36,19 +36,15 @@ const ProductSchema = new mongoose.Schema({
 
 // Auto-increment sequence hook and dynamic customer price calculation
 ProductSchema.pre('save', async function (next) {
-  const PLATFORM_MARGIN = 299;
-
-  // Seller price is stored in base_price. If seller inputs 500, base_price=500 and price=799 (500 + 299).
   if (this.base_price !== undefined && this.base_price !== null && Number(this.base_price) > 0) {
     this.base_price = Number(this.base_price);
-    this.price = Math.round((this.base_price + PLATFORM_MARGIN) * 100) / 100;
+    this.price = this.base_price;
   } else if (this.price !== undefined && this.price !== null && Number(this.price) > 0) {
-    // If seller passed price without base_price (e.g. 500), 500 is seller price!
     this.base_price = Number(this.price);
-    this.price = Math.round((this.base_price + PLATFORM_MARGIN) * 100) / 100;
+    this.price = Number(this.price);
   } else {
     this.base_price = 1700;
-    this.price = 1999;
+    this.price = 1700;
   }
 
   if (this.isNew) {

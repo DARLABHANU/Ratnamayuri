@@ -321,7 +321,7 @@ orderRouter.post('/', async (req, res, next) => {
     // Create Order Items and decrease stock
     const emailItems = [];
     for (const item of enrichedCart) {
-      const base_price = item.product.base_price || (item.product.price > 299 ? item.product.price - 299 : item.product.price);
+      const base_price = item.product.base_price || item.product.price;
       const merchant_payout = Number((base_price * item.quantity).toFixed(2));
       const item_platform_fee = Number(((item.product.price - base_price) * item.quantity).toFixed(2));
 

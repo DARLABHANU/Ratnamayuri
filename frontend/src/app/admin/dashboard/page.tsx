@@ -463,7 +463,7 @@ export default function AdminDashboardPage() {
           </Link>
 
           <Link href="/admin/users?role=merchant" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 text-xs font-medium hover:bg-blue-100 transition-colors">
-            <Store size={13} /> All Sellers
+            <Store size={13} /> All Merchants
           </Link>
 
           <Link href="/admin/users?role=promoter" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200 text-xs font-medium hover:bg-purple-100 transition-colors">

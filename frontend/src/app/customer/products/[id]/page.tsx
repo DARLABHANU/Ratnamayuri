@@ -300,7 +300,7 @@ export default function ProductDetailPage() {
             <div className="flex-1 min-w-0">
               <p className="text-[11px] text-[#8C9890]">Sold by</p>
               <p className="font-garamond text-sm font-bold text-[#1C2E24] truncate">
-                {(product as any).seller?.full_name || "Ratnamayuri Collections"}
+                {(product as any).merchant?.business_name || (product as any).merchant?.full_name || (product as any).seller?.full_name || "Ratnamayuri Collections"}
               </p>
               <div className="flex items-center gap-1 text-[11px] font-bold text-[#2E7D32] mt-0.5">
                 <CheckCircle2 size={12} fill="currentColor" className="text-white bg-[#2E7D32] rounded-full" />

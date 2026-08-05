@@ -367,7 +367,7 @@ router.post('/products/bulk-upload', getCurrentUser, requireMerchantOrAdmin, asy
           slug,
           description,
           base_price,
-          price: base_price + 299,
+          price: base_price,
           compare_price: isNaN(compare_price) ? null : compare_price,
           sku,
           stock_quantity,

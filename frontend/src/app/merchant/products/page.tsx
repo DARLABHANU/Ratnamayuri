@@ -179,7 +179,7 @@ export default function MerchantProductsPage() {
       }
 
       const sellerBasePrice = Number(data.price);
-      const customerSellingPrice = sellerBasePrice + 299;
+      const customerSellingPrice = sellerBasePrice;
 
       const payload = {
         ...data,

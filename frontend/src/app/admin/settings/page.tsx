@@ -5,7 +5,7 @@ import { Save, Lock, Building, DollarSign, Bell } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function AdminSettingsPage() {
-  const [platformMargin, setPlatformMargin] = useState("299");
+  const [platformMargin, setPlatformMargin] = useState("0");
   const [promoterDiscount, setPromoterDiscount] = useState("199");
   const [promoterCommission, setPromoterCommission] = useState("100");
   const [platformProfit, setPlatformProfit] = useState("30");
@@ -41,7 +41,7 @@ export default function AdminSettingsPage() {
                 onChange={(e) => setPlatformMargin(e.target.value)}
                 className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2.5 font-bold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
               />
-              <p className="text-[11px] text-[#8C9890] mt-1">Customer Price = Base Price + Platform Margin (Fixed ₹299)</p>
+              <p className="text-[11px] text-[#8C9890] mt-1">Customer Price = Merchant Base Price (Direct Listing)</p>
             </div>
 
             <div>

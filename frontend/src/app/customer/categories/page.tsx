@@ -50,38 +50,7 @@ export default function CategoriesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#FAF8F3] font-garamond text-[#1C2E24]">
-
-      {/* ══════════════════════════════════════════════
-          MOBILE: Custom "Categories" header
-          (replaces Navbar on mobile for this page)
-         ══════════════════════════════════════════════ */}
-      <div className="md:hidden sticky top-0 z-40 bg-[#FAF8F3] border-b border-[#E5E0D5] shadow-xs">
-        <div className="flex items-center justify-between px-4 py-3.5">
-          {/* Back arrow */}
-          <button
-            onClick={() => router.back()}
-            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#F0ECE5] transition-colors"
-            aria-label="Go back"
-          >
-            <ChevronLeft size={22} strokeWidth={2} />
-          </button>
-
-          {/* Title */}
-          <h1 className="font-cormorant text-[20px] font-bold tracking-wide text-[#1C2E24]">
-            Categories
-          </h1>
-
-          {/* Cart icon */}
-          <Link
-            href="/customer/cart"
-            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#F0ECE5] transition-colors"
-            aria-label="Cart"
-          >
-            <ShoppingBag size={21} strokeWidth={1.8} />
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-6 text-[#1C2E24] font-garamond">
 
       {/* ══════════════════════════════════════════════
           DESKTOP: page heading (Navbar comes from layout)

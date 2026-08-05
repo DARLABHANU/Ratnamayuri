@@ -184,17 +184,17 @@ const startServer = async () => {
     console.error('Error during self-healing SKU normalization:', err);
   }
 
-  // Self-healing migration for all existing products: Ensure customer display price = seller base_price + ₹299
+  // Self-healing migration for all existing products: Set customer display price = merchant base_price (without ₹299 addition)
   try {
     const Product = require('./models/Product');
     const products = await Product.find({});
     let updatedCount = 0;
     for (const p of products) {
       let sellerBase = p.base_price;
-      if (!sellerBase || sellerBase <= 0 || (p.price === p.base_price && p.price > 299)) {
-        sellerBase = p.base_price || p.price;
+      if (!sellerBase || sellerBase <= 0) {
+        sellerBase = p.price;
       }
-      const targetPrice = sellerBase + 299;
+      const targetPrice = sellerBase;
 
       if (p.price !== targetPrice || p.base_price !== sellerBase) {
         p.base_price = sellerBase;
@@ -204,7 +204,7 @@ const startServer = async () => {
       }
     }
     if (updatedCount > 0) {
-      console.log(`[Self-Healing] Migration complete: Updated ${updatedCount} existing products to have customer display price = seller base_price + ₹299!`);
+      console.log(`[Self-Healing] Pricing Migration complete: Updated ${updatedCount} existing products to display exact merchant base price without ₹299 addition!`);
     }
   } catch (err) {
     console.error('Error during self-healing product pricing migration:', err);

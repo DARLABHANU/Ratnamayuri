@@ -98,7 +98,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
           </div>
           <div>
             <span className="font-cormorant text-lg font-bold text-white tracking-wide block leading-none">Ratnamayuri</span>
-            <span className="text-[10px] text-emerald-300 font-semibold tracking-wider uppercase">Seller Panel</span>
+            <span className="text-[10px] text-emerald-300 font-semibold tracking-wider uppercase">Merchant Panel</span>
           </div>
         </div>
 
@@ -276,7 +276,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
                   {merchantProfile?.business_name || user?.full_name?.split(" ")[0] || "Store"}
                 </p>
                 <p className="text-[10px] text-[#8C9890] flex items-center gap-0.5">
-                  Seller <ChevronDown size={10} />
+                  Merchant <ChevronDown size={10} />
                 </p>
               </div>
             </div>

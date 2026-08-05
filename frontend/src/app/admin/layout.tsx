@@ -40,7 +40,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users, hasDropdown: true },
-  { href: "/admin/users?role=merchant", label: "Sellers", icon: Store },
+  { href: "/admin/users?role=merchant", label: "Merchants", icon: Store },
   { href: "/admin/users?role=promoter", label: "Promoters", icon: Megaphone },
   { href: "/admin/products", label: "Products", icon: Package, hasDropdown: true },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },

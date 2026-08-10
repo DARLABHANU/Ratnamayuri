@@ -64,7 +64,7 @@ export default function Navbar() {
 
   useEffect(() => {
     if (isAuthenticated && !user) {
-      authApi.me().then((res) => useAuthStore.getState().setUser(res.data)).catch(() => {});
+      authApi.me().then((res) => useAuthStore.getState().setUser(res.data)).catch(() => { });
     }
   }, [isAuthenticated]);
 
@@ -84,13 +84,13 @@ export default function Navbar() {
             <span>Handmade with Love</span><span>•</span>
             <span>Supporting Small Artisans</span>
           </div>
-          <button 
+          <button
             onClick={openModal}
             className="hidden sm:flex items-center gap-1.5 font-medium text-emerald-200 hover:text-white transition-colors"
           >
             <MapPin size={13} className="text-emerald-300" />
             <span>
-              {deliveryLocation 
+              {deliveryLocation
                 ? `Deliver to ${deliveryLocation.city}, ${deliveryLocation.pincode}`
                 : "Delivering Across India"}
             </span>
@@ -101,9 +101,8 @@ export default function Navbar() {
 
       {/* ─── Main Header ─── */}
       <header
-        className={`bg-[#FAF8F3] border-b border-[#E5E0D5] sticky top-0 z-50 transition-all duration-200 ${
-          isMobileHeaderHidden ? "hidden md:block" : ""
-        } ${scrolled ? "shadow-sm bg-[#FAF8F3]/95 backdrop-blur-md" : ""}`}
+        className={`bg-[#FAF8F3] border-b border-[#E5E0D5] sticky top-0 z-50 transition-all duration-200 ${isMobileHeaderHidden ? "hidden md:block" : ""
+          } ${scrolled ? "shadow-sm bg-[#FAF8F3]/95 backdrop-blur-md" : ""}`}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
 
@@ -177,8 +176,8 @@ export default function Navbar() {
             <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
               <div className="w-10 h-10 rounded-full bg-[#FAF8F3] border border-[#D8C7A5] flex items-center justify-center text-[#B58A46] shadow-sm">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 4C10 7.5 7 9 4 9C4 13 7 16 12 19C17 16 20 13 20 9C17 9 14 7.5 12 4Z" fill="#C9973E" fillOpacity="0.2" stroke="#C9973E" strokeWidth="1.5" strokeLinejoin="round"/>
-                  <path d="M12 7C10.8 9.5 8.5 10.5 6 10.5C6 13.5 8.5 15.5 12 17.5C15.5 15.5 18 13.5 18 10.5C15.5 10.5 13.2 9.5 12 7Z" stroke="#B58A46" strokeWidth="1.2"/>
+                  <path d="M12 4C10 7.5 7 9 4 9C4 13 7 16 12 19C17 16 20 13 20 9C17 9 14 7.5 12 4Z" fill="#C9973E" fillOpacity="0.2" stroke="#C9973E" strokeWidth="1.5" strokeLinejoin="round" />
+                  <path d="M12 7C10.8 9.5 8.5 10.5 6 10.5C6 13.5 8.5 15.5 12 17.5C15.5 15.5 18 13.5 18 10.5C15.5 10.5 13.2 9.5 12 7Z" stroke="#B58A46" strokeWidth="1.2" />
                 </svg>
               </div>
               <div className="flex flex-col">
@@ -295,15 +294,47 @@ export default function Navbar() {
               </div>
               <div className="flex items-center gap-6 py-2">
                 <Link href="/" className="bg-[#EAE5D9] text-[#1E3A2B] px-3.5 py-1.5 rounded-md font-semibold">Home</Link>
-                <Link href="/customer/products?category=jewellery" className="text-[#364B3E] hover:text-[#1E3A2B] flex items-center gap-1 transition-colors">Jewellery <ChevronDown size={11} className="opacity-70" /></Link>
-                <Link href="/customer/products?category=sarees" className="text-[#364B3E] hover:text-[#1E3A2B] flex items-center gap-1 transition-colors">Sarees <ChevronDown size={11} className="opacity-70" /></Link>
-                <Link href="/customer/products?category=dresses" className="text-[#364B3E] hover:text-[#1E3A2B] flex items-center gap-1 transition-colors">Dresses <ChevronDown size={11} className="opacity-70" /></Link>
-                <Link href="/customer/products?is_featured=true" className="text-[#364B3E] hover:text-[#1E3A2B] transition-colors">New Arrivals</Link>
-                <Link href="/customer/products?sort_by=total_sold&sort_order=desc" className="text-[#364B3E] hover:text-[#1E3A2B] transition-colors">Bestsellers</Link>
+                <div className="relative group py-2">
+                  <Link href="/customer/products?category=jewellery" className="text-[#364B3E] hover:text-[#1E3A2B] flex items-center gap-1 transition-colors">Jewellery <ChevronDown size={11} className="opacity-70 group-hover:rotate-180 transition-transform" /></Link>
+                  <div className="absolute left-0 top-full hidden group-hover:block w-48 bg-white border border-[#E5E0D5] shadow-lg rounded-lg overflow-hidden z-50 pt-1 border-t-2 border-t-[#1E3A2B]">
+                    <div className="py-2">
+                      <Link href="/customer/products?category=jewellery&subcategory=necklaces" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Necklaces</Link>
+                      <Link href="/customer/products?category=jewellery&subcategory=earrings" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Earrings</Link>
+                      <Link href="/customer/products?category=jewellery&subcategory=rings" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Rings</Link>
+                      <Link href="/customer/products?category=jewellery&subcategory=bangles" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Bangles</Link>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative group py-2">
+                  <Link href="/customer/products?category=sarees" className="text-[#364B3E] hover:text-[#1E3A2B] flex items-center gap-1 transition-colors">Sarees <ChevronDown size={11} className="opacity-70 group-hover:rotate-180 transition-transform" /></Link>
+                  <div className="absolute left-0 top-full hidden group-hover:block w-48 bg-white border border-[#E5E0D5] shadow-lg rounded-lg overflow-hidden z-50 pt-1 border-t-2 border-t-[#1E3A2B]">
+                    <div className="py-2">
+                      <Link href="/customer/products?category=sarees&subcategory=silk" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Silk Sarees</Link>
+                      <Link href="/customer/products?category=sarees&subcategory=cotton" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Cotton Sarees</Link>
+                      <Link href="/customer/products?category=sarees&subcategory=banarasi" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Banarasi</Link>
+                      <Link href="/customer/products?category=sarees&subcategory=kanchipuram" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Kanchipuram</Link>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative group py-2">
+                  <Link href="/customer/products?category=dresses" className="text-[#364B3E] hover:text-[#1E3A2B] flex items-center gap-1 transition-colors">Dresses <ChevronDown size={11} className="opacity-70 group-hover:rotate-180 transition-transform" /></Link>
+                  <div className="absolute left-0 top-full hidden group-hover:block w-48 bg-white border border-[#E5E0D5] shadow-lg rounded-lg overflow-hidden z-50 pt-1 border-t-2 border-t-[#1E3A2B]">
+                    <div className="py-2">
+                      <Link href="/customer/products?category=dresses&subcategory=lehengas" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Lehengas</Link>
+                      <Link href="/customer/products?category=dresses&subcategory=kurtis" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Kurtis</Link>
+                      <Link href="/customer/products?category=dresses&subcategory=gowns" className="block px-4 py-2 text-xs text-[#1C2E24] hover:bg-[#FAF8F3] hover:text-[#1E3A2B] font-medium">Gowns</Link>
+                    </div>
+                  </div>
+                </div>
+
+                <Link href="/customer/products?is_featured=true" className="text-[#364B3E] hover:text-[#1E3A2B] transition-colors py-2">New Arrivals</Link>
+                <Link href="/customer/products?sort_by=total_sold&sort_order=desc" className="text-[#364B3E] hover:text-[#1E3A2B] transition-colors py-2">Bestsellers</Link>
                 <Link href="/customer/products?sort_by=price&sort_order=asc" className="text-[#364B3E] hover:text-[#1E3A2B] transition-colors">Offers</Link>
                 <Link href="/about" className="text-[#364B3E] hover:text-[#1E3A2B] transition-colors">About Us</Link>
               </div>
-              <button 
+              <button
                 onClick={openModal}
                 className="ml-auto text-[#1E3A2B] flex items-center gap-1 font-semibold hover:underline"
               >

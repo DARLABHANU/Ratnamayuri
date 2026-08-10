@@ -355,10 +355,15 @@ router.post('/', getCurrentUser, requireMerchantOrAdmin, async (req, res, next) 
       counter++;
     }
 
+    if (req.user.role === 'merchant') {
+      delete payload.is_approved;
+    }
+
     const product = new Product({
       merchant_id: merchantId,
       slug,
-      ...payload
+      ...payload,
+      is_approved: req.user.role === 'merchant' ? false : payload.is_approved !== undefined ? payload.is_approved : false
     });
 
     await product.save();

@@ -39,23 +39,23 @@ function ProductsContent() {
     try {
       const params: any = { page, page_size: 20 };
       if (search) params.search = search;
-      
+
       const { data } = await adminApi.products(params);
       if (data && data.items) {
         setProducts(data.items);
         setTotalProducts(data.total);
         setTotalPages(data.pages || 1);
-        
+
         let active = 0;
         let inactive = 0;
         let oos = 0;
         data.items.forEach((p: any) => {
           if (p.is_active) active++;
           else inactive++;
-          
+
           if (p.stock_quantity <= (p.low_stock_threshold || 5)) oos++;
         });
-        
+
         setActiveProducts(active);
         setInactiveProducts(inactive);
         setOutOfStock(oos);
@@ -83,6 +83,32 @@ function ProductsContent() {
     }
   };
 
+  const handleToggleActive = async (prod: any) => {
+    setTogglingId(prod.id);
+    try {
+      await productApi.update(prod.id, { is_active: !prod.is_active });
+      toast.success(`Product ${prod.is_active ? "hidden" : "displayed"} successfully`);
+      loadProducts();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handleApproveProduct = async (prod: any) => {
+    setTogglingId(prod.id);
+    try {
+      await adminApi.approveProduct(prod.id, { is_approved: true });
+      toast.success("Product approved for listing.");
+      loadProducts();
+    } catch (err) {
+      toast.error(getApiError(err));
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const displayList = products
     .filter(p => categoryFilter === "all" || p.category?.name?.toLowerCase() === categoryFilter.toLowerCase())
     .map((p) => ({
@@ -92,18 +118,19 @@ function ProductsContent() {
       price: p.price,
       status: p.is_active ? "Active" : "Inactive",
       is_active: p.is_active,
+      is_approved: p.is_approved,
       stock: p.stock_quantity,
       image: p.images?.[0] || "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=200&auto=format&fit=crop"
     }));
 
   return (
     <div className="space-y-6 text-[#1C2E24] font-garamond">
-      
+
       {/* Page Title */}
       <h1 className="font-cormorant text-2xl md:text-3xl font-bold text-[#1C2E24]">Products Management</h1>
 
       <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-6">
-        
+
         {/* ── 1. Top Summary Metrics (4 Columns) ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#F0ECE1]">
           <div>
@@ -126,7 +153,7 @@ function ProductsContent() {
 
         {/* ── 2. Filter & Add Product Controls Bar ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          
+
           {/* Search Box */}
           <div className="relative w-full sm:w-80">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9890]" />
@@ -188,7 +215,7 @@ function ProductsContent() {
               <tbody className="divide-y divide-[#F5F2EA]">
                 {displayList.map((item) => (
                   <tr key={item.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
-                    
+
                     {/* Image & Product Name */}
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-3">
@@ -210,12 +237,13 @@ function ProductsContent() {
 
                     {/* Status */}
                     <td className="py-3 px-3">
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md inline-block ${
-                        item.is_active 
-                          ? "bg-[#E8F5E9] text-[#2E7D32]" 
-                          : "bg-red-50 text-red-700"
-                      }`}>
-                        {item.status}
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md inline-block ${!item.is_approved
+                          ? "bg-amber-50 text-amber-600 border border-amber-200"
+                          : item.is_active
+                            ? "bg-[#E8F5E9] text-[#2E7D32]"
+                            : "bg-red-50 text-red-700"
+                        }`}>
+                        {!item.is_approved ? "Pending Approval" : item.status}
                       </span>
                     </td>
 
@@ -243,6 +271,26 @@ function ProductsContent() {
                             >
                               <Trash2 size={14} />
                             </button>
+                            <button
+                              onClick={() => handleToggleActive(item)}
+                              className={`p-1 transition-colors ${item.is_active ? 'text-[#8C9890] hover:text-amber-600' : 'text-[#6B7A70] hover:text-[#2E7D32]'}`}
+                              title={item.is_active ? "Hide Product" : "Display Product"}
+                            >
+                              {item.is_active ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                              )}
+                            </button>
+                            {!item.is_approved && (
+                              <button
+                                onClick={() => handleApproveProduct(item)}
+                                className="p-1 text-amber-500 hover:text-amber-700 transition-colors"
+                                title="Approve Product"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                              </button>
+                            )}
                           </>
                         )}
                       </div>

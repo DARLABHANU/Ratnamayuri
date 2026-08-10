@@ -96,7 +96,7 @@ export default function MerchantProductsPage() {
       const items: Product[] = res.data.items;
       setProducts(items);
       setTotal(res.data.total);
-      
+
       // Calculate stats based on fetched items
       let active = 0, inactive = 0, outOfStock = 0;
       items.forEach(p => {
@@ -106,7 +106,7 @@ export default function MerchantProductsPage() {
       setActiveCount(active);
       setInactiveCount(inactive);
       setOutOfStockCount(outOfStock);
-      
+
     } catch (err) {
       toast.error(getApiError(err));
     } finally {
@@ -337,7 +337,7 @@ export default function MerchantProductsPage() {
       </div>
 
       <div className="bg-white border border-[#E5E0D5] rounded-3xl p-6 shadow-xs space-y-6">
-        
+
         {/* Top 4 Metrics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#F0ECE1]">
           <div>
@@ -403,8 +403,8 @@ export default function MerchantProductsPage() {
 
                   <div>
                     <label className="font-bold text-[#1C2E24] block mb-1">Main Category *</label>
-                    <select 
-                      {...register("main_category")} 
+                    <select
+                      {...register("main_category")}
                       className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2.5 font-semibold text-[#1C2E24] focus:outline-none focus:border-[#0D2619]"
                     >
                       {Object.keys(CATEGORY_TAXONOMY).map((mainCat) => (
@@ -476,22 +476,22 @@ export default function MerchantProductsPage() {
 
                   <div className="sm:col-span-2">
                     <label className="font-bold text-[#1C2E24] block mb-1">Product Images (up to 5)</label>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
+                    <input
+                      type="file"
+                      accept="image/*"
                       onChange={handleFileUpload}
                       disabled={isUploading || (watch("images")?.split(",")?.filter(Boolean)?.length || 0) >= 5}
-                      className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2 text-xs font-semibold text-[#1C2E24] focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0D2619] file:text-white hover:file:bg-[#19402B]" 
+                      className="w-full bg-[#FAF8F3] border border-[#E5E0D5] rounded-xl px-4 py-2 text-xs font-semibold text-[#1C2E24] focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0D2619] file:text-white hover:file:bg-[#19402B]"
                     />
                     {isUploading && <p className="text-xs text-[#8C9890] mt-1 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Uploading image...</p>}
-                    
+
                     {/* Display uploaded images thumbnails */}
                     <div className="flex flex-wrap gap-3 mt-3">
                       {watch("images")?.split(",").map(s => s.trim()).filter(Boolean).map((imgUrl, idx) => (
                         <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-[#E5E0D5] shadow-xs">
                           <img src={imgUrl} alt={`Uploaded ${idx}`} className="w-full h-full object-cover" />
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => {
                               const imgs = watch("images")?.split(",").map(s => s.trim()).filter(Boolean) || [];
                               imgs.splice(idx, 1);
@@ -545,85 +545,85 @@ export default function MerchantProductsPage() {
         ) : (
           <div className="overflow-hidden">
             <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#F0ECE1] text-[#7A6E5D] font-bold uppercase tracking-wider text-[11px]">
-                  <th className="pb-3 px-3">Product</th>
-                  <th className="pb-3 px-3">Price</th>
-                  <th className="pb-3 px-3">Stock</th>
-                  <th className="pb-3 px-3">Status</th>
-                  <th className="pb-3 px-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F5F2EA]">
-                {products.map((product) => (
-                  <tr key={product.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
-                    <td className="py-3.5 px-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#FAF8F3] flex-shrink-0 overflow-hidden rounded-lg border border-[#E5E0D5]">
-                          {product.images?.[0] ? (
-                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <Package size={16} className="m-auto mt-3 text-[#E5E0D5]" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-bold text-xs text-[#1C2E24]">{product.name}</p>
-                          <div className="flex gap-2 items-center mt-0.5">
-                            {product.category && (
-                              <span className="text-[10px] font-bold bg-[#E8F5E9] text-[#2E7D32] px-1.5 py-0.5 rounded-md">
-                                {product.category.name.toUpperCase()}
-                              </span>
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#F0ECE1] text-[#7A6E5D] font-bold uppercase tracking-wider text-[11px]">
+                    <th className="pb-3 px-3">Product</th>
+                    <th className="pb-3 px-3">Price</th>
+                    <th className="pb-3 px-3">Stock</th>
+                    <th className="pb-3 px-3">Status</th>
+                    <th className="pb-3 px-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F5F2EA]">
+                  {products.map((product) => (
+                    <tr key={product.id} className="hover:bg-[#FAF8F3]/60 transition-colors">
+                      <td className="py-3.5 px-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-[#FAF8F3] flex-shrink-0 overflow-hidden rounded-lg border border-[#E5E0D5]">
+                            {product.images?.[0] ? (
+                              <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Package size={16} className="m-auto mt-3 text-[#E5E0D5]" />
                             )}
-                            {product.sku && <span className="text-[11px] text-[#8C9890]">SKU: {product.sku}</span>}
+                          </div>
+                          <div>
+                            <p className="font-bold text-xs text-[#1C2E24]">{product.name}</p>
+                            <div className="flex gap-2 items-center mt-0.5">
+                              {product.category && (
+                                <span className="text-[10px] font-bold bg-[#E8F5E9] text-[#2E7D32] px-1.5 py-0.5 rounded-md">
+                                  {product.category.name.toUpperCase()}
+                                </span>
+                              )}
+                              {product.sku && <span className="text-[11px] text-[#8C9890]">SKU: {product.sku}</span>}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <div>
-                        <p className="font-extrabold text-xs text-[#1C2E24]">{formatPrice(product.price)}</p>
-                        {product.compare_price && (
-                          <p className="text-[11px] text-[#8C9890] line-through">{formatPrice(product.compare_price)}</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <span className={`text-xs font-bold ${product.stock_quantity <= product.low_stock_threshold
-                        ? "text-red-600" : "text-[#2E7D32]"}`}>
-                        {product.stock_quantity}
-                        {product.stock_quantity <= product.low_stock_threshold && " ⚠"}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md inline-block ${product.is_active
-                        ? "bg-[#E8F5E9] text-[#2E7D32]" : "bg-gray-100 text-gray-600"}`}>
-                        {product.is_active ? "Active" : "Hidden"}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => openEdit(product)} 
-                          title="Edit Details"
-                          className="bg-[#FAF8F3] hover:bg-[#E5E0D5] text-[#1C2E24] border border-[#E5E0D5] text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all shadow-xs"
-                        >
-                          <Pencil size={11} /> Edit
-                        </button>
-                        <button onClick={() => handleToggleActive(product)} title={product.is_active ? "Hide" : "Show"}
-                          className="p-1.5 text-[#8C9890] hover:text-[#1C2E24] transition-colors">
-                          {product.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                        <button onClick={() => handleDelete(product)} title="Delete"
-                          className="p-1.5 text-[#8C9890] hover:text-red-600 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <div>
+                          <p className="font-extrabold text-xs text-[#1C2E24]">{formatPrice(product.price)}</p>
+                          {product.compare_price && (
+                            <p className="text-[11px] text-[#8C9890] line-through">{formatPrice(product.compare_price)}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <span className={`text-xs font-bold ${product.stock_quantity <= product.low_stock_threshold
+                          ? "text-red-600" : "text-[#2E7D32]"}`}>
+                          {product.stock_quantity}
+                          {product.stock_quantity <= product.low_stock_threshold && " ⚠"}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md inline-block ${!product.is_approved ? "bg-amber-50 text-amber-600 border border-amber-200" : (product.is_active
+                          ? "bg-[#E8F5E9] text-[#2E7D32]" : "bg-gray-100 text-gray-600")}`}>
+                          {!product.is_approved ? "Pending Approval" : (product.is_active ? "Active" : "Hidden")}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openEdit(product)}
+                            title="Edit Details"
+                            className="bg-[#FAF8F3] hover:bg-[#E5E0D5] text-[#1C2E24] border border-[#E5E0D5] text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all shadow-xs"
+                          >
+                            <Pencil size={11} /> Edit
+                          </button>
+                          <button onClick={() => handleToggleActive(product)} title={product.is_active ? "Hide" : "Show"}
+                            className="p-1.5 text-[#8C9890] hover:text-[#1C2E24] transition-colors">
+                            {product.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          <button onClick={() => handleDelete(product)} title="Delete"
+                            className="p-1.5 text-[#8C9890] hover:text-red-600 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
             <div className="p-4 border-t border-[#F0ECE1] flex items-center justify-between">
               <p className="text-xs text-[#8C9890]">Showing {products.length} of {total} products</p>
